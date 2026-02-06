@@ -1,0 +1,12 @@
+stages:
+  - test
+  - build
+  - deploy
+  # more stages
+
+include:
+  - local: ".gitlab/ci/variables.yml"
+  - local: ".gitlab/ci/actions-rules.yml"
+  - local: ".gitlab/ci/branch-rules.yml"
+  - local: ".gitlab/ci/docs.yml"
+  # more component pipelines
