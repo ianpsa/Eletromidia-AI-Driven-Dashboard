@@ -3,4 +3,34 @@ title: Arquitetura
 description: Arquitetura do projeto
 ---
 
-Placeholder.
+## Arquitetura Agnóstica
+
+<Mermaid chart={`
+flowchart TD
+    subgraph Arquitetura Agnóstica
+        api_telemetria[API Telemetria] ..-> api_producer[API Producer]
+        api_producer --> api_telemetria
+
+        api_producer -- evento --> A[[Mensageria Stream Pub/Sub]]
+
+        A -- evento --> writer[API Writer]
+        A -- evento --> writer1[API Writer]
+        A -- evento --> writer2[API Writer]
+
+        writer -- key/value --> keyvaluestore[(Key Value Store)]
+        writer1 -- evento --> datawarehouse[(Data Warehouse)]
+        writer2 -- evento --> bucket[(Object Storage Bucket)]
+
+        bucket --> api_bff[BFF - API]
+        datawarehouse --> api_bff
+
+        keyvaluestore --> servidor[Servidor WS]
+
+        api_bff --> UI
+        servidor --> UI((Interface))
+    end
+`} />
+
+## Arquitetura GCP
+
+![Arquitetura GCP](/GCP-Architeture-v2.png)
