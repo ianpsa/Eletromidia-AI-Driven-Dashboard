@@ -1,6 +1,81 @@
 ---
+description: Interface da aplicação de visualização de fluxo de pessoas
 title: Interface
-description: Interface do projeto
 ---
 
-Placeholder.
+## Interface — Plataforma de Visualização de Fluxo
+
+Este documento descreve a interface da solução desenvolvida para o projeto Visualizador de dados de fluxo de pessoas, em parceria com a Eletromidia, conforme descrito no TAPI.
+
+A aplicação foi concebida como uma plataforma web voltada para análise estratégica de fluxo urbano na cidade de São Paulo. Seu objetivo é transformar grandes volumes de dados geoespaciais em visualizações claras e acessíveis, permitindo que áreas de negócio extraiam insights sem a necessidade de conhecimento técnico avançado.
+
+A solução está estruturada em dois pilares complementares: a plataforma de Business Intelligence construída com Looker (Google Cloud) e o mapa hexagonal interativo. Ambas as camadas refletem os dados em tempo real, conforme definido na arquitetura do projeto.
+
+## Arquitetura de dados
+
+Os dados são fornecidos tanto pela ingestão de CSVs por parte do usuário, quanto por uma API de telemetria, responsável por enviar continuamente as informações de fluxo coletadas.
+
+O backend consome essa API de forma automatizada, processa os registros recebidos e atualiza o banco de dados da aplicação. A interface e a plataforma de BI refletem essas atualizações de maneira automática, garantindo que as visualizações exibam sempre os dados mais recentes disponíveis.
+
+Essa abordagem elimina intervenção manual, reduz riscos de inconsistência e mantém alinhamento total entre mapa, dashboards e base consolidada.
+
+## Plataforma de BI — Looker
+
+A camada de Business Intelligence foi estruturada utilizando o Looker, permitindo consolidar os dados recebidos via API em dashboards estratégicos. Essa camada atende principalmente áreas como executivo(persona Mário), precificação e planejamento comercial/marketing (persona Carmem).
+
+O objetivo da plataforma é transformar os dados de telemetria em indicadores executivos, séries temporais, comparações demográficas e análises regionais. Em vez de visualizar apenas a densidade geográfica, o Looker permite observar tendências ao longo do tempo, comparar regiões e segmentar o público por faixa etária, gênero e classe social.
+
+Sempre que novos dados são recebidos pela API e processados pelo backend, os dashboards são atualizados automaticamente. Não há necessidade de atualização manual ou reprocessamento externo. O ambiente de BI permanece sincronizado com o restante da aplicação.
+
+### Exemplos de dashboards
+
+![Dashboard Looker - Visão Geral](../../../public/looker4.png)
+![Dashboard Looker - Demografia](../../../public/looker.gif)
+![Dashboard Looker - Comparativo Regional](../../../public/looker3.png)
+
+## Mapa hexagonal interativo
+
+O mapa hexagonal é o núcleo visual da aplicação. Conforme previsto nos requisitos do projeto, foi adotado o modelo hexbin como principal forma de visualização geoespacial.
+
+A escolha do hexágono permite agregar grandes volumes de dados sem gerar poluição visual. Em vez de exibir milhares de pontos individuais de latitude e longitude, os registros são agrupados em células hexagonais que representam densidade de fluxo. Isso mantém a organização visual mesmo em cenários de alto volume de dados.
+
+A visualização permite interação direta com o mapa, incluindo zoom, movimentação e exibição de informações resumidas ao passar o cursor sobre cada área. Sempre que novos dados chegam via API, o mapa recalcula as agregações e atualiza automaticamente as células exibidas.
+
+## Estrutura da interface
+
+A parte superior da página concentra o cabeçalho com identidade visual e a área principal do mapa. A interface foi construída para priorizar clareza e leitura rápida da informação.
+
+Na lateral encontra-se a barra de filtros, organizada para permitir refinamento progressivo da análise. O usuário pode definir um raio de distância em quilômetros, selecionar intervalos de faixa etária, escolher gênero, filtrar por classe social e delimitar horários específicos de início e fim.
+
+Quando qualquer filtro é alterado, os dados são recalculados automaticamente e a visualização é atualizada sem necessidade de recarregar a página. Essa atualização ocorre tanto no mapa quanto nos gráficos comparativos e nos dashboards conectados.
+
+Na parte inferior da interface, existe uma área voltada para comparação entre regiões. O usuário pode selecionar diferentes pontos ou raios e comparar segmentos demográficos lado a lado. Dois mapas são exibidos simultaneamente, permitindo análise visual direta das diferenças de densidade.
+
+## Atualização contínua
+
+Toda a aplicação é orientada a dados em tempo real. A cada novo envio de informações pela API de telemetria, o backend processa os registros e atualiza a base da aplicação. O mapa recalcula suas agregações hexagonais e o Looker atualiza seus dashboards.
+
+Não existe etapa manual de upload ou substituição de arquivos. O fluxo é totalmente automatizado, garantindo consistência, escalabilidade e confiabilidade da informação exibida.
+
+## Intenção da interface
+
+A interface foi projetada para equilibrar clareza visual e profundidade analítica. O uso do hexbin mantém a organização mesmo com grande volume de dados, enquanto os filtros demográficos e espaciais permitem cruzamentos estratégicos.
+
+A camada de BI complementa o mapa ao transformar visualização operacional em inteligência executiva. Dessa forma, a solução não apenas exibe dados, mas apoia decisões estratégicas baseadas em fluxo urbano atualizado continuamente.
+
+## Imagens do mapa hexagonal
+
+![Mapa Hexagonal - Visão Geral](../../../public/hexbin-visao-geral.png)
+![Mapa Hexagonal - Comparação de Gênero](../../../public/hexbin-comparacao-genero.png)
+
+## Conclusão
+
+A solução apresentada consolida duas camadas complementares de análise: a visualização geoespacial interativa por meio do mapa hexagonal e a camada estratégica de Business Intelligence estruturada no Looker. Juntas, essas frentes transformam dados brutos de telemetria em uma ferramenta de apoio à decisão orientada por dados em tempo real.
+
+A plataforma de BI atende diretamente ao requisito RF05, ao permitir agrupamentos e agregações personalizadas por faixa etária, gênero, classe social e região, além de possibilitar análises temporais e consolidações como soma, média e variações por horário. Essa capacidade amplia o uso da ferramenta para além da visualização operacional, permitindo que áreas estratégicas da empresa realizem leituras analíticas mais profundas e orientadas a planejamento comercial e precificação.
+
+Já o mapa hexagonal atende ao requisito RF02 ao exibir dados georreferenciados com agregação espacial dinâmica. Em vez de apresentar pontos individuais de latitude e longitude, o sistema organiza os registros em células hexagonais que se ajustam conforme o nível de zoom e os filtros aplicados. Isso garante clareza visual mesmo diante de grandes volumes de dados, preservando a capacidade de análise espacial sem comprometer a legibilidade.
+
+Dessa forma, a aplicação cumpre seu propósito central: tornar utilizável uma grande massa de dados urbanos por meio de uma interface intuitiva, atualizada continuamente via API de telemetria e ingestão de outras bases de dados, e capaz de gerar insights tanto operacionais quanto estratégicos.
+
+Por fim, é importante destacar que a interface apresentada não é estática. Ela foi concebida como uma base evolutiva, sujeita a melhorias contínuas, ajustes de usabilidade e novas implementações conforme surgirem novas necessidades de negócio, expansão para outras cidades ou integração com novas fontes de dados. A arquitetura adotada permite essa evolução de forma estruturada, garantindo que a plataforma possa crescer sem comprometer sua consistência visual e analítica.
