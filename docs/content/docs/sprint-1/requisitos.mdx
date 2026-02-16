@@ -1,0 +1,298 @@
+---
+title: Requisitos
+description: Requisitos Funcionais e Não Funcionais do projeto
+---
+
+## Introdução
+
+Os requisitos funcionais e não funcionais são importantes para alinhar expectativas entre as partes envolvidas e orientar o desenvolvimento
+do sistema de forma consistente. Os requisitos funcionais descrevem o que o sistema deve fazer, ou seja, as funcionalidades e interações
+que atendem às necessidades dos usuários e do parceiro. Já os requisitos não funcionais estabelecem como o sistema deve operar, incluindo
+aspectos como segurança, desempenho, robustez e qualidade dos dados.
+
+No contexto deste projeto, que visa transformar grandes volumes de dados de fluxo de pessoas em visualizações acessíveis e úteis para
+diferentes áreas da Eletromidia, essa delimitação é particularmente importante. Ela garante que o visualizador seja não apenas funcional,
+com mapas, filtros e análises, mas também confiável, seguro e utilizável por públicos não técnicos.
+
+### Escopo da Sprint 1
+
+Nesta fase, o sistema foca no núcleo analítico da solução: ingestão de dados de fluxo de pessoas, processamento e visualização geoespacial
+interativa com filtros e agregações, além de relações personalizáveis entre os dados. Funcionalidades de governança, gestão de usuários, exportação avançada, auditoria e observabilidade
+completa são previstas como evolução arquitetural em fases posteriores.
+
+Assim, os requisitos definidos nesta seção representam o escopo completo do produto, sendo parcialmente implementados na arquitetura atual
+e progressivamente entregues ao longo das próximas sprints.
+
+---
+
+## Fases de Evolução do Produto
+
+**Fase 1 — Núcleo analítico (arquitetura atual)**
+RF01, RF02, RF03, RF04, RF05, RF06
+
+**Fase 2 — Plataforma analítica expandida**
+RF10, RF11, RF12
+
+**Fase 3 — Governança e operação corporativa**
+RF07, RF08, RF09 + RNFs de segurança, auditoria e observabilidade
+
+---
+
+## 1. Requisitos Funcionais (RF)
+
+### RF01 - Ingestão de base de dados de fluxo
+
+**Descrição:** O sistema deve permitir a ingestão de dados estruturados de fluxo de pessoas (ex.: CSV ou fonte equivalente), validando
+esquema e colunas obrigatórias antes de disponibilizar os dados para visualização analítica.
+
+**Prioridade:** MUST (Fase 1)
+
+**Dependência arquitetural:** pipeline de ingestão e validação de dados.
+
+**CA / Teste:**
+
+- Ao importar dados, sistema valida presença das colunas mínimas (`location_id`, `impression_hour`, `uniques`, `latitude`, `longitude`).
+- Se faltar coluna, exibe erro com mensagem clara (qual coluna faltou).
+- Após ingestão bem-sucedida, mostra resumo (nº de registros, período mínimo-máximo de `impression_hour`, contagem de locations únicos).
+
+---
+
+### RF02 - Visualizar mapa interativo com pontos
+
+**Descrição:** Exibir pontos georreferenciados (latitude/longitude) no mapa com agregação por zoom (cluster/hexbin/heatmap selecionável).
+
+**Prioridade:** MUST (Fase 1)
+
+**CA / Teste:**
+
+- Ao abrir o mapa, pontos aparecem no mapa em formato hexbin, ao dar zoom, clusters se expandem.
+- Cada hexbin/cluster informa soma de `uniques` e lista dos `location_id`s contidos.
+
+---
+
+### RF03 - Filtros por período/hora
+
+**Descrição:** Filtrar dados por intervalo de tempo (datas + horário do dia) e aplicar imediatamente nas visualizações.
+
+**Prioridade:** MUST (Fase 1)
+
+**CA / Teste:**
+
+- Usuário seleciona intervalo (ex.: 2025-01-01 06:00 → 2025-01-01 11:00) e mapa/relatórios atualizam.
+- Filtro de “hora do dia” traduzido em faixas ou horário customizado.
+
+---
+
+### RF04 - Comparação de filtros
+
+**Descrição:** Permitir comparar visualizações geoespaciais agregadas (hexbin) entre diferentes filtros ou segmentos (ex.: classe social, faixa etária, gênero ou períodos distintos), facilitando a análise comparativa de distribuição de público.
+
+**Prioridade:** SHOULD (Fase 1)
+
+**CA / Teste:**
+
+- Usuário seleciona dois filtros ou segmentos distintos (ex.: masculino vs. feminino) e o sistema exibe mapas hexbin comparáveis.
+- A interface permite alternar entre filtros ou visualizar comparação lado a lado.
+- Cada visualização mantém agregação consistente de uniques para o segmento selecionado.
+- Diferenças espaciais entre segmentos são visualmente identificáveis no mapa.
+
+---
+
+### RF05 - Agrupamento e agregações personalizadas
+
+**Descrição:** Permitir agrupar por zona, faixa etária, gênero, classe social e agregar `uniques` (soma, média, pico por hora).
+
+**Prioridade:** MUST (Fase 1)
+
+**CA / Teste:**
+
+- Usuário escolhe “agrupar por: gênero” → gráfico/relatório mostram proporções.
+- Agrupamento por hexbin mostra quais `location_id`s compõem cada hex.
+
+---
+
+### RF06 - Gráficos e painéis auxiliares
+
+**Descrição:** Oferecer gráficos (linha temporal, barras por categoria, heatmap horário) que se atualizam com filtros aplicados.
+
+**Prioridade:** MUST (Fase 1)
+
+**CA / Teste:**
+
+- Selecionar filtro temporal muda o gráfico de linha temporal instantaneamente.
+- Gráficos têm tooltip com valores exatos.
+
+---
+
+### RF07 - Exportação de relatório (PDF/CSV) (com restrição de dados)
+
+**Descrição:** Gerar exportação dos dados agregados/relatórios para CSV ou PDF, respeitando regra contratual de não-divulgação.
+
+**Prioridade:** SHOULD (Fase 3)
+
+**Dependência arquitetural:** camada de autenticação e controle de acesso (RBAC).
+
+**CA / Teste:**
+
+- Usuário com permissão pode exportar relatório agregado.
+- Usuários sem permissão recebem aviso.
+- Export inclui metadados (período, filtros aplicados, versão do dataset).
+
+---
+
+### RF08 - Gestão de usuários e papéis (RBAC)
+
+**Descrição:** Implementar autenticação e controle de acesso por papéis (ex.: admin, analista, viewer).
+
+**Prioridade:** SHOULD (Fase 3)
+
+**Dependência arquitetural:** serviço de identidade e autorização.
+
+**CA / Teste:**
+
+- Admin cria/edita papéis.
+- Viewer não pode exportar dados.
+- Analista pode filtrar e gerar relatórios.
+
+---
+
+### RF09 - Histórico de execuções e logs de consulta (auditoria)
+
+**Descrição:** Registrar consultas e exportações por usuário com carimbo temporal.
+
+**Prioridade:** SHOULD (Fase 3)
+
+**Dependência arquitetural:** serviço de auditoria e logging.
+
+**CA / Teste:**
+
+- Após exportação, registro de auditoria criado com usuário, filtros e arquivo.
+
+---
+
+### RF10 - Upload de nova base similar para reuso em outras cidades
+
+**Descrição:** Permitir carregamento de outra base compatível e alternância de dataset no dashboard.
+
+**Prioridade:** SHOULD (Fase 2)
+
+**Dependência arquitetural:** gerenciamento de datasets no pipeline.
+
+**CA / Teste:**
+
+- Upload de CSV compatível cria novo dataset.
+- Interface permite alternar dataset ativo.
+
+---
+
+### RF11 - Ajuda contextual / glossário (UX para não-tecnicos)
+
+**Descrição:** Textos explicativos e glossário para termos técnicos.
+
+**Prioridade:** MUST (Fase 2)
+
+**CA / Teste:**
+
+- Ícones de ajuda abrem popovers.
+- Termos técnicos possuem explicação acessível.
+
+---
+
+### RF12 - Indicadores e perguntas prontas (insights prontos)
+
+**Descrição:** Botão “Perguntas rápidas” com consultas pré-configuradas.
+
+**Prioridade:** SHOULD (Fase 2)
+
+**Dependência arquitetural:** consultas analíticas parametrizadas.
+
+**CA / Teste:**
+
+- Selecionar pergunta aplica filtros automaticamente.
+- Resultado aparece em cartão analítico.
+
+---
+
+## 2. Requisitos Não-Funcionais (RNF)
+
+Os requisitos funcionais e não funcionais estão intrinsecamente alinhados para garantir que cada capacidade analítica do sistema seja entregue com qualidade operacional, segurança e confiabilidade.
+
+As funcionalidades centrais da Fase 1 (ingestão, validação, processamento e visualização geoespacial (RF01–RF05)) dependem diretamente dos RNFs de dados, robustez e tolerância a falhas (RNF-DATA-01, RNF-ROB-01, RNF-REL-01), assegurando que as análises exibidas no mapa e nos painéis sejam consistentes e estáveis mesmo diante de variações ou erros nos dados.
+
+Nas fases evolutivas seguintes, funcionalidades de exportação, múltiplos datasets e insights (RF06–RF11) passam a se apoiar nos RNFs de segurança, autenticação e observabilidade (RNF-SEC-01, RNF-SEC-02, RNF-MAINT-01), garantindo controle de acesso, rastreabilidade e governança corporativa sobre o uso das informações. Dessa forma, cada requisito funcional possui suporte direto em requisitos não funcionais correspondentes, assegurando que a evolução do produto preserve simultaneamente valor analítico, segurança e confiabilidade operacional.
+
+### RNF-SEC-01: Proteção de dados (contratual)
+
+**Descrição:** Dados sensíveis não podem ser exportados ou exibidos sem autorização.
+
+**Prioridade:** Fase 3
+
+**Dependência arquitetural:** RBAC + governança de dados.
+
+**Critério:**
+Exports restritos por role; logs de exportação.
+
+---
+
+### RNF-SEC-02: Autenticação e autorização
+
+**Descrição:** Autenticação segura com controle de sessão.
+
+**Prioridade:** Fase 3
+
+**Dependência arquitetural:** serviço de identidade.
+
+---
+
+### RNF-MAINT-01: Observabilidade / Logs / Métricas
+
+**Descrição:** Logs estruturados e métricas de uso.
+
+**Prioridade:** Fase 3
+
+**Dependência arquitetural:** stack de observabilidade.
+
+---
+
+### RNF-DATA-01: Consistência e Validação dos Dados
+
+**Descrição:** Validar consistência e anomalias durante ingestão.
+
+**Prioridade:** Fase 1
+
+**Dependência arquitetural:** pipeline de validação.
+
+---
+
+### RNF-ROB-01: Robustez Operacional
+
+**Descrição:** Sistema estável sob falhas parciais.
+
+**Prioridade:** Fase 1
+
+**Dependência arquitetural:** arquitetura desacoplada por serviços.
+
+---
+
+### RNF-REL-01: Tolerância a Falhas no Processamento
+
+**Descrição:** Processamento tolerante a falhas com retomada.
+
+**Prioridade:** Fase 1
+
+**Dependência arquitetural:** processamento assíncrono.
+
+---
+
+## Conclusão
+
+Os requisitos funcionais e não funcionais definidos neste documento representam o escopo completo da plataforma analítica de fluxo de
+pessoas. A arquitetura atual implementa o núcleo analítico do sistema (ingestão, processamento e visualização geoespacial), cobrindo
+integralmente os requisitos da Fase 1.
+
+Requisitos de governança, segurança, gestão de usuários, auditoria e observabilidade correspondem a camadas arquiteturais adicionais
+previstas para evolução nas fases 2 e 3. Dessa forma, requisitos, arquitetura, personas e user stories permanecem coerentes: a arquitetura
+atual materializa o núcleo analítico enquanto os requisitos definem a trajetória completa de maturidade do produto.
+
+Essa organização garante que o desenvolvimento permaneça incremental, mantendo alinhamento técnico e valor de negócio ao longo das
+sprints.
