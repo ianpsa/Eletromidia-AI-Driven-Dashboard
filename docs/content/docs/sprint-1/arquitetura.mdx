@@ -1,0 +1,123 @@
+---
+title: Arquitetura
+description: Arquitetura do projeto
+---
+
+O sistema precisa receber dados de fluxo de pessoas vindos da Claro Geodata, processá-los e apresentá-los em uma interface com mapas, gráficos e filtros. Para isso, a arquitetura foi pensada em dois níveis: uma versão agnóstica, que mostra como os componentes se conectam sem depender de nenhum provedor de nuvem, e uma versão usando serviços do Google Cloud Platform (GCP), que é o provedor escolhido para o projeto.
+
+A versão agnóstica existe para que o sistema não fique preso a um fornecedor. Se no futuro a Eletromidia precisar trocar de provedor (apesar de sabermos que eles tem parceria com o Google), basta substituir os serviços mantendo a mesma estrutura. Essa modularidade também facilita a manutenção e a evolução do sistema ao longo das sprints.
+
+## Arquitetura Agnóstica
+
+<Mermaid chart={`
+flowchart TD
+    subgraph Arquitetura Agnóstica
+        api_telemetria[API Telemetria] ..-> api_producer[API Producer]
+        api_producer --> api_telemetria
+
+        api_producer -- evento --> A[[Mensageria Stream Pub/Sub]]
+
+        A -- evento --> writer[API Writer]
+        A -- evento --> writer1[API Writer]
+        A -- evento --> writer2[API Writer]
+
+        writer -- key/value --> keyvaluestore[(Key Value Store)]
+        writer1 -- evento --> datawarehouse[(Data Warehouse)]
+        writer2 -- evento --> bucket[(Object Storage Bucket)]
+
+        bucket --> api_bff[BFF - API]
+        datawarehouse --> api_bff
+
+        keyvaluestore --> servidor[Servidor WS]
+
+        api_bff --> UI
+        servidor --> UI((Interface))
+    end
+
+`} />
+
+A arquitetura agnóstica descreve o fluxo de dados sem se prender a nenhuma tecnologia ou provedor. O sistema funciona assim:
+
+1. **Entrada de dados:** O sistema recebe dados de duas formas:
+   - **Via API:** A API Telemetria recebe dados brutos de fluxo de pessoas em tempo real. Ela se comunica com a API Producer, que transforma esses dados em eventos e os publica.
+   - **Via upload de arquivo:** O usuário pode fazer upload de arquivos (como CSVs da Claro Geodata) diretamente pela interface. Esses arquivos são enviados para o Object Storage Bucket e processados pelo pipeline de ETL, que valida, transforma e carrega os dados no Data Warehouse. Isso permite atualizar a base de dados com novos períodos ou incluir dados de outras cidades.
+
+2. **Fila de mensagens:** Os eventos vindos da API são enviados para um sistema de mensageria (Pub/Sub). Esse componente funciona como uma fila: ele recebe os eventos e os distribui para quem precisa consumi-los. Isso desacopla quem produz os dados de quem os processa.
+
+3. **Processamento e armazenamento:** Três API Writers consomem os eventos da fila, cada uma com uma responsabilidade diferente:
+   - Uma escreve em um Key-Value Store (banco de dados rápido para consultas em tempo real)
+   - Outra escreve em um Data Warehouse (banco otimizado para análises históricas e relatórios)
+   - A terceira escreve em um Object Storage Bucket (armazenamento de arquivos para dados brutos)
+
+4. **Servindo os dados para o usuário:** Existem dois caminhos para a interface consumir os dados:
+   - **Tempo real:** O Servidor WebSocket (WS) lê do Key-Value Store e envia atualizações para a interface em tempo real, sem que o usuário precise recarregar a página.
+   - **Dados históricos:** A BFF (Backend for Frontend) API consulta o Data Warehouse e o Object Storage para montar as respostas que a interface precisa para gráficos, filtros e mapas. Isso inclui tanto os dados vindos da API quanto os dados importados via upload de arquivo.
+
+5. **Interface:** A camada de UI (Interface) é a aplicação web que o usuário final acessa. Ela consome dados tanto do WebSocket (tempo real) quanto da BFF API (dados históricos), e também é onde o usuário faz o upload de novos arquivos.
+
+## Arquitetura GCP
+
+![Arquitetura GCP](/GCP-Architeture-v2.png)
+
+A arquitetura GCP traduz cada componente da versão agnóstica para serviços reais do Google Cloud. O diagrama está dividido em três áreas: rede pública, frontend e backend.
+
+### CI/CD e Deploy
+
+No topo do diagrama, o GitLab CI/CD cuida da integração e entrega contínua. Quando um desenvolvedor faz push do código, o pipeline roda automaticamente: constrói a imagem da aplicação, armazena no Container Registry e faz o deploy nos serviços de backend.
+
+### Rede Pública e Frontend
+
+O caminho do usuário até a aplicação passa por:
+
+- Cloud CDN e Cloud Storage servem os arquivos estáticos da interface (HTML, CSS, JS)
+- API Gateway gerencia as chamadas de API, controlando autenticação e limites de uso
+- Cloud Load Balancing distribui as requisições entre as instâncias do backend, garantindo que o sistema aguente picos de acesso
+
+### Backend - Fluxo em Tempo Real
+
+Esse caminho lida com dados que precisam chegar rápido ao usuário:
+
+- A Telemetry API envia dados para o Compute Engine (Data Source), que está conectado à internet pública via Cloud NAT
+- Os dados passam pelo Managed Service for Apache Kafka, que funciona como a fila de mensagens
+- Um Compute Engine (Memorystore Writer) consome os eventos do Kafka e escreve no Memorystore, o banco de dados em memória do GCP
+- O Cloud Run (WebSocket Service) lê do Memorystore e envia as atualizações em tempo real para a interface
+
+### Backend - Fluxo Histórico e Upload de Arquivos
+
+Esse caminho processa e armazena dados para consultas e análises. Ele recebe dados de duas origens: os eventos do Kafka (dados da API) e arquivos enviados pelo usuário (como CSVs).
+
+- O Dataflow faz o processamento ETL (extração, transformação e carga dos dados), tanto dos eventos do Kafka quanto dos arquivos que o usuário faz upload pela interface
+- Os arquivos enviados pelo usuário são armazenados no Cloud Storage (Historical Data) e processados pelo mesmo pipeline de ETL
+- Os dados processados vão para o BigQuery, o data warehouse do GCP, onde ficam disponíveis para consultas e análises, independente de terem vindo da API ou de um upload
+- O Cloud Run (API for Data History) consulta o Cloud Storage e o BigQuery para servir dados históricos à interface
+- O BigQuery alimenta o Looker, a plataforma de BI (Business Intelligence) do GCP, que permite análises quase em tempo real
+
+### Resumo dos Serviços
+
+| Componente Agnóstico        | Serviço GCP                         | Função                  |
+| --------------------------- | ----------------------------------- | ----------------------- |
+| API Telemetria              | Compute Engine + Cloud NAT          | Recebe dados externos   |
+| Mensageria Pub/Sub          | Managed Service for Apache Kafka    | Fila de eventos         |
+| API Writer (Key-Value)      | Compute Engine (Memorystore Writer) | Escreve no cache        |
+| Key-Value Store             | Memorystore                         | Dados em tempo real     |
+| Servidor WebSocket          | Cloud Run (WebSocket Service)       | Tempo real para a UI    |
+| API Writer (Data Warehouse) | Dataflow                            | ETL dos dados           |
+| Data Warehouse              | BigQuery                            | Análises e relatórios   |
+| Object Storage              | Cloud Storage                       | Dados históricos brutos |
+| BFF API                     | Cloud Run (API for Data History)    | Serve dados históricos  |
+| BI/Visualização             | Looker                              | Dashboards e análises   |
+| Interface (UI)              | Cloud CDN + Cloud Storage           | Frontend estático       |
+
+## Sobre a versão atual
+
+Esta arquitetura representa o melhor desenho que a equipe conseguiu elaborar com as informações disponíveis até o momento. Ela serve como ponto de partida para o desenvolvimento: um plano que organiza os componentes, define responsabilidades e orienta a implementação nas próximas sprints.
+
+Dito isso, ela não é fixa. Conforme o projeto avança, ajustes vão acontecer. Os motivos mais prováveis para mudanças são:
+
+- **Requisitos evoluindo:** Conforme o entendimento do problema melhora e o parceiro valida as entregas, novos requisitos podem surgir ou os atuais podem mudar.
+- **Viabilidade técnica:** Algumas decisões podem se mostrar complexas demais para o tempo e os recursos disponíveis da equipe. Nesses casos, simplificações serão feitas sem comprometer o objetivo principal.
+- **Feedback do parceiro:** Validações com a Eletromidia podem redirecionar prioridades ou mudar o escopo de determinados componentes.
+
+Essas mudanças serão feitas de forma planejada e documentadas nas sprints seguintes, mantendo coerência com os [Requisitos](/docs/sprint-1/requisitos) e com o [Planejamento do Projeto](/docs/sprint-1/planejamento-projeto).
+
+Dessa forma, a arquitetura sustenta os dois principais usos da aplicação: a visualização em tempo real (via WebSocket) e a análise de dados históricos (via BFF API e BigQuery). Esses dois fluxos alimentam a interface com mapa hexbin, filtros e gráficos detalhada na seção de [Interface](/docs/sprint-1/interface). Os requisitos funcionais e não funcionais que guiaram essas decisões, como importação de CSV, filtros por distância e controle de acesso, estão em [Requisitos](/docs/sprint-1/requisitos). O contexto de negócio e o valor que essa estrutura gera para a Eletromidia e seus clientes está em [Potencial de Retorno](/docs/sprint-1/potencial-de-retorno).

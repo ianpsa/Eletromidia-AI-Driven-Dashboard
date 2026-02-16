@@ -1,0 +1,70 @@
+---
+title: Potencial de Retorno
+description: Análise do potencial de retorno que a solução traz para a Eletromidia
+---
+
+## Introdução
+
+&emsp;Este documento analisa os benefícios que a solução gera para três frentes: a Eletromidia como empresa (comercial, precificação e operação), os anunciantes que contratam seus espaços de mídia, e a infraestrutura técnica que sustenta o crescimento da plataforma.
+
+## Retorno para a Eletromidia
+
+### Fortalecimento do argumento comercial
+
+&emsp;A Eletromidia já possui um volume massivo de dados de circulação e audiência, mas esses dados são difíceis de consumir e interpretar no formato atual. Com a solução, esses mesmos dados são reestruturados e apresentados de forma clara e visual, permitindo que o time comercial mostre ao anunciante exatamente **quem** circula naquela região, **quando** e com **qual perfil demográfico**.
+
+&emsp;O impacto direto é a elevação do valor percebido da mídia oferecida. Os dados já existem, o que muda é a capacidade de comunicá-los de forma acessível e convincente.
+
+### Retenção e fidelização de clientes
+
+&emsp;Anunciantes que conseguem enxergar o retorno de suas campanhas tendem a manter e aumentar seus investimentos. As análises geradas pela plataforma de BI (Looker) e pelo mapa hexbin permitem que o cliente acompanhe as métricas de impressões e alcance de sua campanha, gerando transparência e confiança na relação comercial.
+
+### Otimização do inventário de mídia
+
+&emsp;Com as diversas combinações possíveis entre os dados, apresentações como fluxo segmentados por horário e perfil demográfico permitem que a Eletromidia precifique seus espaços de forma mais inteligente. Pontos com maior concentração de públicos específicos (ex.: jovens classe A em horário noturno) podem ser oferecidos com preços diferenciados para campanhas que buscam exatamente esse segmento.
+
+### Redução do tempo de negociação
+
+&emsp;Ao reorganizar os dados já existentes em visualizações claras e filtráveis, o ciclo de venda é reduzido. Em vez de múltiplas reuniões para convencer o cliente do valor de determinado ponto, a equipe comercial pode apresentar os dashboards de BI e o mapa hexbin com filtros por região, gênero, faixa etária e classe social, agilizando a tomada de decisão.
+
+## Retorno para os anunciantes (clientes da Eletromidia)
+
+### Decisões baseadas em dados
+
+&emsp;Anunciantes como o [Mário](/docs/sprint-1/perfil-do-parceiro/personas) (executivo com experiência em análise de dados) já sabem o que querem analisar e como formular gráficos que façam sentido para o seu negócio. O problema é que hoje não existe uma plataforma que permita essa personalização. Os gráficos e análises disponíveis não refletem a realidade da operação e não dizem nada sobre como a campanha está afetando o negócio dele.
+
+&emsp;Uma plataforma de BI resolve exatamente isso. Ao permitir que o próprio usuário crie análises, cruze dados e monte visualizações do jeito que preferir, Mário consegue entender de fato o retorno das suas campanhas. Mais do que isso, por se tratar de uma plataforma de BI, a Eletromidia ganha a capacidade de gerar qualquer tipo de relação e análise entre seus dados, abrindo possibilidades muito maiores de personalização. Cada cliente pode receber dashboards e relatórios montados sob medida para o seu contexto, com os recortes e cruzamentos que fazem sentido para o seu negócio. Essa personalização real dos dados apresentados ao cliente cria uma experiência única, que fortalece o relacionamento e diferencia a Eletromidia no mercado.
+
+### Segmentação geográfica precisa
+
+&emsp;Profissionais de marketing como a [Carmen](/docs/sprint-1/perfil-do-parceiro/personas) (analista) podem comparar o perfil de público entre diferentes regiões, identificar os pontos ótimos para cada campanha e ajustar estratégias de forma ágil. O mapa interativo com hexágonos por região facilita a visualização comparativa.
+
+### Maior retorno sobre investimento (ROI)
+
+&emsp;Com a capacidade de escolher pontos de mídia alinhados ao público-alvo da campanha, anunciantes reduzem desperdício de investimento e aumentam a taxa de conversão. Por exemplo, em vez de contratar painéis espalhados por toda a cidade, um anunciante que busca jovens classe A pode usar os filtros demográficos e o mapa hexbin para identificar exatamente quais regiões e horários concentram esse público, direcionando a verba de forma precisa.
+
+&emsp;Além disso, a possibilidade de acompanhar métricas de impressões e alcance ao longo da campanha permite ajustes em tempo real, realocando investimento de pontos com baixo retorno para pontos com maior potencial.
+
+## Retorno técnico e operacional
+
+&emsp;Os detalhes técnicos dos componentes mencionados abaixo estão descritos na [Arquitetura](/docs/sprint-1/arquitetura).
+
+### Escalabilidade
+
+&emsp;A arquitetura baseada em GCP com mensageria Pub/Sub, múltiplos writers e auto-scaling horizontal permite que a solução processe alto volume de requisições por segundo sem degradação de performance. Isso garante que o crescimento do volume de dados não exija reestruturação da plataforma.
+
+### Modularidade
+
+&emsp;A arquitetura agnóstica e modular permite substituição de componentes sem impacto sistêmico. Se a Eletromidia decidir migrar de provedor de nuvem ou trocar o data warehouse, a mudança é isolada e não afeta o restante do sistema.
+
+### Dados em tempo real
+
+&emsp;A combinação de Key-Value Store com WebSocket permite que a interface exiba dados atualizados em tempo real, sem necessidade de atualização manual da página. Isso é especialmente relevante para acompanhamento de campanhas ativas.
+
+### Ingestão de novas bases de dados
+
+&emsp;O sistema permite o upload de arquivos CSV com novos dados de fluxo, que passam pelo pipeline de ETL e ficam disponíveis para análise. Isso possibilita atualizar a base com novos períodos, incluir dados de outras cidades ou substituir datasets antigos. Para [Carlos](/docs/sprint-1/perfil-do-parceiro/personas) (administrador da plataforma), esse fluxo reduz o trabalho manual de validação, já que o sistema verifica automaticamente a estrutura e consistência dos dados antes de disponibilizá-los.
+
+## Conclusão
+
+&emsp;A solução não gera dados novos. Ela reorganiza e apresenta de forma acessível os dados que a Eletromidia já possui, permitindo que equipes comerciais argumentem com mais clareza, que anunciantes tomem decisões mais informadas e que a infraestrutura suporte o crescimento da operação sem retrabalho. O retorno está em desbloquear o valor que já existe dentro da empresa.
