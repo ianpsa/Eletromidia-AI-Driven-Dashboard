@@ -27,14 +27,14 @@ e progressivamente entregues ao longo das próximas sprints.
 
 ## Fases de Evolução do Produto
 
-**Fase 1 — Núcleo analítico (arquitetura atual)**  
-RF01, RF02, RF03, RF04, RF05, RF06  
+**Fase 1 — Núcleo analítico (arquitetura atual)**
+RF01, RF02, RF03, RF04, RF05, RF06
 
-**Fase 2 — Plataforma analítica expandida**  
-RF10, RF11, RF12  
+**Fase 2 — Plataforma analítica expandida**
+RF10, RF11, RF12
 
-**Fase 3 — Governança e operação corporativa**  
-RF07, RF08, RF09 + RNFs de segurança, auditoria e observabilidade  
+**Fase 3 — Governança e operação corporativa**
+RF07, RF08, RF09 + RNFs de segurança, auditoria e observabilidade
 
 ---
 
@@ -51,9 +51,9 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Ao importar dados, sistema valida presença das colunas mínimas (`location_id`, `impression_hour`, `uniques`, `latitude`, `longitude`).
-* Se faltar coluna, exibe erro com mensagem clara (qual coluna faltou).
-* Após ingestão bem-sucedida, mostra resumo (nº de registros, período mínimo-máximo de `impression_hour`, contagem de locations únicos).
+- Ao importar dados, sistema valida presença das colunas mínimas (`location_id`, `impression_hour`, `uniques`, `latitude`, `longitude`).
+- Se faltar coluna, exibe erro com mensagem clara (qual coluna faltou).
+- Após ingestão bem-sucedida, mostra resumo (nº de registros, período mínimo-máximo de `impression_hour`, contagem de locations únicos).
 
 ---
 
@@ -65,8 +65,8 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Ao abrir o mapa, pontos aparecem no mapa em formato hexbin, ao dar zoom, clusters se expandem.
-* Cada hexbin/cluster informa soma de `uniques` e lista dos `location_id`s contidos.
+- Ao abrir o mapa, pontos aparecem no mapa em formato hexbin, ao dar zoom, clusters se expandem.
+- Cada hexbin/cluster informa soma de `uniques` e lista dos `location_id`s contidos.
 
 ---
 
@@ -78,8 +78,8 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Usuário seleciona intervalo (ex.: 2025-01-01 06:00 → 2025-01-01 11:00) e mapa/relatórios atualizam.
-* Filtro de “hora do dia” traduzido em faixas ou horário customizado.
+- Usuário seleciona intervalo (ex.: 2025-01-01 06:00 → 2025-01-01 11:00) e mapa/relatórios atualizam.
+- Filtro de “hora do dia” traduzido em faixas ou horário customizado.
 
 ---
 
@@ -91,10 +91,10 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Usuário seleciona dois filtros ou segmentos distintos (ex.: masculino vs. feminino) e o sistema exibe mapas hexbin comparáveis.
-* A interface permite alternar entre filtros ou visualizar comparação lado a lado.
-* Cada visualização mantém agregação consistente de uniques para o segmento selecionado.
-* Diferenças espaciais entre segmentos são visualmente identificáveis no mapa.
+- Usuário seleciona dois filtros ou segmentos distintos (ex.: masculino vs. feminino) e o sistema exibe mapas hexbin comparáveis.
+- A interface permite alternar entre filtros ou visualizar comparação lado a lado.
+- Cada visualização mantém agregação consistente de uniques para o segmento selecionado.
+- Diferenças espaciais entre segmentos são visualmente identificáveis no mapa.
 
 ---
 
@@ -106,8 +106,8 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Usuário escolhe “agrupar por: gênero” → gráfico/relatório mostram proporções.
-* Agrupamento por hexbin mostra quais `location_id`s compõem cada hex.
+- Usuário escolhe “agrupar por: gênero” → gráfico/relatório mostram proporções.
+- Agrupamento por hexbin mostra quais `location_id`s compõem cada hex.
 
 ---
 
@@ -119,8 +119,8 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Selecionar filtro temporal muda o gráfico de linha temporal instantaneamente.
-* Gráficos têm tooltip com valores exatos.
+- Selecionar filtro temporal muda o gráfico de linha temporal instantaneamente.
+- Gráficos têm tooltip com valores exatos.
 
 ---
 
@@ -134,9 +134,9 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Usuário com permissão pode exportar relatório agregado.
-* Usuários sem permissão recebem aviso.
-* Export inclui metadados (período, filtros aplicados, versão do dataset).
+- Usuário com permissão pode exportar relatório agregado.
+- Usuários sem permissão recebem aviso.
+- Export inclui metadados (período, filtros aplicados, versão do dataset).
 
 ---
 
@@ -150,9 +150,9 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Admin cria/edita papéis.
-* Viewer não pode exportar dados.
-* Analista pode filtrar e gerar relatórios.
+- Admin cria/edita papéis.
+- Viewer não pode exportar dados.
+- Analista pode filtrar e gerar relatórios.
 
 ---
 
@@ -166,7 +166,7 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Após exportação, registro de auditoria criado com usuário, filtros e arquivo.
+- Após exportação, registro de auditoria criado com usuário, filtros e arquivo.
 
 ---
 
@@ -180,8 +180,8 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Upload de CSV compatível cria novo dataset.
-* Interface permite alternar dataset ativo.
+- Upload de CSV compatível cria novo dataset.
+- Interface permite alternar dataset ativo.
 
 ---
 
@@ -193,8 +193,8 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Ícones de ajuda abrem popovers.
-* Termos técnicos possuem explicação acessível.
+- Ícones de ajuda abrem popovers.
+- Termos técnicos possuem explicação acessível.
 
 ---
 
@@ -208,8 +208,8 @@ esquema e colunas obrigatórias antes de disponibilizar os dados para visualiza�
 
 **CA / Teste:**
 
-* Selecionar pergunta aplica filtros automaticamente.
-* Resultado aparece em cartão analítico.
+- Selecionar pergunta aplica filtros automaticamente.
+- Resultado aparece em cartão analítico.
 
 ---
 
@@ -225,11 +225,11 @@ Nas fases evolutivas seguintes, funcionalidades de exportação, múltiplos data
 
 **Descrição:** Dados sensíveis não podem ser exportados ou exibidos sem autorização.
 
-**Prioridade:** Fase 3  
+**Prioridade:** Fase 3
 
 **Dependência arquitetural:** RBAC + governança de dados.
 
-**Critério:**  
+**Critério:**
 Exports restritos por role; logs de exportação.
 
 ---
@@ -238,7 +238,7 @@ Exports restritos por role; logs de exportação.
 
 **Descrição:** Autenticação segura com controle de sessão.
 
-**Prioridade:** Fase 3  
+**Prioridade:** Fase 3
 
 **Dependência arquitetural:** serviço de identidade.
 
@@ -248,7 +248,7 @@ Exports restritos por role; logs de exportação.
 
 **Descrição:** Logs estruturados e métricas de uso.
 
-**Prioridade:** Fase 3  
+**Prioridade:** Fase 3
 
 **Dependência arquitetural:** stack de observabilidade.
 
@@ -258,7 +258,7 @@ Exports restritos por role; logs de exportação.
 
 **Descrição:** Validar consistência e anomalias durante ingestão.
 
-**Prioridade:** Fase 1  
+**Prioridade:** Fase 1
 
 **Dependência arquitetural:** pipeline de validação.
 
@@ -268,7 +268,7 @@ Exports restritos por role; logs de exportação.
 
 **Descrição:** Sistema estável sob falhas parciais.
 
-**Prioridade:** Fase 1  
+**Prioridade:** Fase 1
 
 **Dependência arquitetural:** arquitetura desacoplada por serviços.
 
@@ -278,7 +278,7 @@ Exports restritos por role; logs de exportação.
 
 **Descrição:** Processamento tolerante a falhas com retomada.
 
-**Prioridade:** Fase 1  
+**Prioridade:** Fase 1
 
 **Dependência arquitetural:** processamento assíncrono.
 
