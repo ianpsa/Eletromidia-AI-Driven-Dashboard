@@ -63,7 +63,7 @@
 - [Francisco de Souza Escobar](https://www.linkedin.com/in/francisco-escobar/)
 - [Marcelo de Paula do Desterro Gorini](https://www.linkedin.com/in/marcelodesterro/)
 - [Marcelo Luiz do Amaral Gonçalves](https://www.linkedin.com/in/marcelo-gon%C3%A7alves-phd/)
-- [Murilo Zanini de Carvalho] (https://www.linkedin.com/in/murilo-zanini-de-carvalho-0980415b/)
+- [Murilo Zanini de Carvalho](https://www.linkedin.com/in/murilo-zanini-de-carvalho-0980415b/)
 
 ## Descrição
 
