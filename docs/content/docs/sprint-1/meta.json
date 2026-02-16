@@ -1,11 +1,12 @@
 {
   "title": "Sprint 1",
   "pages": [
+    "planejamento-projeto",
     "arquitetura",
     "requisitos",
     "proposta-da-solucao",
     "perfil-do-parceiro",
     "potencial-de-retorno",
-    "interface"
+    "interface"  
   ]
 }

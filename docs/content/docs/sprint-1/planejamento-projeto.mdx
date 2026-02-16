@@ -1,0 +1,96 @@
+---
+title: Planejamento do Projeto
+description: Planejamento estratégico do projeto para as sprints
+---
+
+## Introdução
+
+&emsp;Este documento define o planejamento estratégico do nosso projeto para as próximas iterações de desenvolvimento, com foco principal no desenvolvimento estratégico para entrega de valor ao parceiro.
+
+&emsp;A *Eletromidia* é a maior referência em tecnologias para Marketing OOH (Out Of Home) no Brasil e atua em ambientes urbanos com alta circulação de pessoas. Com o auxílio de sensores, atuam na telemetria OOH e transformam dados em inteligência de negócio para entrega de valor a seus clientes.
+
+&emsp;Nosso projeto visa entregar um sistema completo para melhorar a visibilidade dos clientes da *Eletromidia* acerca das escolhas de planos e escolha de estratégias pelos seus clientes, com enriquecimento de informações através dos dados telemétricos da Claro com informações demográficas por localidade.
+
+&emsp;A segmentação de Públicos, conceito cunhado por [Philip Kotler (2019)](#referências), é um processo que tem como objetivo dividir um mercado amplo em grupos menores de consumidores com características demográficas e necessidades semelhantes, permitindo que as organizações direcionem melhor suas estratégias de marketing e comunicação. Por este motivo, depreende-se que conhecer os públicos favorece este direcionamento e cria alto valor à *Eletromidia* e seus clientes.
+
+&emsp;Nosso enfoque nesse documento é dar previsibilidade ao desenvolvimento, permitindo que possíveis mudanças na nossa proposta de solução sejam aplicadas com mais agilidade e organização, garantindo que cada sprint contribua diretamente para os objetivos de negócio estabelecidos.
+
+---
+
+## Planejamento das Sprints
+
+| Sprint | Objetivo | Entregáveis | Valor de negócio | Completo |
+|:------:|:---------|:------------|:-----------------|:--------:|
+| **Sprint 1** | Estruturar a solução e alinhar o projeto às necessidades do parceiro, definindo claramente o problema, o público e a proposta de valor. | [Documentação de arquitetura](/docs/sprint-1/arquitetura) (agnóstica e GCP), [definição de requisitos](/docs/sprint-1/requisitos) (RF e RNF), [protótipo de interface](/docs/sprint-1/interface) em alta fidelidade, [proposta de solução](/docs/sprint-1/proposta-da-solucao), [personas](/docs/sprint-1/perfil-do-parceiro/personas), [Value Proposition Canvas](/docs/sprint-1/perfil-do-parceiro/value-proposition-canvas) e [user stories](/docs/sprint-1/user-stories). | Garante alinhamento com o parceiro, reduz riscos de retrabalho e assegura que o desenvolvimento foque em valor real de negócio desde o início. | **√** |
+| **Sprint 2** | Implementar a base técnica do sistema, criando um pipeline funcional de ingestão e visualização inicial de dados. | Pipeline de ingestão de dados funcional, estruturação do banco de dados, criação da API para consumo de dados, mapa inicial em hexbin com filtros básicos de tempo e localização, início do desenvolvimento da UI de visualização de dados. | Materializa a solução proposta, permitindo as primeiras análises e demonstrando viabilidade técnica ao parceiro. | |
+| **Sprint 3** | Evoluir o sistema para geração de insights analíticos alinhados às personas e necessidades de negócio. | Filtros demográficos e temporais avançados, agregações e agrupamentos, gráficos auxiliares integrados a UI. | Permite extração de inteligência de negócio, aproximando a solução do uso real. | |
+| **Sprint 4** | Tornar o sistema robusto, escalável e preparado para maior volume de dados e usuários. | Processamento assíncrono com filas, otimizações de performance, controle de acesso (RBAC), logs e observabilidade, refinamentos de UX. | Garante confiabilidade e escalabilidade, aumentando a confiança do parceiro na adoção da solução. | |
+| **Sprint 5** | Consolidar a solução em uma prova de conceito validada e documentação final. | Protótipo funcional completo, testes com usuários finais, validação dos requisitos funcionais, manual do usuário, documentação final do projeto. | Demonstra valor concreto ao parceiro e comprova que a solução atende aos objetivos de negócio definidos. | |
+
+---
+
+## Detalhamento do Planejamento
+
+### Sprint 1 - Fundação e Alinhamento Estratégico
+
+#### Personas e Value Proposition
+
+&emsp;A primeira sprint focou na estruturação da base conceitual e técnica do projeto. Nesta etapa, definimos as **[personas](/docs/sprint-1/perfil-do-parceiro/personas)** que representam nossos públicos-alvo, mapeando suas necessidades, dores e objetivos em relação à análise de dados telemétricos e OOH.
+
+&emsp;O **[Value Proposition Canvas (VPC)](/docs/sprint-1/perfil-do-parceiro/value-proposition-canvas)** conectou as dores, ganhos e tarefas dos usuários aos criadores de valor, aliviadores de dor e produtos/serviços que nossa solução oferece, garantindo alinhamento entre o que construímos e o que o parceiro e seus clientes realmente necessitam.
+
+#### Arquitetura do Sistema
+
+&emsp;A **[arquitetura](/docs/sprint-1/arquitetura)** foi documentada em duas versões:
+
+- **[Arquitetura agnóstica de cloud](/docs/sprint-1/arquitetura#arquitetura-agnóstica)**: utilizando conceitos de API Producer, mensageria Pub/Sub, APIs Writer para persistência em Key-Value Store, Data Warehouse e Object Storage, além de um BFF (Backend for Frontend) e servidor WebSocket para comunicação em tempo real com a interface.
+
+- **[Arquitetura Google Cloud Platform (GCP)](/docs/sprint-1/arquitetura#arquitetura-gcp)**: detalha os serviços concretos que implementam cada componente desta arquitetura.
+
+#### Requisitos do Sistema
+
+&emsp;Os **[requisitos funcionais (RF01-RF12)](/docs/sprint-1/requisitos#1-requisitos-funcionais-rf)** estabeleceram as funcionalidades essenciais do sistema, cobrindo desde a importação e validação de dados em CSV, visualização geoespacial através de mapas hexbin, aplicação de filtros temporais e espaciais, até funcionalidades avançadas como agrupamentos demográficos, gráficos auxiliares, exportação controlada de relatórios, gestão de usuários com controle de acesso (RBAC), auditoria de operações, suporte a múltiplas bases de dados, ajuda contextual para usuários e perguntas prontas para geração rápida de insights.
+
+&emsp;Os **[requisitos não funcionais](/docs/sprint-1/requisitos#2-requisitos-não-funcionais-rnf)** definiram os critérios de qualidade e desempenho que o sistema deve atender, estabelecendo diretrizes para segurança (proteção de dados sensíveis e autenticação robusta), observabilidade (implementação de logs estruturados e métricas de monitoramento), consistência e validação de dados, robustez operacional com tolerância a falhas, e otimização de performance através de processamento assíncrono com sistemas de filas.
+
+#### Protótipo de Interface
+
+&emsp;O **[protótipo de interface](/docs/sprint-1/interface)** em alta fidelidade materializou a experiência do usuário através de uma solução dividida estrategicamente em duas áreas principais. A [parte superior](/docs/sprint-1/interface#parte-superior-da-interface) concentra o cabeçalho com identidade visual, botão de importação de dados, o mapa hexbin interativo seguindo as cores da *Eletromidia* (branco, amarelo e laranja), e a barra lateral de filtros que oferece controles completos de refinamento incluindo seleção geográfica (cidade/estado/endereço), filtro de distância por raio, filtros demográficos (gênero, faixa etária, classe social) e intervalo de horário customizável. A [parte inferior](/docs/sprint-1/interface#parte-inferior-da-interface) é dedicada à comparação entre regiões, permitindo análises comparativas de diferentes áreas por diversos critérios demográficos.
+
+&emsp;O hexbin foi escolhido especificamente por permitir agregar grandes volumes de pontos geográficos sem poluição visual, facilitando a leitura de densidade populacional.
+
+#### User Stories
+
+&emsp;As **[user stories](/docs/sprint-1/user-stories)** traduzem as funcionalidades do sistema em objetivos centrados no usuário, expressando o que cada persona deseja realizar e por quê. Derivadas diretamente das personas Mário (executivo orientado a decisão) e Carmen (analista orientada à otimização), as histórias de usuário conectam as interações da interface às decisões reais de negócio.
+
+&emsp;Foram definidas **9 user stories** que cobrem as principais funcionalidades do sistema:
+
+- **US01 a US04 (Mário)**: Focam em visualização rápida de fluxo, filtros por período, centralização em endereços específicos e compreensão clara das visualizações, priorizando simplicidade e confiança na interpretação dos dados.
+
+- **US05 a US09 (Carmen)**: Concentram-se em análises demográficas detalhadas, avaliação de raios específicos, comparação entre regiões, exploração de padrões temporais e compartilhamento de insights, permitindo decisões estratégicas baseadas em dados refinados.
+
+&emsp;Cada história inclui critérios de aceitação claros, referências à interface relacionada e conexões com os requisitos funcionais, mantendo coerência entre interface, requisitos e arquitetura do sistema.
+
+---
+
+### Sprints Futuras
+
+&emsp;As próximas sprints seguirão a estrutura planejada, evoluindo incrementalmente desde a implementação da base técnica (Sprint 2) até a validação final com o parceiro (Sprint 5).
+
+&emsp;Cada etapa será detalhada conforme sua execução, permitindo ajustes no planejamento baseados em aprendizados e feedback contínuo da *Eletromidia*.
+
+---
+
+## Conclusão
+
+&emsp;Este planejamento estratégico estabelece um roteiro claro e incremental para o desenvolvimento da solução, assegurando que cada iteração (Sprint) contribua diretamente para a inteligência de negócio da *Eletromidia*.
+
+&emsp;Ao priorizar desde a estruturação da arquitetura até a validação com o parceiro, garantimos que a ferramenta não apenas processe dados telemétricos com eficiência, mas também facilite nas decisões estratégicas.
+
+&emsp;Dessa forma, o projeto cumpre seu objetivo de oferecer previsibilidade técnica e agilidade na adaptação, maximizando a satisfação dos parceiros e clientes envolvidos.
+
+---
+
+## Referências
+
+KOTLER, Philip; KELLER, Kevin Lane. **Administração de Marketing**. 15. ed. São Paulo: Pearson Education do Brasil, 2019. Disponível em: [https://www.amazon.com.br/Administração-Marketing-Philip-Kotler/dp/8543024951](https://www.amazon.com.br/Administração-Marketing-Philip-Kotler/dp/8543024951). Acesso em: 13 fev. 2026.
