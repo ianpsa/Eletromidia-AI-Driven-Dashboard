@@ -1,0 +1,40 @@
+sync:main-to-develop:
+  stage: deploy
+  image: alpine:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: always
+    - when: never
+  before_script:
+    - apk add --no-cache git
+    - git config --global user.email "ci@inteli.edu.br"
+    - git config --global user.name "GitLab CI"
+  script:
+    - |
+      echo "Syncing main into develop..."
+      
+      # Clone with credentials
+      git clone --branch develop "https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" repo
+      cd repo
+      
+      # Add main and fetch
+      git remote set-url origin "https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+      git fetch origin main
+      
+      # Check if develop is behind main
+      BEHIND=$(git rev-list --count HEAD..origin/main)
+      
+      if [ "$BEHIND" -eq 0 ]; then
+        echo "develop is already up-to-date with main"
+        exit 0
+      fi
+      
+      echo "develop is $BEHIND commits behind main, syncing..."
+      
+      # Merge main into develop
+      git merge origin/main -m "chore: sync main into develop [skip ci]"
+      
+      # Push
+      git push origin develop
+      
+      echo "Successfully synced main into develop"
