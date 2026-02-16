@@ -21,7 +21,7 @@ Essa abordagem elimina intervenção manual, reduz riscos de inconsistência e m
 
 ## Plataforma de BI — Looker
 
-A camada de Business Intelligence foi estruturada utilizando o Looker, permitindo consolidar os dados recebidos via API em dashboards estratégicos. Essa camada atende principalmente áreas como executivo(persona Mário), precificação e planejamento comercial/marketing (persona Carmem).
+A camada de Business Intelligence foi estruturada utilizando o Looker, permitindo consolidar os dados recebidos via API em dashboards estratégicos. Essa camada atende principalmente áreas como executivo(persona Mário), precificação e planejamento comercial/marketing (persona Carmen).
 
 O objetivo da plataforma é transformar os dados de telemetria em indicadores executivos, séries temporais, comparações demográficas e análises regionais. Em vez de visualizar apenas a densidade geográfica, o Looker permite observar tendências ao longo do tempo, comparar regiões e segmentar o público por faixa etária, gênero e classe social.
 
@@ -29,9 +29,9 @@ Sempre que novos dados são recebidos pela API e processados pelo backend, os da
 
 ### Exemplos de dashboards
 
-![Dashboard Looker - Visão Geral](../../../public/looker4.png)
-![Dashboard Looker - Demografia](../../../public/looker.gif)
-![Dashboard Looker - Comparativo Regional](../../../public/looker3.png)
+![Dashboard Looker - Visão Geral](/looker4.png)
+![Dashboard Looker - Demografia](/looker.gif)
+![Dashboard Looker - Comparativo Regional](/looker3.png)
 
 ## Mapa hexagonal interativo
 
@@ -55,7 +55,7 @@ Na parte inferior da interface, existe uma área voltada para comparação entre
 
 Toda a aplicação é orientada a dados em tempo real. A cada novo envio de informações pela API de telemetria, o backend processa os registros e atualiza a base da aplicação. O mapa recalcula suas agregações hexagonais e o Looker atualiza seus dashboards.
 
-Não existe etapa manual de upload ou substituição de arquivos. O fluxo é totalmente automatizado, garantindo consistência, escalabilidade e confiabilidade da informação exibida.
+Para os dados vindos da API de telemetria, o fluxo é totalmente automatizado. Além disso, o usuário pode fazer upload manual de arquivos CSV com novas bases de dados, que passam pelo pipeline de validação e ficam disponíveis para análise após o processamento.
 
 ## Intenção da interface
 
@@ -65,17 +65,17 @@ A camada de BI complementa o mapa ao transformar visualização operacional em i
 
 ## Imagens do mapa hexagonal
 
-![Mapa Hexagonal - Visão Geral](../../../public/hexbin-visao-geral.png)
-![Mapa Hexagonal - Comparação de Gênero](../../../public/hexbin-comparacao-genero.png)
+![Mapa Hexagonal - Visão Geral](/hexbin-visao-geral.png)
+![Mapa Hexagonal - Comparação de Gênero](/hexbin-comparacao-genero.png)
 
 ## Conclusão
 
 A solução apresentada consolida duas camadas complementares de análise: a visualização geoespacial interativa por meio do mapa hexagonal e a camada estratégica de Business Intelligence estruturada no Looker. Juntas, essas frentes transformam dados brutos de telemetria em uma ferramenta de apoio à decisão orientada por dados em tempo real.
 
-A plataforma de BI atende diretamente ao requisito RF05, ao permitir agrupamentos e agregações personalizadas por faixa etária, gênero, classe social e região, além de possibilitar análises temporais e consolidações como soma, média e variações por horário. Essa capacidade amplia o uso da ferramenta para além da visualização operacional, permitindo que áreas estratégicas da empresa realizem leituras analíticas mais profundas e orientadas a planejamento comercial e precificação.
+A plataforma de BI atende diretamente ao [requisito RF05](/docs/sprint-1/requisitos), ao permitir agrupamentos e agregações personalizadas por faixa etária, gênero, classe social e região, além de possibilitar análises temporais e consolidações como soma, média e variações por horário. Essa capacidade amplia o uso da ferramenta para além da visualização operacional, permitindo que áreas estratégicas da empresa realizem leituras analíticas mais profundas e orientadas a planejamento comercial e precificação.
 
-Já o mapa hexagonal atende ao requisito RF02 ao exibir dados georreferenciados com agregação espacial dinâmica. Em vez de apresentar pontos individuais de latitude e longitude, o sistema organiza os registros em células hexagonais que se ajustam conforme o nível de zoom e os filtros aplicados. Isso garante clareza visual mesmo diante de grandes volumes de dados, preservando a capacidade de análise espacial sem comprometer a legibilidade.
+Já o mapa hexagonal atende ao [requisito RF02](/docs/sprint-1/requisitos) ao exibir dados georreferenciados com agregação espacial dinâmica. Em vez de apresentar pontos individuais de latitude e longitude, o sistema organiza os registros em células hexagonais que se ajustam conforme o nível de zoom e os filtros aplicados. Isso garante clareza visual mesmo diante de grandes volumes de dados, preservando a capacidade de análise espacial sem comprometer a legibilidade.
 
 Dessa forma, a aplicação cumpre seu propósito central: tornar utilizável uma grande massa de dados urbanos por meio de uma interface intuitiva, atualizada continuamente via API de telemetria e ingestão de outras bases de dados, e capaz de gerar insights tanto operacionais quanto estratégicos.
 
-Por fim, é importante destacar que a interface apresentada não é estática. Ela foi concebida como uma base evolutiva, sujeita a melhorias contínuas, ajustes de usabilidade e novas implementações conforme surgirem novas necessidades de negócio, expansão para outras cidades ou integração com novas fontes de dados. A arquitetura adotada permite essa evolução de forma estruturada, garantindo que a plataforma possa crescer sem comprometer sua consistência visual e analítica.
+Por fim, é importante destacar que a interface apresentada não é estática. Ela foi concebida como uma base evolutiva, sujeita a melhorias contínuas, ajustes de usabilidade e novas implementações conforme surgirem novas necessidades de negócio, expansão para outras cidades ou integração com novas fontes de dados. A [arquitetura](/docs/sprint-1/arquitetura) adotada permite essa evolução de forma estruturada, garantindo que a plataforma possa crescer sem comprometer sua consistência visual e analítica.

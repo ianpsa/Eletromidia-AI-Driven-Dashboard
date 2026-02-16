@@ -11,68 +11,68 @@ No contexto deste projeto, as user stories derivam diretamente das personas defi
 
 ### US01 - Entender rapidamente onde está o maior fluxo
 
-**Como** Mário  
-**Quero** visualizar no mapa hexbin as regiões com maior concentração de pessoas  
-**Para** entender rapidamente onde a campanha tem mais impacto  
+**Como** Mário
+**Quero** visualizar no mapa hexbin as regiões com maior concentração de pessoas
+**Para** entender rapidamente onde a campanha tem mais impacto
 
 #### Critérios de aceitação
 
 - Mapa exibe hexágonos com intensidade de cor proporcional ao fluxo
 - Tooltip mostra total agregado de pessoas na área
-- Interação simples (zoom e hover) permite leitura sem conhecimento técnico  
+- Interação simples (zoom e hover) permite leitura sem conhecimento técnico
 
-**Interface relacionada:** Mapa hexbin central  
+**Interface relacionada:** Mapa hexbin central
 **Requisitos relacionados:** RF02, RF05
 
 ---
 
 ### US02 - Filtrar por período específico
 
-**Como** Mário  
-**Quero** definir horário inicial e final  
-**Para** avaliar desempenho em momentos estratégicos  
+**Como** Mário
+**Quero** definir horário inicial e final
+**Para** avaliar desempenho em momentos estratégicos
 
 #### Critérios de aceitação
 
 - Campos de horário atualizam o mapa imediatamente
 - Hexbins refletem apenas dados do intervalo selecionado
-- Alteração não exige recarregamento da página  
+- Alteração não exige recarregamento da página
 
-**Interface relacionada:** Filtro “Horário (início e fim)”  
+**Interface relacionada:** Filtro “Horário (início e fim)”
 **Requisitos relacionados:** RF03
 
 ---
 
 ### US03 - Centralizar análise em um endereço
 
-**Como** Mário  
-**Quero** digitar um endereço  
-**Para** focar a análise em uma região de interesse  
+**Como** Mário
+**Quero** digitar um endereço
+**Para** focar a análise em uma região de interesse
 
 #### Critérios de aceitação
 
 - Mapa centraliza no endereço buscado
 - Hexbins ao redor ficam visíveis automaticamente
-- Interação ocorre sem perda de contexto  
+- Interação ocorre sem perda de contexto
 
-**Interface relacionada:** Campo “Endereço”  
+**Interface relacionada:** Campo “Endereço”
 **Requisitos relacionados:** RF04
 
 ---
 
 ### US04 - Receber explicações claras da visualização
 
-**Como** Mário  
-**Quero** entender o significado das cores e da visualização  
-**Para** confiar na interpretação dos dados  
+**Como** Mário
+**Quero** entender o significado das cores e da visualização
+**Para** confiar na interpretação dos dados
 
 #### Critérios de aceitação
 
 - Interface apresenta legenda ou explicação do hexbin
 - Linguagem acessível e não técnica
-- Ajuda visível sem interromper a análise  
+- Ajuda visível sem interromper a análise
 
-**Interface relacionada:** Legenda/ajuda do mapa  
+**Interface relacionada:** Legenda/ajuda do mapa
 **Requisitos relacionados:** RF11
 
 ---
@@ -81,77 +81,77 @@ No contexto deste projeto, as user stories derivam diretamente das personas defi
 
 ### US05 - Analisar público por características demográficas
 
-**Como** Carmen  
-**Quero** filtrar por gênero, faixa etária e classe social  
-**Para** entender o perfil do público em cada região  
+**Como** Carmen
+**Quero** filtrar por gênero, faixa etária e classe social
+**Para** entender o perfil do público em cada região
 
 #### Critérios de aceitação
 
 - Filtros atualizam hexbin imediatamente
 - Possível combinar múltiplos filtros
-- Visualização mantém coerência espacial  
+- Visualização mantém coerência espacial
 
-**Interface relacionada:** Filtros demográficos laterais  
+**Interface relacionada:** Filtros demográficos laterais
 **Requisitos relacionados:** RF05
 
 ---
 
 ### US06 - Avaliar oportunidades em um raio específico
 
-**Como** Carmen  
-**Quero** definir uma distância em km a partir de um ponto  
-**Para** analisar o público ao redor de locais estratégicos  
+**Como** Carmen
+**Quero** definir uma distância em km a partir de um ponto
+**Para** analisar o público ao redor de locais estratégicos
 
 #### Critérios de aceitação
 
 - Raio é aplicado a partir do endereço ou ponto selecionado
 - Hexbins dentro da área permanecem destacados
-- Dados fora do raio são ocultados  
+- Dados fora do raio são ocultados
 
-**Interface relacionada:** Filtro “Distância (km)”  
+**Interface relacionada:** Filtro “Distância (km)”
 **Requisitos relacionados:** RF04
 
 ---
 
 ### US07 - Comparar regiões diferentes
 
-**Como** Carmen  
-**Quero** comparar duas áreas por características do público  
-**Para** decidir onde concentrar campanhas  
+**Como** Carmen
+**Quero** comparar duas áreas por características do público
+**Para** decidir onde concentrar campanhas
 
 #### Critérios de aceitação
 
 - Usuária insere endereço e distância para comparação
 - Sistema mostra diferenças percentuais por categoria
-- Visualização clara das variações entre áreas  
+- Visualização clara das variações entre áreas
 
-**Interface relacionada:** Área inferior de comparação  
+**Interface relacionada:** Área inferior de comparação
 **Requisitos relacionados:** RF05, RF06
 
 ---
 
 ### US08 - Explorar padrões temporais do público
 
-**Como** Carmen  
-**Quero** ajustar o intervalo de horário  
-**Para** identificar momentos de maior potencial  
+**Como** Carmen
+**Quero** ajustar o intervalo de horário
+**Para** identificar momentos de maior potencial
 
 #### Critérios de aceitação
 
 - Alteração do horário muda imediatamente a densidade hexbin
 - Permite análises em horários específicos
-- Consistência visual mantida  
+- Consistência visual mantida
 
-**Interface relacionada:** Filtro de horário  
+**Interface relacionada:** Filtro de horário
 **Requisitos relacionados:** RF03
 
 ---
 
 ### US09 - Importar novos dados de fluxo
 
-**Como** Carmen  
-**Quero** fazer upload de um arquivo CSV com dados de fluxo de pessoas  
-**Para** atualizar a base com novos períodos ou incluir dados de outras cidades  
+**Como** Carmen
+**Quero** fazer upload de um arquivo CSV com dados de fluxo de pessoas
+**Para** atualizar a base com novos períodos ou incluir dados de outras cidades
 
 #### Critérios de aceitação
 
@@ -160,30 +160,30 @@ No contexto deste projeto, as user stories derivam diretamente das personas defi
 - Se o arquivo estiver fora do padrão, exibe mensagem de erro indicando o problema
 - Dados importados ficam disponíveis no mapa e nos filtros após o processamento
 
-**Interface relacionada:** Botão de importação de dados  
+**Interface relacionada:** Botão de importação de dados
 **Requisitos relacionados:** RF01, RF10
 
 ---
 
 ### US10 - Compartilhar análises agregadas
 
-**Como** Carmen  
-**Quero** exportar dados agregados da análise  
-**Para** compartilhar insights com o time  
+**Como** Carmen
+**Quero** exportar dados agregados da análise
+**Para** compartilhar insights com o time
 
 #### Critérios de aceitação
 
 - Exportação respeita permissões
 - Inclui filtros aplicados
-- Não expõe dados sensíveis  
+- Não expõe dados sensíveis
 
-**Interface relacionada:** Ação de exportação do dashboard  
-**Requisitos relacionados:** RF07, RNF-SEC-01  
+**Interface relacionada:** Ação de exportação do dashboard
+**Requisitos relacionados:** RF07, RNF-SEC-01
 
 ---
 
 ## Conclusão
 
-As user stories refletem diretamente a experiência proposta na interface: o mapa hexbin como elemento central de leitura, a barra lateral como mecanismo de refinamento progressivo e a área inferior como suporte à comparação entre regiões. Dessa forma, cada interação prevista no protótipo, explorar densidade, aplicar filtros espaciais e demográficos, ajustar horário e comparar áreas, é traduzida em objetivos claros de uso pelas personas Mário e Carmen.
+As user stories refletem diretamente a experiência proposta na [Interface](/docs/sprint-1/interface): o mapa hexbin como elemento central de leitura, a barra lateral como mecanismo de refinamento progressivo e a área inferior como suporte à comparação entre regiões. Dessa forma, cada interação prevista no protótipo, explorar densidade, aplicar filtros espaciais e demográficos, ajustar horário e comparar áreas, é traduzida em objetivos claros de uso pelas [personas Mário e Carmen](/docs/sprint-1/perfil-do-parceiro/personas).
 
-Esse conjunto mantém coerência com os requisitos funcionais, que especificam as capacidades do sistema (visualização, filtros, agregações e exportação), e com a arquitetura, que define os fluxos de dados e serviços responsáveis por suportar essas interações (BFF, Data Warehouse e consultas espaciais). Assim, interface, user stories, requisitos e arquitetura permanecem alinhados: a interface materializa as histórias de usuário, os requisitos formalizam suas funcionalidades e a arquitetura viabiliza tecnicamente a experiência pretendida.
+Esse conjunto mantém coerência com os [requisitos funcionais](/docs/sprint-1/requisitos), que especificam as capacidades do sistema (visualização, filtros, agregações e exportação), e com a [arquitetura](/docs/sprint-1/arquitetura), que define os fluxos de dados e serviços responsáveis por suportar essas interações (BFF, Data Warehouse e consultas espaciais). Assim, interface, user stories, requisitos e arquitetura permanecem alinhados.
