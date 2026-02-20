@@ -1,0 +1,26 @@
+project_id = "id-do-projeto"
+location = "southamerica-east1"
+dataset_id = "dataset-name"
+admin_email = "emaildoadmin@gmail.com"
+tables = {
+    geodata = {
+        table_id = "geodata"
+        schema = "schemas/geodata.json"
+    }
+    target = {
+        table_id = "target"
+        schema = "schemas/target.json"
+    }
+    age = {
+        table_id = "age"
+        schema = "schemas/age.json"
+    }
+    gender = {
+        table_id = "gender"
+        schema = "schemas/gender.json"
+    }
+    social_class = {
+        table_id = "social_class"
+        schema = "schemas/social_class.json"
+    }
+}

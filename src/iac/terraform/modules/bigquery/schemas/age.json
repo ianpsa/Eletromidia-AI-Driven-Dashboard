@@ -1,0 +1,57 @@
+[
+    {
+        "name": "id",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Identificador único do registro Age",
+        "defaultValueExpression": "GENERATE_UUID()"
+    },
+    {
+        "name": "x18_19",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem das pessoas, na faixa de idade 18-19, de um evento Geodata"
+    },
+    {
+        "name": "x20_29",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem das pessoas, na faixa de idade 20-29, de um evento Geodata"
+    },
+    {
+        "name": "x30_39",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem das pessoas, na faixa de idade 30-39, de um evento Geodata"
+    },
+    {
+        "name": "x40_49",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem das pessoas, na faixa de idade 40-49, de um evento Geodata"
+    },
+    {
+        "name": "x50_59",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem das pessoas, na faixa de idade 50-59, de um evento Geodata"
+    },
+    {
+        "name": "x60_69",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem das pessoas, na faixa de idade 60-69, de um evento Geodata"
+    },
+    {
+        "name": "x70_79",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem das pessoas, na faixa de idade 70-79, de um evento Geodata"
+    },
+    {
+        "name": "x80_plus",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem das pessoas, acima de 80 anos de idade, de um evento Geodata"
+    }
+]

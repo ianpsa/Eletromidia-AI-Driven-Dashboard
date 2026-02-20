@@ -1,0 +1,63 @@
+[
+    {
+        "name": "id",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Identificador único do registro Geodata",
+        "defaultValueExpression": "GENERATE_UUID()"
+    },
+    {
+        "name": "impression_hour",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Horário da leitura"
+    },
+    {
+        "name": "location_id",
+        "type": "INTEGER",
+        "mode": "REQUIRED",
+        "description": "Id referente a localização do registro Geodata"
+    },
+    {
+        "name": "latitude",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Latitude referente ao local da leitura"
+    },
+    {
+        "name": "longitude",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Longitude referente ao local da leitura"
+    },
+    {
+        "name": "uf_estado",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Estado Federal referente ao local da leitura"
+    },
+    {
+        "name": "cidade",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Cidade referente ao local da leitura"
+    },
+    {
+        "name": "endereco",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Endereço referente ao local da leitura"
+    },
+    {
+        "name": "numero",
+        "type": "INTEGER",
+        "mode": "REQUIRED",
+        "description": "Numero do endereço referente ao local da leitura"
+    },
+    {
+        "name": "target_id",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "Foreign Key referente ao Id da tabela `target`"
+    }
+]

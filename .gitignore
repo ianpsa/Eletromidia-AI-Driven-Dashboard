@@ -77,3 +77,19 @@ temp/
 
 # Cache
 .cache/
+
+*.tfvars
+terraform.tfstate
+terraform.tfstate.backup
+.terraform/
+
+# Terraform state - contém detalhes sensíveis da infraestrutura
+terraform.tfstate
+terraform.tfstate.backup
+
+# Diretório de inicialização do Terraform
+.terraform/
+.terraform.lock.hcl
+
+# Variáveis com valores reais - podem conter dados sensíveis
+terraform.tfvars
