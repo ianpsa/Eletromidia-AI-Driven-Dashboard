@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bigquery-writer-cm
+data:
+  KAFKA_BROKERS: "my-cluster-kafka-bootstrap.kafka.svc:9092"
+  KAFKA_TOPIC: "geodata"
+  KAFKA_GROUP_ID: "bigquery-writer-group"
+  KAFKA_MIN_BYTES: "1000"
+  KAFKA_MAX_BYTES: "10000000"
+  GCP_PROJECT_ID: "midia-in-da-house"
+  BQ_DATASET_ID: "eletromidia_bq"
+  GOOGLE_APPLICATION_CREDENTIALS: "/secrets/key.json"

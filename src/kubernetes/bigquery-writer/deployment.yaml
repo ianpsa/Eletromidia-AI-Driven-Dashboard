@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: bigquery-writer
+  name: bigquery-writer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bigquery-writer
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: bigquery-writer
+    spec:
+      containers:
+        - image: bigquery-writer:latest
+          imagePullPolicy: Never
+          name: bigquery-writer
+          envFrom:
+            - configMapRef:
+                name: bigquery-writer-cm
+          volumeMounts:
+            - name: gcp-sa-key
+              mountPath: /secrets/key.json
+              subPath: key.json
+              readOnly: true
+          livenessProbe:
+            exec:
+              command: ["test", "-f", "/tmp/healthy"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+      volumes:
+        - name: gcp-sa-key
+          secret:
+            secretName: gcp-sa-key

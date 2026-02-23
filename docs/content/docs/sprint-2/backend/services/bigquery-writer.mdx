@@ -1,0 +1,339 @@
+---
+title: BigQuery Writer
+description: Serviço Go que consome eventos do Kafka e escreve nas tabelas do BigQuery
+---
+
+## O que é
+
+O bigquery-writer é o componente **API Writer (Data Warehouse)** da [arquitetura GCP](/docs/sprint-1/arquitetura): um consumer Kafka escrito em Go que transforma eventos de telemetria de fluxo de pessoas em linhas nas 5 tabelas do BigQuery — `age`, `gender`, `social_class`, `target` e `geodata`.
+
+É o serviço responsável por tornar os dados da Claro Geodata consultáveis no BigQuery e, por extensão, visíveis no Looker.
+
+---
+
+## Onde se encaixa na arquitetura
+
+```
+Claro Geodata API
+       │
+       ▼
+  Kafka Topic: geodata  (Strimzi / KRaft, 3 brokers)
+       │
+       ▼
+  bigquery-writer   ◄── este serviço
+       │
+       ├── age          ──► BigQuery: eletromidia_bq.age
+       ├── gender       ──► BigQuery: eletromidia_bq.gender
+       ├── social_class ──► BigQuery: eletromidia_bq.social_class
+       ├── target       ──► BigQuery: eletromidia_bq.target
+       └── geodata      ──► BigQuery: eletromidia_bq.geodata
+                                          │
+                                          ▼
+                                        Looker
+```
+
+As inserções seguem a ordem de dependência de chaves estrangeiras:
+
+> `age` → `gender` → `social_class` → `target` → `geodata`
+
+---
+
+## Entrada: formato da mensagem Kafka
+
+Todos os campos chegam como string (formato da Claro Geodata):
+
+```json
+{
+  "impression_hour": "0",
+  "location_id": "30847",
+  "uniques": "1605.9",
+  "latitude": "-23.558334",
+  "longitude": "-46.686511",
+  "uf_estado": "SP",
+  "cidade": "São Paulo",
+  "endereco": "Avenida Cidade Jardim",
+  "numero": "897",
+  "target": "{'idade': {'18-19': 0.08, '20-29': 0.12, ...}, 'genero': {'F': 0.38, 'M': 0.62}, 'classe_social': {'A': 0.05, ...}}"
+}
+```
+
+- `target` chega como dict Python (aspas simples) e é normalizado para JSON antes do parse.
+
+---
+
+## Saída: schemas do BigQuery
+
+Os schemas são definidos como JSON em `src/iac/terraform/modules/bigquery/schemas/` e provisionados via Terraform (ver [Infraestrutura GCP](#infraestrutura-gcp-terraform)).
+
+### `age`
+
+| Campo      | Tipo   | Mode     |
+| ---------- | ------ | -------- |
+| `id`       | STRING | REQUIRED |
+| `x18_19`   | FLOAT  | REQUIRED |
+| `x20_29`   | FLOAT  | REQUIRED |
+| `x30_39`   | FLOAT  | REQUIRED |
+| `x40_49`   | FLOAT  | REQUIRED |
+| `x50_59`   | FLOAT  | REQUIRED |
+| `x60_69`   | FLOAT  | REQUIRED |
+| `x70_79`   | FLOAT  | REQUIRED |
+| `x80_plus` | FLOAT  | REQUIRED |
+
+### `gender`
+
+| Campo       | Tipo   | Mode     |
+| ----------- | ------ | -------- |
+| `id`        | STRING | REQUIRED |
+| `feminine`  | FLOAT  | REQUIRED |
+| `masculine` | FLOAT  | REQUIRED |
+
+### `social_class`
+
+| Campo      | Tipo   | Mode     |
+| ---------- | ------ | -------- |
+| `id`       | STRING | REQUIRED |
+| `a_class`  | FLOAT  | REQUIRED |
+| `b1_class` | FLOAT  | REQUIRED |
+| `b2_class` | FLOAT  | REQUIRED |
+| `c1_class` | FLOAT  | REQUIRED |
+| `c2_class` | FLOAT  | REQUIRED |
+| `de_class` | FLOAT  | REQUIRED |
+
+### `target`
+
+| Campo             | Tipo   | Mode     |
+| ----------------- | ------ | -------- |
+| `id`              | STRING | REQUIRED |
+| `age_id`          | STRING | NULLABLE |
+| `gender_id`       | STRING | NULLABLE |
+| `social_class_id` | STRING | NULLABLE |
+
+### `geodata`
+
+| Campo             | Tipo    | Mode     |
+| ----------------- | ------- | -------- |
+| `id`              | STRING  | REQUIRED |
+| `impression_hour` | STRING  | REQUIRED |
+| `location_id`     | INTEGER | REQUIRED |
+| `uniques`         | FLOAT   | REQUIRED |
+| `latitude`        | STRING  | REQUIRED |
+| `longitude`       | STRING  | REQUIRED |
+| `uf_estado`       | STRING  | REQUIRED |
+| `cidade`          | STRING  | REQUIRED |
+| `endereco`        | STRING  | REQUIRED |
+| `numero`          | INTEGER | REQUIRED |
+| `target_id`       | STRING  | NULLABLE |
+
+---
+
+## Decisões de design
+
+### Por que Go e não Python/Node?
+
+O BigQuery e o Kafka têm SDKs sólidos em Go, a linguagem gera binários estáticos sem runtime externo (importante para imagens alpine pequenas) e o modelo de goroutines se encaixa bem no loop de consumer. O time já usava Go no `redis-writer`, então a escolha manteve consistência.
+
+### `segmentio/kafka-go` em vez de `confluent-kafka-go`
+
+A lib da Confluent exige CGO e `librdkafka` compilada no sistema, o que complica o Dockerfile (precisa de gcc, headers C, imagem maior). O `segmentio/kafka-go` é puro Go: `CGO_ENABLED=0` e binário estático funcionam em `alpine:3.19` sem dependências extras.
+
+### Streaming inserts em vez de batch/load jobs
+
+BigQuery suporta dois modos de escrita: streaming inserts (linha a linha, em tempo real) e load jobs (arquivos em batch). Streaming inserts têm latência de segundos e são a escolha natural para um consumer Kafka que precisa que os dados estejam disponíveis no Looker logo após a ingestão.
+
+### IDs determinísticos (UUID v5) e deduplicação
+
+Cada linha recebe um ID derivado das coordenadas da mensagem Kafka via UUID v5 (SHA-1):
+
+```
+id = UUID_v5(namespace, "topic:partition:offset:tabela")
+
+id(age)          = UUID_v5("geodata:0:42:age")
+id(gender)       = UUID_v5("geodata:0:42:gender")
+id(social_class) = UUID_v5("geodata:0:42:social_class")
+id(target)       = UUID_v5("geodata:0:42:target")
+id(geodata)      = UUID_v5("geodata:0:42:geodata")
+```
+
+O mesmo ID é enviado como `insertId` no streaming insert. O BigQuery usa esse campo para deduplicar retries dentro de uma janela de ~1 minuto: se a mesma mensagem chegar duas vezes, a segunda inserção é rejeitada silenciosamente.
+
+A consequência importante: **a cadeia de FKs é sempre consistente em reentregas**. Se `insertAge` passar mas `insertGender` falhar, o retry da mesma mensagem gera exatamente os mesmos UUIDs — o `age_id` passado para `target` será idêntico ao da primeira tentativa, sem criar linhas órfãs.
+
+### Campos NULLABLE mapeados para `*string`
+
+As colunas `age_id`, `gender_id`, `social_class_id` e `target_id` são NULLABLE no BigQuery. O serviço usa `*string` nos structs Go para que `InferSchema` (usado pelo `StructSaver`) gere o schema correto no lado cliente, alinhado com o que o Terraform provisionou.
+
+### Validação de chaves obrigatórias antes de inserir
+
+O campo `target` é parseado como mapa (`map[string]float64`). Em Go, acessar uma chave inexistente em um map retorna o zero value — `0.0` para float64. Inserir `0.0` seria indistinguível de um dado real de 0%, o que corromperia silenciosamente as análises no Looker.
+
+Por isso o serviço valida explicitamente todas as 16 chaves obrigatórias antes de qualquer insert. Mensagem com chave ausente é descartada com log de erro.
+
+### Normalização do campo `target`
+
+A Claro Geodata envia o campo `target` como um dict Python serializado:
+
+```
+{'idade': {'18-19': 0.08}, 'genero': {'F': 0.38}}
+```
+
+O serviço converte para JSON válido via regex `'([^']*)'` → `"$1"` antes de fazer o `json.Unmarshal`. A regex é segura para o formato atual (chaves alfanuméricas, valores numéricos). Se o produtor passar strings com apóstrofos nos valores (ex: nomes de rua), será necessário substituir por um parser Python literal.
+
+### Liveness probe via arquivo
+
+O serviço escreve `/tmp/healthy` após processar a primeira mensagem com sucesso. O Kubernetes verifica esse arquivo a cada 30 segundos e reinicia o pod automaticamente se o consumer travar (ex: deadlock, conexão Kafka presa).
+
+### Comportamento em falha de mensagem
+
+O serviço usa `ReadMessage` do `kafka-go`, que faz auto-commit do offset após a leitura. Isso significa que **mensagens com erro são puladas** — o consumer avança o offset e a mensagem não é retentada automaticamente. O erro é logado e o loop continua.
+
+Esse tradeoff foi escolhido para evitar que uma mensagem malformada (ex: campo `target` inválido) trave o consumer indefinidamente. Em produção, mensagens descartadas devem ser monitoradas via logs.
+
+---
+
+## Implementação
+
+### Estrutura de arquivos
+
+```
+src/services/bigquery-writer/
+├── main.go          # Toda a lógica: config, structs, inserções, consumer loop
+├── go.mod           # Módulo: bigquery-writer, go 1.21
+├── go.sum
+├── Dockerfile       # Multi-stage alpine, CGO_ENABLED=0, usuário não-root
+└── .dockerignore
+
+src/kubernetes/bigquery-writer/
+├── configmap.yaml   # Variáveis de ambiente: Kafka + BigQuery
+├── deployment.yaml  # Recreate strategy, liveness probe, volume da SA key
+└── secret-README.md # Instruções para criar o secret (somente local)
+```
+
+### Dependências Go
+
+| Pacote                          | Versão  | Motivo da escolha                                 |
+| ------------------------------- | ------- | ------------------------------------------------- |
+| `cloud.google.com/go/bigquery`  | v1.59.1 | SDK oficial — streaming inserts com StructSaver   |
+| `github.com/segmentio/kafka-go` | v0.4.47 | Puro Go, sem CGO — compatível com alpine estático |
+| `github.com/google/uuid`        | v1.6.0  | UUID v5 para IDs determinísticos                  |
+
+### Variáveis de ambiente
+
+Definidas em `src/kubernetes/bigquery-writer/configmap.yaml`.
+
+| Variável                         | Default                                     | Descrição                 |
+| -------------------------------- | ------------------------------------------- | ------------------------- |
+| `KAFKA_BROKERS`                  | `my-cluster-kafka-bootstrap.kafka.svc:9092` | Endereços dos brokers     |
+| `KAFKA_TOPIC`                    | `geodata`                                   | Tópico a consumir         |
+| `KAFKA_GROUP_ID`                 | `bigquery-writer-group`                     | Consumer group ID         |
+| `KAFKA_MIN_BYTES`                | `1000`                                      | Mínimo de bytes por fetch |
+| `KAFKA_MAX_BYTES`                | `10000000`                                  | Máximo de bytes por fetch |
+| `GCP_PROJECT_ID`                 | _(obrigatório)_                             | ID do projeto GCP         |
+| `BQ_DATASET_ID`                  | _(obrigatório)_                             | Dataset do BigQuery       |
+| `GOOGLE_APPLICATION_CREDENTIALS` | `/secrets/key.json`                         | Caminho da chave SA       |
+
+---
+
+## Kubernetes
+
+### Estratégia de deploy
+
+Usa `Recreate` em vez de `RollingUpdate`. Em minikube com recursos limitados, o `RollingUpdate` sobe o pod novo antes de encerrar o antigo — o pico de memória derruba ambos. O `Recreate` encerra primeiro, depois sobe.
+
+### Autenticação GCP
+
+| Ambiente         | Método                                  | Arquivo de chave                    |
+| ---------------- | --------------------------------------- | ----------------------------------- |
+| Local (minikube) | Service Account key montada como Secret | Necessário — ver `secret-README.md` |
+| Produção (GKE)   | Workload Identity                       | Não necessário                      |
+
+Em produção, o pod autentica automaticamente via a identidade da node pool do GKE. O volume `gcp-sa-key` é necessário apenas localmente.
+
+---
+
+## Setup local com minikube
+
+### Pré-requisitos
+
+```bash
+brew install minikube kubectl
+# Docker Desktop precisa estar rodando
+```
+
+### 1. Iniciar minikube
+
+```bash
+minikube start \
+  --driver=docker \
+  --memory=6144 \
+  --cpus=4 \
+  --disk-size=20g
+```
+
+### 2. Instalar Strimzi + Kafka
+
+```bash
+kubectl create namespace kafka
+
+kubectl apply -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
+kubectl wait deployment/strimzi-cluster-operator \
+  -n kafka --for=condition=Available --timeout=300s
+
+kubectl apply -f src/kubernetes/kafka/template.yaml -n kafka
+kubectl apply -f src/kubernetes/kafka/geodata-topic.yaml -n kafka
+kubectl wait kafka/my-cluster -n kafka --for=condition=Ready --timeout=600s
+```
+
+### 3. Build e deploy
+
+```bash
+# Apontar Docker para o daemon do minikube
+eval $(minikube docker-env)
+
+docker build -t bigquery-writer:latest src/services/bigquery-writer/
+
+# Obter sa-key.json com o responsável pelo projeto GCP (ver secret-README.md)
+kubectl create secret generic gcp-sa-key \
+  --from-file=key.json=./sa-key.json
+
+kubectl apply -f src/kubernetes/bigquery-writer/
+kubectl logs -l app=bigquery-writer -f
+```
+
+### 4. Produzir mensagem de teste
+
+```bash
+make -C src/kubernetes/kafka producer
+```
+
+Cole no prompt o JSON da seção [Entrada: formato da mensagem Kafka](#entrada-formato-da-mensagem-kafka) com todos os campos de `idade`, `genero` e `classe_social` preenchidos.
+
+### Log esperado
+
+```
+Consumer iniciado | brokers=my-cluster-kafka-bootstrap.kafka.svc:9092 topic=geodata group=bigquery-writer-group
+age inserted          | id=<uuid>
+gender inserted       | id=<uuid>
+social_class inserted | id=<uuid>
+target inserted       | id=<uuid>
+geodata inserted      | id=<uuid> target_id=<uuid>
+OK | key= partition=0 offset=0
+```
+
+---
+
+## Infraestrutura GCP (Terraform)
+
+O dataset e as tabelas são provisionados via Terraform em `src/iac/terraform/`. Os schemas de cada tabela estão em `src/iac/terraform/modules/bigquery/schemas/`.
+
+| Recurso         | Valor                                                      |
+| --------------- | ---------------------------------------------------------- |
+| Projeto GCP     | `midia-in-da-house`                                        |
+| Dataset         | `eletromidia_bq`                                           |
+| Localização     | `southamerica-east1`                                       |
+| Service Account | `bq-data-editor@midia-in-da-house.iam.gserviceaccount.com` |
+
+```bash
+cd src/iac/terraform
+terraform init
+terraform apply -var-file=terraform.tfvars
+```
