@@ -91,6 +91,7 @@ terraform.tfstate.backup
 # Diretório de inicialização do Terraform
 .terraform/
 .terraform.lock.hcl
+*.tfplan
 
 # Variáveis com valores reais - podem conter dados sensíveis
 terraform.tfvars
