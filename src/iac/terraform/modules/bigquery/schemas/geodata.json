@@ -18,6 +18,13 @@
         "mode": "REQUIRED",
         "description": "Id referente a localização do registro Geodata"
     },
+
+    {
+        "name": "uniques",
+        "type": "FLOAT",
+        "mode": "NULLABLE",
+        "description": "Quantidade de pessoas únicas estimadas no local no período"
+    },
     {
         "name": "latitude",
         "type": "STRING",
