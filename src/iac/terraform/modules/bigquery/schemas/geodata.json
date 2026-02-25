@@ -22,7 +22,7 @@
     {
         "name": "uniques",
         "type": "FLOAT",
-        "mode": "NULLABLE",
+        "mode": "REQUIRED",
         "description": "Quantidade de pessoas únicas estimadas no local no período"
     },
     {
@@ -60,12 +60,6 @@
         "type": "INTEGER",
         "mode": "REQUIRED",
         "description": "Numero do endereço referente ao local da leitura"
-    },
-    {
-        "name": "uniques",
-        "type": "FLOAT",
-        "mode": "REQUIRED",
-        "description": "Quantidade de pessoas únicas estimadas no local no período"
     },
     {
         "name": "target_id",
