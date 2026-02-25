@@ -13,7 +13,7 @@ O bigquery-writer é o componente **API Writer (Data Warehouse)** da [arquitetur
 
 ## Onde se encaixa na arquitetura
 
-```
+```text
 Claro Geodata API
        │
        ▼
@@ -132,7 +132,7 @@ Os schemas são definidos como JSON em `src/iac/terraform/modules/bigquery/schem
 
 Cada linha recebe um ID derivado das coordenadas da mensagem Kafka via UUID v5 (SHA-1):
 
-```
+```text
 id = UUID_v5(namespace, "topic:partition:offset:tabela")
 
 id(age)          = UUID_v5("geodata:0:42:age")
@@ -156,7 +156,7 @@ Por isso o serviço valida explicitamente todas as 16 chaves obrigatórias antes
 
 A Claro Geodata envia o campo `target` como um dict Python serializado:
 
-```
+```text
 {'idade': {'18-19': 0.08}, 'genero': {'F': 0.38}}
 ```
 
@@ -178,7 +178,7 @@ Esse tradeoff foi escolhido para evitar que uma mensagem malformada (ex: campo `
 
 ### Estrutura de arquivos
 
-```
+```text
 src/services/bigquery-writer/
 ├── main.go          # Toda a lógica: config, structs, inserções, consumer loop
 ├── go.mod
@@ -285,7 +285,7 @@ Cole no prompt o JSON da seção [Entrada: formato da mensagem Kafka](#entrada-f
 
 ### Log esperado
 
-```
+```text
 Consumer iniciado | brokers=my-cluster-kafka-bootstrap.kafka.svc:9092 topic=geodata group=bigquery-writer-group
 age inserted          | id=<uuid>
 gender inserted       | id=<uuid>
