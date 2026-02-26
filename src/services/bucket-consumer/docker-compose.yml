@@ -1,0 +1,9 @@
+services:
+  bucket-consumer:
+    build: .
+    container_name: bucket-consumer
+    network_mode: host
+    env_file:
+      - .env
+    volumes:
+      - ./cs-api-key.json:/app/cs-api-key.json:ro

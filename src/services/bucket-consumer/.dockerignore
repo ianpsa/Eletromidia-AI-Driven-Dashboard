@@ -1,0 +1,7 @@
+.git
+*.md
+.env
+.env.*
+*.tfvars
+*.json
+bucket-consumer
