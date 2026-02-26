@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -57,20 +56,6 @@ func loadConfig() Config {
 		GCPProjectID:  getEnv("GCP_PROJECT_ID", ""),
 		BQDatasetID:   getEnv("BQ_DATASET_ID", ""),
 	}
-}
-
-func validateConfig(cfg Config) error {
-	var missing []string
-	if cfg.GCPProjectID == "" {
-		missing = append(missing, "GCP_PROJECT_ID")
-	}
-	if cfg.BQDatasetID == "" {
-		missing = append(missing, "BQ_DATASET_ID")
-	}
-	if len(missing) > 0 {
-		return fmt.Errorf("missing env vars: %s", strings.Join(missing, ", "))
-	}
-	return nil
 }
 
 // ─── Kafka Message Structs ────────────────────────────────────────────────────
@@ -125,10 +110,10 @@ type socialClassRow struct {
 }
 
 type targetRow struct {
-	ID            string  `bigquery:"id"`
-	AgeID         *string `bigquery:"age_id"`
-	GenderID      *string `bigquery:"gender_id"`
-	SocialClassID *string `bigquery:"social_class_id"`
+	ID            string `bigquery:"id"`
+	AgeID         string `bigquery:"age_id"`
+	GenderID      string `bigquery:"gender_id"`
+	SocialClassID string `bigquery:"social_class_id"`
 }
 
 type geodataRow struct {
@@ -142,7 +127,7 @@ type geodataRow struct {
 	Cidade         string  `bigquery:"cidade"`
 	Endereco       string  `bigquery:"endereco"`
 	Numero         int64   `bigquery:"numero"`
-	TargetID       *string `bigquery:"target_id"`
+	TargetID       string  `bigquery:"target_id"`
 }
 
 // ─── BQ Inserters ─────────────────────────────────────────────────────────────
@@ -259,9 +244,9 @@ func insertTarget(ctx context.Context, ins *bqInserters, msg kafka.Message, ageI
 	id := deterministicID(msg, "target")
 	row := targetRow{
 		ID:            id,
-		AgeID:         &ageID,
-		GenderID:      &genderID,
-		SocialClassID: &socialClassID,
+		AgeID:         ageID,
+		GenderID:      genderID,
+		SocialClassID: socialClassID,
 	}
 	saver := &bigquery.StructSaver{Schema: ins.targetSchema, InsertID: id, Struct: row}
 	if err := ins.target.Put(ctx, saver); err != nil {
@@ -278,12 +263,10 @@ func insertGeodata(ctx context.Context, ins *bqInserters, msg kafka.Message, eve
 	if err != nil {
 		return fmt.Errorf("insertGeodata: invalid location_id %q: %w", event.LocationID, err)
 	}
-
 	uniques, err := strconv.ParseFloat(event.Uniques, 64)
 	if err != nil {
 		return fmt.Errorf("insertGeodata: invalid uniques %q: %w", event.Uniques, err)
 	}
-
 	numero, err := strconv.ParseInt(event.Numero, 10, 64)
 	if err != nil {
 		return fmt.Errorf("insertGeodata: invalid numero %q: %w", event.Numero, err)
@@ -300,7 +283,7 @@ func insertGeodata(ctx context.Context, ins *bqInserters, msg kafka.Message, eve
 		Cidade:         event.Cidade,
 		Endereco:       event.Endereco,
 		Numero:         numero,
-		TargetID:       &targetID,
+		TargetID:       targetID,
 	}
 	saver := &bigquery.StructSaver{Schema: ins.geodataSchema, InsertID: id, Struct: row}
 	if err := ins.geodata.Put(ctx, saver); err != nil {
@@ -382,26 +365,10 @@ func handleMessage(ctx context.Context, ins *bqInserters, msg kafka.Message) err
 	return insertGeodata(ctx, ins, msg, event, targetID)
 }
 
-// ─── Liveness Probe ───────────────────────────────────────────────────────────
-
-var healthOnce sync.Once
-
-func touchHealthFile() {
-	healthOnce.Do(func() {
-		if err := os.WriteFile("/tmp/healthy", nil, 0600); err != nil {
-			log.Printf("liveness: failed to create /tmp/healthy: %v", err)
-		}
-	})
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 func main() {
 	cfg := loadConfig()
-
-	if err := validateConfig(cfg); err != nil {
-		log.Fatalf("config error: %v", err)
-	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -462,8 +429,5 @@ func main() {
 			// message will be redelivered on next startup, deterministic UUIDs handle dedup
 		}
 
-		touchHealthFile()
-		log.Printf("OK | key=%s partition=%d offset=%d",
-			string(msg.Key), msg.Partition, msg.Offset)
 	}
 }
