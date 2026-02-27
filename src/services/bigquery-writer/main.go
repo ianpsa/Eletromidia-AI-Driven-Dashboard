@@ -350,18 +350,6 @@ func handleMessage(ctx context.Context, ins *bqInserters, msg kafka.Message) err
 	return insertGeodata(ctx, ins, msg, event, targetID)
 }
 
-// ─── Liveness Probe ───────────────────────────────────────────────────────────
-
-var healthOnce sync.Once
-
-func touchHealthFile() {
-	healthOnce.Do(func() {
-		if err := os.WriteFile("/tmp/healthy", nil, 0600); err != nil {
-			log.Printf("liveness: failed to create /tmp/healthy: %v", err)
-		}
-	})
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 func main() {
