@@ -17,8 +17,9 @@ spec:
     spec:
       containers:
       - image: bucket-consumer:latest
+        imagePullPolicy: Never
         name: bucket-consumer
-        envFrom::
+        envFrom:
           - configMapRef:
               name: bucket-consumer-cm
         volumeMounts:
@@ -33,3 +34,7 @@ spec:
           limits:
             cpu: "500m"
             memory: "128Mi"
+      volumes:
+        - name: gcs-sa-key
+          secret:
+            secretName: gcs-sa-key
