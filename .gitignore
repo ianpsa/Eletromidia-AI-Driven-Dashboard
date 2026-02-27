@@ -95,6 +95,7 @@ terraform.tfstate.backup
 
 # Variáveis com valores reais - podem conter dados sensíveis
 terraform.tfvars
+src/services/bigquery-writer/bigquery-writer
 
 # Chaves de API
 *api-key.json

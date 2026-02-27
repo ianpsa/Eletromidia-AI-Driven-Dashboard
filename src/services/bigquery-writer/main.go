@@ -112,6 +112,9 @@ type targetRow struct {
 	AgeID         string `bigquery:"age_id"`
 	GenderID      string `bigquery:"gender_id"`
 	SocialClassID string `bigquery:"social_class_id"`
+	AgeID         string `bigquery:"age_id"`
+	GenderID      string `bigquery:"gender_id"`
+	SocialClassID string `bigquery:"social_class_id"`
 }
 
 type geodataRow struct {
@@ -126,6 +129,7 @@ type geodataRow struct {
 	Cidade         string  `bigquery:"cidade"`
 	Endereco       string  `bigquery:"endereco"`
 	Numero         int64   `bigquery:"numero"`
+	TargetID       string `bigquery:"target_id"`
 	TargetID       string `bigquery:"target_id"`
 }
 
@@ -246,6 +250,9 @@ func insertTarget(ctx context.Context, ins *bqInserters, msg kafka.Message, ageI
 		AgeID:         ageID,
 		GenderID:      genderID,
 		SocialClassID: socialClassID,
+		AgeID:         ageID,
+		GenderID:      genderID,
+		SocialClassID: socialClassID,
 	}
 	saver := &bigquery.StructSaver{Schema: ins.targetSchema, InsertID: id, Struct: row}
 	if err := ins.target.Put(ctx, saver); err != nil {
@@ -311,6 +318,10 @@ func normalizeTarget(raw string) string {
 	return singleQuoteRe.ReplaceAllString(raw, `"$1"`)
 }
 
+// handleMessage inserts rows into all 5 tables sequentially.
+// On partial failure, the caller does NOT commit the Kafka offset,
+// so the message will be redelivered. Deterministic UUID v5 IDs
+// ensure BigQuery deduplicates already-inserted rows via InsertID.
 func handleMessage(ctx context.Context, ins *bqInserters, msg kafka.Message) error {
 	var event KafkaEvent
 	if err := json.Unmarshal(msg.Value, &event); err != nil {
@@ -389,13 +400,14 @@ func main() {
 				return
 			}
 			log.Printf("FetchMessage error: %v", err)
+			log.Printf("FetchMessage error: %v", err)
 			continue
 		}
 
 		if err := handleMessage(ctx, ins, msg); err != nil {
 			log.Printf("handleMessage error | partition=%d offset=%d: %v",
 				msg.Partition, msg.Offset, err)
-			continue
+			continue // offset NOT committed — message will be redelivered
 		}
 
 		log.Printf("OK | key=%s partition=%d offset=%d",

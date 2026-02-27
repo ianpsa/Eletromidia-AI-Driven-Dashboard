@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: bucket-consumer
+  name: bucket-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bucket-consumer
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: bucket-consumer
+    spec:
+      containers:
+      - image: bucket-consumer:latest
+        imagePullPolicy: Never
+        name: bucket-consumer
+        envFrom:
+          - configMapRef:
+              name: bucket-consumer-cm
+        volumeMounts:
+          - name: gcs-sa-key
+            mountPath: /secrets/cs-api-key.json
+            subPath:  cs-api-key.json
+            readOnly: true
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "64Mi"
+          limits:
+            cpu: "500m"
+            memory: "128Mi"
+      volumes:
+        - name: gcs-sa-key
+          secret:
+            secretName: gcs-sa-key

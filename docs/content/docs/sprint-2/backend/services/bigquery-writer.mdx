@@ -128,6 +128,18 @@ Os schemas são definidos como JSON em `src/iac/terraform/modules/bigquery/schem
 
 ## Decisões de design
 
+### Por que Go e não Python/Node?
+
+O BigQuery e o Kafka têm SDKs sólidos em Go, a linguagem gera binários estáticos sem runtime externo (importante para imagens alpine pequenas) e o modelo de goroutines se encaixa bem no loop de consumer. O time já usava Go no `redis-writer`, então a escolha manteve consistência.
+
+### `segmentio/kafka-go` em vez de `confluent-kafka-go`
+
+A lib da Confluent exige CGO e `librdkafka` compilada no sistema, o que complica o Dockerfile (precisa de gcc, headers C, imagem maior). O `segmentio/kafka-go` é puro Go: `CGO_ENABLED=0` e binário estático funcionam em `alpine:3.19` sem dependências extras.
+
+### Streaming inserts em vez de batch/load jobs
+
+BigQuery suporta dois modos de escrita: streaming inserts (linha a linha, em tempo real) e load jobs (arquivos em batch). Streaming inserts têm latência de segundos e são a escolha natural para um consumer Kafka que precisa que os dados estejam disponíveis no Looker logo após a ingestão.
+
 ### IDs determinísticos (UUID v5) e deduplicação
 
 Cada linha recebe um ID derivado das coordenadas da mensagem Kafka via UUID v5 (SHA-1):
@@ -146,6 +158,10 @@ O mesmo ID é enviado como `insertId` no streaming insert. O BigQuery usa esse c
 
 A consequência importante: **a cadeia de FKs é sempre consistente em reentregas**. Se `insertAge` passar mas `insertGender` falhar, o retry da mesma mensagem gera exatamente os mesmos UUIDs — o `age_id` passado para `target` será idêntico ao da primeira tentativa, sem criar linhas órfãs.
 
+### Campos NULLABLE mapeados para `*string`
+
+As colunas `age_id`, `gender_id`, `social_class_id` e `target_id` são NULLABLE no BigQuery. O serviço usa `*string` nos structs Go para que `InferSchema` (usado pelo `StructSaver`) gere o schema correto no lado cliente, alinhado com o que o Terraform provisionou.
+
 ### Validação de chaves obrigatórias antes de inserir
 
 O campo `target` é parseado como mapa (`map[string]float64`). Em Go, acessar uma chave inexistente em um map retorna o zero value — `0.0` para float64. Inserir `0.0` seria indistinguível de um dado real de 0%, o que corromperia silenciosamente as análises no Looker.
@@ -156,7 +172,7 @@ Por isso o serviço valida explicitamente todas as 16 chaves obrigatórias antes
 
 A Claro Geodata envia o campo `target` como um dict Python serializado:
 
-```
+```json
 {'idade': {'18-19': 0.08}, 'genero': {'F': 0.38}}
 ```
 
@@ -181,9 +197,9 @@ Esse tradeoff foi escolhido para evitar que uma mensagem malformada (ex: campo `
 ```
 src/services/bigquery-writer/
 ├── main.go          # Toda a lógica: config, structs, inserções, consumer loop
-├── go.mod
+├── go.mod           # Módulo: bigquery-writer, go 1.21
 ├── go.sum
-├── Dockerfile
+├── Dockerfile       # Multi-stage alpine, CGO_ENABLED=0, usuário não-root
 └── .dockerignore
 
 src/kubernetes/bigquery-writer/
@@ -191,6 +207,14 @@ src/kubernetes/bigquery-writer/
 ├── deployment.yaml  # Recreate strategy, liveness probe, volume da SA key
 └── secret-README.md # Instruções para criar o secret (somente local)
 ```
+
+### Dependências Go
+
+| Pacote                          | Versão  | Motivo da escolha                                 |
+| ------------------------------- | ------- | ------------------------------------------------- |
+| `cloud.google.com/go/bigquery`  | v1.59.1 | SDK oficial — streaming inserts com StructSaver   |
+| `github.com/segmentio/kafka-go` | v0.4.47 | Puro Go, sem CGO — compatível com alpine estático |
+| `github.com/google/uuid`        | v1.6.0  | UUID v5 para IDs determinísticos                  |
 
 ### Variáveis de ambiente
 
