@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
+	// "os/signal"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
+	// "syscall"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -59,32 +59,18 @@ func loadConfig() Config {
 	}
 }
 
-func validateConfig(cfg Config) error {
-	var missing []string
-	if cfg.GCPProjectID == "" {
-		missing = append(missing, "GCP_PROJECT_ID")
-	}
-	if cfg.BQDatasetID == "" {
-		missing = append(missing, "BQ_DATASET_ID")
-	}
-	if len(missing) > 0 {
-		return fmt.Errorf("missing env vars: %s", strings.Join(missing, ", "))
-	}
-	return nil
-}
-
 // ─── Kafka Message Structs ────────────────────────────────────────────────────
 
 type KafkaEvent struct {
-	ImpressionHour string `json:"impression_hour"`
-	LocationID     string `json:"location_id"`
-	Uniques        string `json:"uniques"`
+	ImpressionHour int64 `json:"impression_hour"`
+	LocationID     int64 `json:"location_id"`
+	Uniques        float64 `json:"uniques"`
 	Latitude       string `json:"latitude"`
 	Longitude      string `json:"longitude"`
 	UfEstado       string `json:"uf_estado"`
 	Cidade         string `json:"cidade"`
 	Endereco       string `json:"endereco"`
-	Numero         string `json:"numero"`
+	Numero         int64 `json:"numero"`
 	Target         string `json:"target"`
 }
 
@@ -126,9 +112,9 @@ type socialClassRow struct {
 
 type targetRow struct {
 	ID            string  `bigquery:"id"`
-	AgeID         *string `bigquery:"age_id"`
-	GenderID      *string `bigquery:"gender_id"`
-	SocialClassID *string `bigquery:"social_class_id"`
+	AgeID         string `bigquery:"age_id"`
+	GenderID      string `bigquery:"gender_id"`
+	SocialClassID string `bigquery:"social_class_id"`
 }
 
 type geodataRow struct {
@@ -142,7 +128,7 @@ type geodataRow struct {
 	Cidade         string  `bigquery:"cidade"`
 	Endereco       string  `bigquery:"endereco"`
 	Numero         int64   `bigquery:"numero"`
-	TargetID       *string `bigquery:"target_id"`
+	TargetID       string `bigquery:"target_id"`
 }
 
 // ─── BQ Inserters ─────────────────────────────────────────────────────────────
@@ -259,9 +245,9 @@ func insertTarget(ctx context.Context, ins *bqInserters, msg kafka.Message, ageI
 	id := deterministicID(msg, "target")
 	row := targetRow{
 		ID:            id,
-		AgeID:         &ageID,
-		GenderID:      &genderID,
-		SocialClassID: &socialClassID,
+		AgeID:         ageID,
+		GenderID:      genderID,
+		SocialClassID: socialClassID,
 	}
 	saver := &bigquery.StructSaver{Schema: ins.targetSchema, InsertID: id, Struct: row}
 	if err := ins.target.Put(ctx, saver); err != nil {
@@ -274,38 +260,38 @@ func insertTarget(ctx context.Context, ins *bqInserters, msg kafka.Message, ageI
 func insertGeodata(ctx context.Context, ins *bqInserters, msg kafka.Message, event KafkaEvent, targetID string) error {
 	id := deterministicID(msg, "geodata")
 
-	impressionHour, err := strconv.ParseInt(event.ImpressionHour, 10, 64)
-	if err != nil {
-		return fmt.Errorf("insertGeodata: invalid impressionHour %q: %w", event.ImpressionHour, err)
-	}
+	// impressionHour, err := strconv.ParseInt(event.ImpressionHour, 10, 64)
+	// if err != nil {
+	// 	return fmt.Errorf("insertGeodata: invalid impressionHour %q: %w", event.ImpressionHour, err)
+	// }
 
-	locationID, err := strconv.ParseInt(event.LocationID, 10, 64)
-	if err != nil {
-		return fmt.Errorf("insertGeodata: invalid location_id %q: %w", event.LocationID, err)
-	}
+	// locationID, err := strconv.ParseInt(event.LocationID, 10, 64)
+	// if err != nil {
+	// 	return fmt.Errorf("insertGeodata: invalid location_id %q: %w", event.LocationID, err)
+	// }
 
-	uniques, err := strconv.ParseFloat(event.Uniques, 64)
-	if err != nil {
-		return fmt.Errorf("insertGeodata: invalid uniques %q: %w", event.Uniques, err)
-	}
+	// uniques, err := strconv.ParseFloat(event.Uniques, 64)
+	// if err != nil {
+	// 	return fmt.Errorf("insertGeodata: invalid uniques %q: %w", event.Uniques, err)
+	// }
 
-	numero, err := strconv.ParseInt(event.Numero, 10, 64)
-	if err != nil {
-		return fmt.Errorf("insertGeodata: invalid numero %q: %w", event.Numero, err)
-	}
+	// numero, err := strconv.ParseInt(event.Numero, 10, 64)
+	// if err != nil {
+	// 	return fmt.Errorf("insertGeodata: invalid numero %q: %w", event.Numero, err)
+	// }
 
 	row := geodataRow{
 		ID:             id,
-		ImpressionHour: impressionHour,
-		LocationID:     locationID,
-		Uniques:        uniques,
+		ImpressionHour: event.ImpressionHour,
+		LocationID:     event.LocationID,
+		Uniques:        event.Uniques,
 		Latitude:       event.Latitude,
 		Longitude:      event.Longitude,
 		UfEstado:       event.UfEstado,
 		Cidade:         event.Cidade,
 		Endereco:       event.Endereco,
-		Numero:         numero,
-		TargetID:       &targetID,
+		Numero:         event.Numero,
+		TargetID:       targetID,
 	}
 	saver := &bigquery.StructSaver{Schema: ins.geodataSchema, InsertID: id, Struct: row}
 	if err := ins.geodata.Put(ctx, saver); err != nil {
@@ -400,10 +386,6 @@ func touchHealthFile() {
 func main() {
 	cfg := loadConfig()
 
-	if err := validateConfig(cfg); err != nil {
-		log.Fatalf("config error: %v", err)
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -431,14 +413,6 @@ func main() {
 	log.Printf("Consumer iniciado | brokers=%s topic=%s group=%s",
 		cfg.KafkaBrokers, cfg.KafkaTopic, cfg.KafkaGroupID)
 
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		<-sigCh
-		log.Println("Shutdown signal received")
-		cancel()
-	}()
 
 	for {
 		msg, err := reader.ReadMessage(ctx)
