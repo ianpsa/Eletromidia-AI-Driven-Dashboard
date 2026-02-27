@@ -56,20 +56,6 @@ func loadConfig() Config {
 	}
 }
 
-func validateConfig(cfg Config) error {
-	var missing []string
-	if cfg.GCPProjectID == "" {
-		missing = append(missing, "GCP_PROJECT_ID")
-	}
-	if cfg.BQDatasetID == "" {
-		missing = append(missing, "BQ_DATASET_ID")
-	}
-	if len(missing) > 0 {
-		return fmt.Errorf("missing env vars: %s", strings.Join(missing, ", "))
-	}
-	return nil
-}
-
 // ─── Kafka Message Structs ────────────────────────────────────────────────────
 
 type KafkaEvent struct {
@@ -123,9 +109,9 @@ type socialClassRow struct {
 
 type targetRow struct {
 	ID            string  `bigquery:"id"`
-	AgeID         *string `bigquery:"age_id"`
-	GenderID      *string `bigquery:"gender_id"`
-	SocialClassID *string `bigquery:"social_class_id"`
+	AgeID         string `bigquery:"age_id"`
+	GenderID      string `bigquery:"gender_id"`
+	SocialClassID string `bigquery:"social_class_id"`
 }
 
 type geodataRow struct {
@@ -139,7 +125,7 @@ type geodataRow struct {
 	Cidade         string  `bigquery:"cidade"`
 	Endereco       string  `bigquery:"endereco"`
 	Numero         int64   `bigquery:"numero"`
-	TargetID       *string `bigquery:"target_id"`
+	TargetID       string `bigquery:"target_id"`
 }
 
 // ─── BQ Inserters ─────────────────────────────────────────────────────────────
@@ -256,9 +242,9 @@ func insertTarget(ctx context.Context, ins *bqInserters, msg kafka.Message, ageI
 	id := deterministicID(msg, "target")
 	row := targetRow{
 		ID:            id,
-		AgeID:         &ageID,
-		GenderID:      &genderID,
-		SocialClassID: &socialClassID,
+		AgeID:         ageID,
+		GenderID:      genderID,
+		SocialClassID: socialClassID,
 	}
 	saver := &bigquery.StructSaver{Schema: ins.targetSchema, InsertID: id, Struct: row}
 	if err := ins.target.Put(ctx, saver); err != nil {
@@ -380,10 +366,6 @@ func touchHealthFile() {
 
 func main() {
 	cfg := loadConfig()
-
-	if err := validateConfig(cfg); err != nil {
-		log.Fatalf("config error: %v", err)
-	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
