@@ -8,6 +8,9 @@ RUN go mod download
 
 COPY . .
 
+# Por enquanto builda apenas o consumer.
+# Para incluir o daily-aggregator, adicionar:
+# RUN CGO_ENABLED=0 GOOS=linux go build -o daily-aggregator ./cmd/daily-aggregator
 RUN CGO_ENABLED=0 GOOS=linux go build -o bucket-consumer ./cmd/consumer
 
 # Stage 2 — Runtime
