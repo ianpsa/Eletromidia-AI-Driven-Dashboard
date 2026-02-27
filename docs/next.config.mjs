@@ -6,8 +6,8 @@ const withMDX = createMDX();
 const config = {
   output: 'export',
   reactStrictMode: true,
-  basePath: '/2026-1a/t12/g05',
-  assetPrefix: '/2026-1a/t12/g05/',
+  // basePath: '/2026-1a/t12/g05',
+  // assetPrefix: '/2026-1a/t12/g05/',
   images: {
     unoptimized: true,
   },
