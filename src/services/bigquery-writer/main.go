@@ -133,7 +133,7 @@ type targetRow struct {
 
 type geodataRow struct {
 	ID             string  `bigquery:"id"`
-	ImpressionHour string  `bigquery:"impression_hour"`
+	ImpressionHour int64   `bigquery:"impression_hour"`
 	LocationID     int64   `bigquery:"location_id"`
 	Uniques        float64 `bigquery:"uniques"`
 	Latitude       string  `bigquery:"latitude"`
@@ -274,6 +274,11 @@ func insertTarget(ctx context.Context, ins *bqInserters, msg kafka.Message, ageI
 func insertGeodata(ctx context.Context, ins *bqInserters, msg kafka.Message, event KafkaEvent, targetID string) error {
 	id := deterministicID(msg, "geodata")
 
+	impressionHour, err := strconv.ParseInt(event.ImpressionHour, 10, 64)
+	if err != nil {
+		return fmt.Errorf("insertGeodata: invalid impressionHour %q: %w", event.ImpressionHour, err)
+	}
+
 	locationID, err := strconv.ParseInt(event.LocationID, 10, 64)
 	if err != nil {
 		return fmt.Errorf("insertGeodata: invalid location_id %q: %w", event.LocationID, err)
@@ -291,7 +296,7 @@ func insertGeodata(ctx context.Context, ins *bqInserters, msg kafka.Message, eve
 
 	row := geodataRow{
 		ID:             id,
-		ImpressionHour: event.ImpressionHour,
+		ImpressionHour: impressionHour,
 		LocationID:     locationID,
 		Uniques:        uniques,
 		Latitude:       event.Latitude,
