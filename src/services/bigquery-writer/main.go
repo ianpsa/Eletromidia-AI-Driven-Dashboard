@@ -403,7 +403,7 @@ func main() {
 
 
 	for {
-		msg, err := reader.FetchMessage(ctx)
+		msg, err := reader.ReadMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				log.Println("Consumer stopped")
@@ -417,11 +417,6 @@ func main() {
 			log.Printf("handleMessage error | partition=%d offset=%d: %v",
 				msg.Partition, msg.Offset, err)
 			continue
-		}
-
-		if err := reader.CommitMessages(ctx, msg); err != nil {
-			log.Printf("CommitMessages error | partition=%d offset=%d: %v",
-				msg.Partition, msg.Offset, err)
 		}
 
 		log.Printf("OK | key=%s partition=%d offset=%d",
