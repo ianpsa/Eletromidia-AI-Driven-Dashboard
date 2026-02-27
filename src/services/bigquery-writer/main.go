@@ -383,7 +383,7 @@ func main() {
 		cfg.KafkaBrokers, cfg.KafkaTopic, cfg.KafkaGroupID)
 
 	for {
-		msg, err := reader.FetchMessage(ctx)
+		msg, err := reader.ReadMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				log.Println("Consumer stopped")
