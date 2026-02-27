@@ -8,6 +8,7 @@ Consumer Kafka em Go que persiste eventos do tópico `geodata` no Google Cloud S
 bucket-consumer/
 ├── cmd/
 │   ├── consumer/main.go          # Entrypoint do serviço
+│   ├── daily-aggregator/main.go  # Script de consolidação diária para o BFF
 │   └── produce-test/main.go      # Ferramenta para enviar mensagem de teste
 ├── internal/
 │   ├── config/config.go          # Configuração via variáveis de ambiente
@@ -28,13 +29,18 @@ bucket-consumer/
 
 ```
 gs://kafka-backup-eletromidia/
-└── kafka-backup/
-    └── topics/
-        └── geodata/
-            └── year=2026/
-                └── month=02/
-                    └── day=26/
-                        └── {partition}-{startOffset}-{endOffset}.json
+├── kafka-backup/                          # Backup bruto (escrito pelo consumer)
+│   └── topics/
+│       └── geodata/
+│           └── year=2026/month=02/day=26/
+│               ├── 0-0-150.json           # partição 0
+│               ├── 0-151-300.json
+│               └── 1-0-200.json           # partição 1
+│
+└── daily/                                 # Consolidado diário (gerado pelo aggregator)
+    └── geodata/
+        └── year=2026/month=02/day=26/
+            └── geodata.json               # todos os fragmentos do dia em um arquivo
 ```
 
 ## Pré-requisitos
@@ -107,6 +113,35 @@ No terminal do consumer:
 bufferizado | particao=0 offset=0 pendentes=1
 flush concluido: 1 registros → gs://kafka-backup-eletromidia/kafka-backup/topics/geodata/year=2026/month=02/day=26/0-0-0.json
 ```
+
+## Agregador diário (para o BFF)
+
+O consumer gera vários fragmentos por dia (um por flush, por partição). O script `daily-aggregator` consolida todos os fragmentos de um dia em um único arquivo NDJSON no path `daily/`, para o BFF baixar diretamente.
+
+**Agregar o dia de ontem** (padrão):
+
+```bash
+go run cmd/daily-aggregator/main.go
+```
+
+**Agregar uma data específica:**
+
+```bash
+go run cmd/daily-aggregator/main.go -date 2026-02-26
+```
+
+Saída esperada:
+
+```
+agregando fragmentos de gs://kafka-backup-eletromidia/kafka-backup/topics/geodata/year=2026/month=02/day=26/
+  lido: kafka-backup/topics/geodata/year=2026/month=02/day=26/0-0-150.json (12345 bytes)
+  lido: kafka-backup/topics/geodata/year=2026/month=02/day=26/1-0-200.json (15678 bytes)
+agregacao concluida: 2 fragmentos (28023 bytes) → gs://kafka-backup-eletromidia/daily/geodata/year=2026/month=02/day=26/geodata.json
+```
+
+Em produção, pode rodar como **CronJob no Kubernetes** (ex: todo dia às 00:30 agrega o dia anterior).
+
+> **Nota:** o `Dockerfile` atual builda apenas o consumer. O daily-aggregator roda localmente via `go run`. Quando for necessário incluí-lo no deploy, basta adicionar a linha de build no Dockerfile e criar o manifesto de CronJob no Kubernetes.
 
 ## Variáveis de ambiente
 
