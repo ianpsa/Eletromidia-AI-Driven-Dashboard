@@ -1,3 +1,7 @@
+# Como o BFF-Storage não é um serviço interno, ele preciso se expor
+# Criei um NodePort somente para teste
+# Futuramente criarei um API Gateway
+
 apiVersion: v1
 kind: Service
 metadata:
