@@ -1,0 +1,4 @@
+.PHONY: def-key
+def-key:
+	export GOOGLE_APPLICATION_CREDENTIALS="bq-api-key.json"
+	echo $GOOGLE_APPLICATION_CREDENTIALS
