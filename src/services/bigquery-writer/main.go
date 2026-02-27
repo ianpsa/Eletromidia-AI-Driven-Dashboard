@@ -340,10 +340,6 @@ func normalizeTarget(raw string) string {
 	return singleQuoteRe.ReplaceAllString(raw, `"$1"`)
 }
 
-// handleMessage inserts rows into all 5 tables sequentially.
-// On partial failure, the caller does NOT commit the Kafka offset,
-// so the message will be redelivered. Deterministic UUID v5 IDs
-// ensure BigQuery deduplicates already-inserted rows via InsertID.
 func handleMessage(ctx context.Context, ins *bqInserters, msg kafka.Message) error {
 	var event KafkaEvent
 	if err := json.Unmarshal(msg.Value, &event); err != nil {
@@ -453,13 +449,12 @@ func main() {
 		if err := handleMessage(ctx, ins, msg); err != nil {
 			log.Printf("handleMessage error | partition=%d offset=%d: %v",
 				msg.Partition, msg.Offset, err)
-			continue // offset NOT committed — message will be redelivered
+			continue
 		}
 
 		if err := reader.CommitMessages(ctx, msg); err != nil {
 			log.Printf("CommitMessages error | partition=%d offset=%d: %v",
 				msg.Partition, msg.Offset, err)
-			// message will be redelivered on next startup, deterministic UUIDs handle dedup
 		}
 
 		touchHealthFile()
