@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -61,16 +59,16 @@ func loadConfig() Config {
 // ─── Kafka Message Structs ────────────────────────────────────────────────────
 
 type KafkaEvent struct {
-	ImpressionHour string `json:"impression_hour"`
-	LocationID     string `json:"location_id"`
-	Uniques        string `json:"uniques"`
-	Latitude       string `json:"latitude"`
-	Longitude      string `json:"longitude"`
-	UfEstado       string `json:"uf_estado"`
-	Cidade         string `json:"cidade"`
-	Endereco       string `json:"endereco"`
-	Numero         string `json:"numero"`
-	Target         string `json:"target"`
+	ImpressionHour int64   `json:"impression_hour"`
+	LocationID     int64   `json:"location_id"`
+	Uniques        float64 `json:"uniques"`
+	Latitude       string  `json:"latitude"`
+	Longitude      string  `json:"longitude"`
+	UfEstado       string  `json:"uf_estado"`
+	Cidade         string  `json:"cidade"`
+	Endereco       string  `json:"endereco"`
+	Numero         int64   `json:"numero"`
+	Target         string  `json:"target"`
 }
 
 type TargetData struct {
@@ -118,7 +116,7 @@ type targetRow struct {
 
 type geodataRow struct {
 	ID             string  `bigquery:"id"`
-	ImpressionHour string  `bigquery:"impression_hour"`
+	ImpressionHour int64   `bigquery:"impression_hour"`
 	LocationID     int64   `bigquery:"location_id"`
 	Uniques        float64 `bigquery:"uniques"`
 	Latitude       string  `bigquery:"latitude"`
@@ -259,32 +257,17 @@ func insertTarget(ctx context.Context, ins *bqInserters, msg kafka.Message, ageI
 func insertGeodata(ctx context.Context, ins *bqInserters, msg kafka.Message, event KafkaEvent, targetID string) error {
 	id := deterministicID(msg, "geodata")
 
-	locationID, err := strconv.ParseInt(event.LocationID, 10, 64)
-	if err != nil {
-		return fmt.Errorf("insertGeodata: invalid location_id %q: %w", event.LocationID, err)
-	}
-
-	uniques, err := strconv.ParseFloat(event.Uniques, 64)
-	if err != nil {
-		return fmt.Errorf("insertGeodata: invalid uniques %q: %w", event.Uniques, err)
-	}
-
-	numero, err := strconv.ParseInt(event.Numero, 10, 64)
-	if err != nil {
-		return fmt.Errorf("insertGeodata: invalid numero %q: %w", event.Numero, err)
-	}
-
 	row := geodataRow{
 		ID:             id,
 		ImpressionHour: event.ImpressionHour,
-		LocationID:     locationID,
-		Uniques:        uniques,
+		LocationID:     event.LocationID,
+		Uniques:        event.Uniques,
 		Latitude:       event.Latitude,
 		Longitude:      event.Longitude,
 		UfEstado:       event.UfEstado,
 		Cidade:         event.Cidade,
 		Endereco:       event.Endereco,
-		Numero:         numero,
+		Numero:         event.Numero,
 		TargetID:       &targetID,
 	}
 	saver := &bigquery.StructSaver{Schema: ins.geodataSchema, InsertID: id, Struct: row}
@@ -395,17 +378,8 @@ func main() {
 	log.Printf("Consumer iniciado | brokers=%s topic=%s group=%s",
 		cfg.KafkaBrokers, cfg.KafkaTopic, cfg.KafkaGroupID)
 
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		<-sigCh
-		log.Println("Shutdown signal received")
-		cancel()
-	}()
-
 	for {
-		msg, err := reader.FetchMessage(ctx)
+		msg, err := reader.ReadMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				log.Println("Consumer stopped")
@@ -419,11 +393,6 @@ func main() {
 			log.Printf("handleMessage error | partition=%d offset=%d: %v",
 				msg.Partition, msg.Offset, err)
 			continue
-		}
-
-		if err := reader.CommitMessages(ctx, msg); err != nil {
-			log.Printf("CommitMessages error | partition=%d offset=%d: %v",
-				msg.Partition, msg.Offset, err)
 		}
 
 		log.Printf("OK | key=%s partition=%d offset=%d",
