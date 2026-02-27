@@ -10,8 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
-	// "syscall"
+	"syscall"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -369,18 +368,6 @@ func handleMessage(ctx context.Context, ins *bqInserters, msg kafka.Message) err
 	return insertGeodata(ctx, ins, msg, event, targetID)
 }
 
-// ─── Liveness Probe ───────────────────────────────────────────────────────────
-
-var healthOnce sync.Once
-
-func touchHealthFile() {
-	healthOnce.Do(func() {
-		if err := os.WriteFile("/tmp/healthy", nil, 0600); err != nil {
-			log.Printf("liveness: failed to create /tmp/healthy: %v", err)
-		}
-	})
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 func main() {
@@ -436,7 +423,6 @@ func main() {
 				msg.Partition, msg.Offset, err)
 		}
 
-		touchHealthFile()
 		log.Printf("OK | key=%s partition=%d offset=%d",
 			string(msg.Key), msg.Partition, msg.Offset)
 	}
