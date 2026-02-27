@@ -11,10 +11,8 @@ data:
   KAFKA_READ_TIMEOUT: "5s"
   KAFKA_MAX_WAIT: "500ms"
   PROCESS_DELAY: "0"
-
   GCS_BUCKET: "kafka-backup-eletromidia"
   GCS_CREDENTIALS: "/secrets/cs-api-key.json"
   GCS_BASE_PATH: "kafka-backup"
-
   FLUSH_INTERVAL: "30s"
   FLUSH_SIZE: "500"
