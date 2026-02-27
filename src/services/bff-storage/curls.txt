@@ -1,0 +1,9 @@
+curl -X GET http://192.168.49.2:31997/healthz
+
+curl -X GET http://192.168.49.2:31997/bucket/items
+
+curl -X GET "http://192.168.49.2:31997/bucket/items/by-folder?folder=kafka-backup/topics/geodata/year=2026/month=02/day=27"
+
+curl -X GET "http://192.168.49.2:31997/bucket/items/file?id=kafka-backup/topics/geodata/year=2026/month=02/day=27/2-41-41.json"
+
+curl -X GET "http://192.168.49.2:31997/bucket/items/file?id=kafka-backup/topics/geodata/year=2026/month=02/day=27/2-41-41.json" -O

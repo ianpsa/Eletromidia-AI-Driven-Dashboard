@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: bff-storage
+  name: bff-storage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bff-storage
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: bff-storage
+    spec:
+      containers:
+      - image: bff-storage:latest
+        name: bff-storage
+        imagePullPolicy: Never
+        resources: 
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        envFrom:
+          - configMapRef:
+              name: bff-storage-cm
+        volumeMounts:
+          - name: gcs-sa-key
+            mountPath: /secrets/cs-api-key.json
+            subPath: cs-api-key.json
+            readOnly: true
+      volumes:
+        - name: gcs-sa-key
+          secret:
+            secretName: gcs-sa-key 
+

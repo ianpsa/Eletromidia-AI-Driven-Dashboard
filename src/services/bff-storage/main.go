@@ -13,13 +13,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"google.golang.org/api/option"
 	"google.golang.org/api/iterator"
 )
 
 type config struct {
 	Port       string
 	BucketName string
+	Key		   string
 }
 
 type api struct {
@@ -41,7 +42,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	client, err := storage.NewClient(ctx)
+	client, err := storage.NewClient(ctx, option.WithCredentialsFile(cfg.Key))
 	if err != nil {
 		log.Fatalf("error creating cloud storage client: %v", err)
 	}
@@ -74,6 +75,7 @@ func loadConfig() config {
 	return config{
 		Port:       getEnv("PORT", "8080"),
 		BucketName: getEnv("BUCKET_NAME", ""),
+		Key:		getEnv("CS_SA_CREDENTIALS", ""),
 	}
 }
 
