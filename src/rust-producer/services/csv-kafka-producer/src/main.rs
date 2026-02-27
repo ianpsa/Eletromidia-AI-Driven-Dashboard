@@ -37,8 +37,10 @@ struct LoadTestResult {
 }
 
 fn create_producer() -> FutureProducer {
+    let bootstrap_servers = std::env::var("KAFKA_BOOTSTRAP_SERVERS").unwrap_or_else(|_| "kafka:9092".to_string());
+    
     ClientConfig::new()
-        .set("bootstrap.servers", "localhost:9092")
+        .set("bootstrap.servers", &bootstrap_servers)
         .set("message.timeout.ms", "5000")
         .create()
         .expect("Falha ao criar producer")
@@ -138,7 +140,7 @@ async fn csv_post(config: web::Json<LoadTestConfig>) -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| App::new().service(csv_post))
-        .bind(("127.0.0.1", 5000))?
+        .bind(("0.0.0.0", 5000))?
         .run()
         .await
 }

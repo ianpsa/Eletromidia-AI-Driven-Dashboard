@@ -17,7 +17,7 @@ async fn read_csv(rand: usize, filepath: &str) -> Result<Vec<String>, Box<dyn Er
 
 pub async fn take_csv_line() -> Result<Vec<String>, Box<dyn Error>> {
   
-    let filepath = "../../services/csv-ingestor/data/dados.csv";
+    let filepath = std::env::var("CSV_FILEPATH").unwrap_or_else(|_| "/app/data/dados.csv".to_string());
     
     let mut rdr = ReaderBuilder::new().from_path(&filepath)?;
     
@@ -31,7 +31,7 @@ pub async fn take_csv_line() -> Result<Vec<String>, Box<dyn Error>> {
     
     
     let rng = rand::rng().random_range(0..total_records);
-    let rand_record = read_csv(rng, filepath).await?;
+    let rand_record = read_csv(rng, &filepath).await?;
     
     println!("{:?} peguei esta linha", rand_record);
     
