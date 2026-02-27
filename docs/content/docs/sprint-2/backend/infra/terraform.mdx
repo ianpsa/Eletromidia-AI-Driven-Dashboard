@@ -1,0 +1,464 @@
+# Documentação Terraform — Infraestrutura GCP
+
+
+---
+
+## Visão Geral
+
+Esta documentação descreve a infraestrutura de nuvem provisionada via **Terraform** para o projeto de visualização de dados de fluxo de pessoas da Eletromídia. Toda a infraestrutura é hospedada no **Google Cloud Platform (GCP)** e é composta por três módulos principais:
+
+| Módulo | Serviço GCP | Finalidade |
+|--------|-------------|------------|
+| `bigquery` | BigQuery | Armazenamento e consulta dos dados de geodata |
+| `iam` | IAM | Controle de acesso e permissões |
+| `cloud_storage` | Cloud Storage | Backup e staging de dados via Kafka |
+
+---
+
+## Pré-requisitos
+
+Antes de aplicar a infraestrutura, certifique-se de ter:
+
+- [Terraform](https://developer.hashicorp.com/terraform/downloads) versão `>= 1.5.0`
+- [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) instalado e autenticado
+- Um projeto GCP criado com as seguintes APIs habilitadas:
+  - BigQuery API
+  - Cloud Storage API
+  - IAM API
+- Permissões de `Owner` ou `Editor` no projeto GCP
+
+---
+
+## Estrutura de Arquivos
+
+```text
+terraform/
+├── main.tf                  # Orquestração dos módulos
+├── providers.tf             # Configuração do provider Google
+├── versions.tf              # Versões do Terraform e providers
+├── variables.tf             # Variáveis raiz
+├── terraform.tfvars.example # Exemplo de valores das variáveis
+└── modules/
+    ├── bigquery/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   ├── outputs.tf
+    │   └── schemas/
+    │       ├── geodata.json
+    │       ├── target.json
+    │       ├── age.json
+    │       ├── gender.json
+    │       └── social_class.json
+    ├── iam/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    └── cloud_storage/
+        ├── main.tf
+        ├── variables.tf
+        └── outputs.tf
+```
+
+---
+
+## Arquivos Raiz
+
+### `providers.tf`
+
+Configura o provider do Google Cloud, apontando para o projeto e região definidos nas variáveis.
+
+```hcl
+provider "google" {
+  project = var.project_id
+  region  = var.location
+}
+```
+
+### `versions.tf`
+
+Define as restrições de versão do Terraform e do provider `hashicorp/google`.
+
+```hcl
+terraform {
+  required_version = ">= 1.5.0"
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+}
+```
+
+> A versão `~> 5.0` permite qualquer patch dentro da série `5.x`, garantindo compatibilidade sem surpresas com versões maiores.
+
+### `main.tf`
+
+Arquivo principal que orquestra os três módulos. O módulo `iam` depende do output do módulo `bigquery` (o e-mail da service account criada).
+
+```hcl
+module "bigquery" {
+  source     = "./modules/bigquery"
+  project_id = var.project_id
+  location   = var.location
+  dataset_id = var.dataset_id
+  tables     = var.tables
+}
+
+module "iam" {
+  source                = "./modules/iam"
+  project_id            = var.project_id
+  admin_email           = var.admin_email
+  service_account_email = module.bigquery.service_account_email
+}
+
+module "cloud_storage" {
+  source     = "./modules/cloud_storage"
+  project_id = var.project_id
+  location   = var.location
+  cs_name    = var.cs_name
+}
+```
+
+---
+
+## Variáveis Raiz (`variables.tf`)
+
+| Variável | Tipo | Padrão | Descrição |
+|----------|------|--------|-----------|
+| `project_id` | `string` | — | ID do projeto no GCP |
+| `location` | `string` | `"US"` | Região de deploy dos recursos |
+| `dataset_id` | `string` | — | Nome do dataset no BigQuery |
+| `admin_email` | `string` | — | E-mail do usuário administrador do BigQuery |
+| `cs_name` | `string` | — | Nome do bucket do Cloud Storage |
+| `tables` | `map(object)` | — | Mapa de tabelas BigQuery com `table_id` e `schema` |
+
+### Exemplo de `terraform.tfvars`
+
+Copie `terraform.tfvars.example` para `terraform.tfvars` e preencha com seus valores:
+
+```hcl
+project_id = "meu-projeto-gcp"
+location   = "southamerica-east1"
+dataset_id = "eletromidia_dataset"
+admin_email = "admin@meugrupo.com"
+cs_name    = "eletromidia-kafka-backup"
+
+tables = {
+  geodata = {
+    table_id = "geodata"
+    schema   = "schemas/geodata.json"
+  }
+  target = {
+    table_id = "target"
+    schema   = "schemas/target.json"
+  }
+  age = {
+    table_id = "age"
+    schema   = "schemas/age.json"
+  }
+  gender = {
+    table_id = "gender"
+    schema   = "schemas/gender.json"
+  }
+  social_class = {
+    table_id = "social_class"
+    schema   = "schemas/social_class.json"
+  }
+}
+```
+
+> ⚠️ **Nunca versione o arquivo `terraform.tfvars`** com credenciais reais no repositório. Adicione-o ao `.gitignore`.
+
+---
+
+## Módulo: `bigquery`
+
+**Caminho:** `modules/bigquery/`
+
+Responsável por criar o dataset e as tabelas no BigQuery, além de uma service account dedicada para operações de escrita.
+
+### Recursos Criados
+
+#### `google_bigquery_dataset.eletromidia_bq`
+
+Cria o dataset que agrupa todas as tabelas do projeto.
+
+| Atributo | Valor |
+|----------|-------|
+| `project` | `var.project_id` |
+| `dataset_id` | `var.dataset_id` |
+| `location` | `var.location` |
+
+#### `google_bigquery_table.tables`
+
+Cria as tabelas dinamicamente usando `for_each` sobre o mapa `var.tables`. Cada tabela carrega seu schema a partir de um arquivo `.json` localizado na pasta `schemas/`.
+
+```hcl
+resource "google_bigquery_table" "tables" {
+  for_each = var.tables
+
+  dataset_id        = google_bigquery_dataset.eletromidia_bq.dataset_id
+  table_id          = each.value.table_id
+  schema            = file("${path.module}/${each.value.schema}")
+  deletion_protection = false
+}
+```
+
+> `deletion_protection = false` permite que o Terraform destrua as tabelas com `terraform destroy`. Em produção, considere alterar para `true`.
+
+#### `google_service_account.bq_sa`
+
+Cria a service account `bq-data-editor` usada por serviços internos que precisam escrever dados no BigQuery.
+
+### Outputs
+
+| Output | Descrição |
+|--------|-----------|
+| `service_account_email` | E-mail da service account do BigQuery (repassado ao módulo IAM) |
+| `dataset_id` | ID do dataset criado |
+| `table_ids` | Mapa com os IDs de todas as tabelas criadas |
+
+---
+
+## Módulo: `iam`
+
+**Caminho:** `modules/iam/`
+
+Gerencia as permissões de acesso aos recursos do BigQuery para usuários e service accounts.
+
+### Recursos Criados
+
+#### `google_project_iam_member.bq_admin`
+
+Concede a role `roles/bigquery.admin` ao e-mail definido em `var.admin_email`. Esse usuário tem controle total sobre o BigQuery do projeto.
+
+#### `google_project_iam_member.bq_data_editor`
+
+Concede a role `roles/bigquery.dataEditor` à service account criada pelo módulo `bigquery`. Permite que serviços automatizados escrevam dados nas tabelas.
+
+#### `google_service_account.bq_looker_reader`
+
+Cria a service account `bq-looker-reader`, dedicada à integração com o **Looker Studio** (ferramenta de visualização de dados).
+
+#### `google_project_iam_member.bq_looker_reader`
+
+Concede a role `roles/bigquery.dataViewer` à service account do Looker, garantindo acesso somente leitura para dashboards e visualizações.
+
+### Resumo de Permissões
+
+| Identidade | Role | Nível de Acesso |
+|------------|------|-----------------|
+| `var.admin_email` (usuário) | `bigquery.admin` | Administração total |
+| `bq-data-editor` (SA) | `bigquery.dataEditor` | Leitura e escrita de dados |
+| `bq-looker-reader` (SA) | `bigquery.dataViewer` | Somente leitura |
+
+### Outputs
+
+| Output | Descrição |
+|--------|-----------|
+| `bq_looker_reader_email` | E-mail da service account do Looker Studio |
+
+---
+
+## Módulo: `cloud_storage`
+
+**Caminho:** `modules/cloud_storage/`
+
+Cria um bucket no Cloud Storage para armazenar backups dos dados consumidos via **Kafka**, com regras automáticas de ciclo de vida para otimização de custo.
+
+### Recursos Criados
+
+#### `google_storage_bucket.kafka_backup`
+
+Bucket principal de armazenamento.
+
+| Configuração | Valor | Descrição |
+|-------------|-------|-----------|
+| `uniform_bucket_level_access` | `true` | Controle de acesso uniforme (sem ACLs por objeto) |
+| `versioning.enabled` | `false` | Versionamento desabilitado |
+| `force_destroy` | `true` | Permite destruição mesmo com objetos dentro |
+
+**Regras de Ciclo de Vida:**
+
+| Condição | Ação | Descrição |
+|----------|------|-----------|
+| Objetos com mais de **30 dias** | Mover para `NEARLINE` | Reduz custo de armazenamento para dados acessados com menos frequência |
+| Objetos com mais de **360 dias** | `Delete` | Remove dados antigos automaticamente |
+
+#### `google_storage_managed_folder.topics`
+
+Cria a pasta gerenciada `topics/` dentro do bucket, que organiza os dados dos tópicos Kafka.
+
+#### `google_service_account.cs_sa`
+
+Cria a service account `cs-kafka-consumer` usada pelo consumer Kafka para gravar no bucket.
+
+#### `google_storage_bucket_iam_member.cs_sa`
+
+Concede a role `roles/storage.objectUser` à service account `cs-kafka-consumer`, permitindo que ela leia e escreva objetos no bucket.
+
+### Outputs
+
+| Output | Descrição |
+|--------|-----------|
+| `bucket_name` | Nome do bucket criado |
+| `service_account_email` | E-mail da service account do Cloud Storage |
+
+---
+
+## Schemas das Tabelas BigQuery
+
+As tabelas são criadas com schemas definidos em arquivos `.json` dentro de `modules/bigquery/schemas/`.
+
+### `geodata` — Dados Principais de Fluxo
+
+Tabela central com os registros de fluxo de pessoas por localização e horário.
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `id` | STRING | ✅ | Identificador único (UUID gerado automaticamente) |
+| `impression_hour` | STRING | ✅ | Horário da leitura |
+| `location_id` | INTEGER | ✅ | ID da localização |
+| `uniques` | FLOAT | ✅ | Quantidade estimada de pessoas únicas no local |
+| `latitude` | STRING | ✅ | Latitude do ponto de leitura |
+| `longitude` | STRING | ✅ | Longitude do ponto de leitura |
+| `uf_estado` | STRING | ✅ | Estado (UF) |
+| `cidade` | STRING | ✅ | Cidade |
+| `endereco` | STRING | ✅ | Endereço do local |
+| `numero` | INTEGER | ✅ | Número do endereço |
+| `target_id` | STRING | ❌ | FK para a tabela `target` |
+
+### `target` — Segmentação Demográfica
+
+Tabela de relacionamento que agrupa as segmentações de um evento geodata.
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `id` | STRING | ✅ | Identificador único |
+| `age_id` | STRING | ❌ | FK para a tabela `age` |
+| `gender_id` | STRING | ❌ | FK para a tabela `gender` |
+| `social_class_id` | STRING | ❌ | FK para a tabela `social_class` |
+
+### `age` — Distribuição por Faixa Etária
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | STRING | Identificador único |
+| `x18_19` | FLOAT | % de pessoas de 18-19 anos |
+| `x20_29` | FLOAT | % de pessoas de 20-29 anos |
+| `x30_39` | FLOAT | % de pessoas de 30-39 anos |
+| `x40_49` | FLOAT | % de pessoas de 40-49 anos |
+| `x50_59` | FLOAT | % de pessoas de 50-59 anos |
+| `x60_69` | FLOAT | % de pessoas de 60-69 anos |
+| `x70_79` | FLOAT | % de pessoas de 70-79 anos |
+| `x80_plus` | FLOAT | % de pessoas acima de 80 anos |
+
+### `gender` — Distribuição por Gênero
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | STRING | Identificador único |
+| `feminine` | FLOAT | % do gênero feminino |
+| `masculine` | FLOAT | % do gênero masculino |
+
+### `social_class` — Distribuição por Classe Social
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | STRING | Identificador único |
+| `a_class` | FLOAT | % da classe A |
+| `b1_class` | FLOAT | % da classe B1 |
+| `b2_class` | FLOAT | % da classe B2 |
+| `c1_class` | FLOAT | % da classe C1 |
+| `c2_class` | FLOAT | % da classe C2 |
+| `de_class` | FLOAT | % da classe DE |
+
+---
+
+## Diagrama da Infraestrutura
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│                     GCP PROJECT                          │
+│                                                          │
+│  ┌─────────────────────────────┐                         │
+│  │         BigQuery            │                         │
+│  │  Dataset: eletromidia_bq    │                         │
+│  │  ┌──────────┐ ┌──────────┐  │                         │
+│  │  │ geodata  │ │  target  │  │                         │
+│  │  └──────────┘ └──────────┘  │                         │
+│  │  ┌──────┐ ┌────────┐ ┌───┐  │                         │
+│  │  │ age  │ │ gender │ │SC │  │                         │
+│  │  └──────┘ └────────┘ └───┘  │                         │
+│  └─────────────────────────────┘                         │
+│                                                          │
+│  ┌─────────────────────────────┐                         │
+│  │       Cloud Storage         │                         │
+│  │  Bucket: kafka_backup       │                         │
+│  │  └── topics/ (folder)       │                         │
+│  └─────────────────────────────┘                         │
+│                                                          │
+│  ┌─────────────────────────────┐                         │
+│  │            IAM              │                         │
+│  │  👤 admin → bigquery.admin  │                         │
+│  │  🤖 bq-data-editor → editor │                         │
+│  │  🤖 bq-looker-reader → view │                         │
+│  │  🤖 cs-kafka-consumer → obj │                         │
+│  └─────────────────────────────┘                         │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Como Usar
+
+### 1. Autenticar no GCP
+
+```bash
+gcloud auth application-default login
+```
+
+### 2. Configurar as variáveis
+
+```bash
+cp terraform.tfvars.example terraform.tfvars
+# Edite o arquivo terraform.tfvars com seus valores
+```
+
+### 3. Inicializar o Terraform
+
+```bash
+terraform init
+```
+
+### 4. Visualizar o plano de execução
+
+```bash
+terraform plan
+```
+
+### 5. Aplicar a infraestrutura
+
+```bash
+terraform apply
+```
+
+### 6. (Opcional) Destruir a infraestrutura
+
+```bash
+terraform destroy
+```
+
+> ⚠️ O `terraform destroy` irá deletar **todos** os recursos, incluindo dados nas tabelas BigQuery e no bucket. Use com cautela em ambientes com dados reais.
+
+---
+
+## Convenções e Boas Práticas Adotadas
+
+- **Modularização:** cada serviço GCP é isolado em seu próprio módulo, facilitando manutenção e reuso.
+- **`for_each` nas tabelas:** permite adicionar novas tabelas apenas editando o `tfvars`, sem alterar código Terraform.
+- **Schemas externos em JSON:** os schemas das tabelas ficam em arquivos separados, tornando as mudanças de estrutura rastreáveis via Git.
+- **Service accounts dedicadas:** cada serviço usa sua própria SA com o mínimo de permissões necessário (princípio do menor privilégio).
+- **Ciclo de vida no Storage:** regras automáticas evitam acúmulo desnecessário de dados e reduzem custos.
