@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -57,20 +56,6 @@ func loadConfig() Config {
 		GCPProjectID:  getEnv("GCP_PROJECT_ID", ""),
 		BQDatasetID:   getEnv("BQ_DATASET_ID", ""),
 	}
-}
-
-func validateConfig(cfg Config) error {
-	var missing []string
-	if cfg.GCPProjectID == "" {
-		missing = append(missing, "GCP_PROJECT_ID")
-	}
-	if cfg.BQDatasetID == "" {
-		missing = append(missing, "BQ_DATASET_ID")
-	}
-	if len(missing) > 0 {
-		return fmt.Errorf("missing env vars: %s", strings.Join(missing, ", "))
-	}
-	return nil
 }
 
 // ─── Kafka Message Structs ────────────────────────────────────────────────────
@@ -378,26 +363,10 @@ func handleMessage(ctx context.Context, ins *bqInserters, msg kafka.Message) err
 	return insertGeodata(ctx, ins, msg, event, targetID)
 }
 
-// ─── Liveness Probe ───────────────────────────────────────────────────────────
-
-var healthOnce sync.Once
-
-func touchHealthFile() {
-	healthOnce.Do(func() {
-		if err := os.WriteFile("/tmp/healthy", nil, 0600); err != nil {
-			log.Printf("liveness: failed to create /tmp/healthy: %v", err)
-		}
-	})
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 func main() {
 	cfg := loadConfig()
-
-	if err := validateConfig(cfg); err != nil {
-		log.Fatalf("config error: %v", err)
-	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -457,7 +426,6 @@ func main() {
 				msg.Partition, msg.Offset, err)
 		}
 
-		touchHealthFile()
 		log.Printf("OK | key=%s partition=%d offset=%d",
 			string(msg.Key), msg.Partition, msg.Offset)
 	}
