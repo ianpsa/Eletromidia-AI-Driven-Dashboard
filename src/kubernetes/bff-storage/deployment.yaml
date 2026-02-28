@@ -15,9 +15,15 @@ spec:
       labels:
         app: bff-storage
     spec:
+      securityContext:
+        runAsUser: 1010
+        runAsNonRoot: true
       containers:
       - image: bff-storage:latest
         name: bff-storage
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
         imagePullPolicy: Never
         ports: 
           - containerPort: 8080

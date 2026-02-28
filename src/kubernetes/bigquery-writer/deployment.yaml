@@ -3,23 +3,32 @@ kind: Deployment
 metadata:
   labels:
     app: bigquery-writer
+    kafka-role: consumer
   name: bigquery-writer
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: bigquery-writer
+      kafka-role: consumer
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
         app: bigquery-writer
+        kafka-role: consumer
     spec:
+      securityContext:
+        runAsUser: 1010
+        runAsNonRoot: true
       containers:
         - image: bigquery-writer:latest
           imagePullPolicy: Never
           name: bigquery-writer
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
           envFrom:
             - configMapRef:
                 name: bigquery-writer-cm

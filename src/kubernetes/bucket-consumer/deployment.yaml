@@ -3,22 +3,31 @@ kind: Deployment
 metadata:
   labels:
     app: bucket-consumer
+    kafka-role: consumer
   name: bucket-consumer
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: bucket-consumer
+      kafka-role: consumer
   strategy: {}
   template:
     metadata:
       labels:
         app: bucket-consumer
+        kafka-role: consumer
     spec:
+      securityContext:
+        runAsUser: 1010
+        runAsNonRoot: true
       containers:
       - image: bucket-consumer:latest
         imagePullPolicy: Never
         name: bucket-consumer
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
         envFrom:
           - configMapRef:
               name: bucket-consumer-cm
