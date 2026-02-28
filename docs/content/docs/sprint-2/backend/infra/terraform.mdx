@@ -1,5 +1,12 @@
+---
+title: Terraform
+description: Documentação da configuração da infraestrutura em nuvem (GCP)
+---
+
 # Documentação Terraform — Infraestrutura GCP
 
+Este documento descreve a infraestrutura de nuvem do projeto Hiperconectividade para Cidades Inteligentes, desenvolvido pelo grupo Mídia in da House em parceria com a Eletromídia. Toda a infraestrutura é provisionada como código (Infrastructure as Code) utilizando Terraform, garantindo que o ambiente seja reproduzível, versionável e auditável — qualquer membro do time pode recriar o ambiente completo a partir dos arquivos .tf, sem configuração manual.
+A abordagem de IaC é especialmente relevante para este projeto pois, à medida que novos dados forem recebidos da Claro Geodata ou novas cidades forem incorporadas ao escopo, a infraestrutura pode ser expandida com alterações mínimas de configuração. Além disso, o uso de módulos separados para BigQuery, IAM e Cloud Storage garante que cada camada da infraestrutura seja independente, facilitando manutenção, revisão de código e eventuais substituições de serviço sem impacto no restante do stack.
 
 ---
 
