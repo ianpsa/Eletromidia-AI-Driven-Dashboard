@@ -5,6 +5,12 @@
 
 ## Visão Geral
 
+O Terraform é uma ferramenta de Infrastructure as Code (IaC) criada pela HashiCorp que permite criar e gerenciar infraestrutura através de arquivos de configuração. Em vez de provisionar servidores, redes e outros recursos manualmente, você descreve o que precisa em código e o Terraform cuida do resto.
+
+Ele utiliza uma linguagem própria chamada HCL (HashiCorp Configuration Language) e é compatível com os principais provedores de nuvem do mercado, como AWS, Azure e Google Cloud. O fluxo de trabalho é simples: você escreve a configuração desejada, visualiza o plano de execução para conferir o que será criado ou modificado, e então aplica as mudanças.
+
+Por tratar a infraestrutura como código, o Terraform torna o processo de provisionamento reproduzível, versionável e muito menos suscetível a erros manuais, sendo uma das ferramentas mais adotadas por times de DevOps e engenharia de plataforma atualmente.
+
 Esta documentação descreve a infraestrutura de nuvem provisionada via **Terraform** para o projeto de visualização de dados de fluxo de pessoas da Eletromídia. Toda a infraestrutura é hospedada no **Google Cloud Platform (GCP)** e é composta por três módulos principais:
 
 | Módulo | Serviço GCP | Finalidade |
