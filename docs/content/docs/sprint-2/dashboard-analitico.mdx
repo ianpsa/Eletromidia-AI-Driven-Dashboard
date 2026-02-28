@@ -1,0 +1,219 @@
+---
+title: Dashboard Analítico
+description: Plataforma de BI desenvolvida no Looker Studio para análise dos dados.
+---
+
+## Introdução
+
+Este documento apresenta a primeira versão da plataforma de BI desenvolvida para análise integrada de fluxo de pessoas com segmentação demográfica.  
+
+A solução foi construída a partir de dados estruturados no BigQuery e visualizada no Looker Studio, com o objetivo de transformar dados brutos de geolocalização e perfil populacional em uma ferramenta analítica interativa.
+
+O propósito central da plataforma é permitir que decisões estratégicas sejam tomadas com base em concentração de público, distribuição geográfica, perfil socioeconômico, faixa etária, gênero e comportamento ao longo do tempo. A modelagem adotada permite cruzamento entre todas essas dimensões simultaneamente, oferecendo uma visão aprofundada do comportamento do público.
+
+---
+
+## Visão Geral da Plataforma
+
+Abaixo está a visão completa da plataforma:
+
+<a href="https://lookerstudio.google.com/s/pDP7Kuy2ByM" target="_blank">
+  <img src="/dashboard-visao-geral.png" alt="Visão Geral do Dashboard" />
+</a>
+[Link para o dashboard](https://lookerstudio.google.com/s/pDP7Kuy2ByM)
+
+A interface foi projetada como um ambiente de exploração analítica. Os gráficos não são apenas representações visuais, mas pontos de interação que alteram dinamicamente toda a análise. A organização visual permite leitura executiva imediata (indicadores no topo) e aprofundamento técnico na sequência das visualizações.
+
+---
+
+## Filtros e Interatividade
+
+<img src="/filtros-dashboard.png" alt="filtros" />
+
+Logo após a visualização geral, é importante destacar o comportamento interativo da plataforma. Através de controles e cliques nos próprios gráficos é possível aplicar filtros e combinar seleções. As opções incluem seleção por classe social, gênero, faixa etária, endereço e horário. Também é possível selecionar múltiplos filtros simultaneamente e clicar diretamente em gráficos para aplicar filtros automáticos, o que faz com que o restante da interface se adapte àquela seleção sem necessidade de alterar consultas manualmente.
+
+---
+
+## Indicadores Estratégicos
+
+### Média de Pessoas por Dia
+
+<img src="/kpi-media.png" alt="Média de Pessoas por Dia" />
+
+Esse indicador apresenta a média estimada de pessoas por dia no período analisado e funciona como referência de intensidade geral, contextualizando as demais análises.
+
+### Horário de Pico
+
+<img src="/kpi-pico.png" alt="Horário de Pico" />
+
+Indica o horário com maior concentração estimada de pessoas, útil para planejar ações com maior impacto temporal.
+
+### Local com Maior Fluxo
+
+<img src="/kpi-local.png" alt="Local com Maior Fluxo" />
+
+Destaca o endereço com maior volume estimado, apoiando decisões de priorização territorial.
+
+---
+
+## Gráficos
+
+### Concentração por Classe Social
+
+<img src="/grafico-classe.png" alt="Concentração por Classe Social" />
+
+O gráfico em formato donut apresenta a distribuição proporcional das classes sociais dentro do fluxo total. Sua importância está na capacidade de revelar rapidamente o perfil socioeconômico predominante, ajudando a calibrar estratégias de comunicação, precificação e posicionamento de campanhas.
+
+---
+
+### Concentração por Gênero ao Longo do Tempo
+
+<img src="/grafico-genero.png" alt="Concentração por Gênero" />
+
+O gráfico de linhas apresenta a evolução temporal da quantidade estimada de pessoas por gênero, possibilitando comparar curvas e identificar horários de maior presença de cada grupo. É uma visualização essencial para entender dinâmica de audiência ao longo do dia.
+
+---
+
+### Concentração por Idade
+
+<img src="/grafico-idade.png" alt="Concentração por Idade" />
+
+A visualização por faixa etária mostra a composição do público entre grupos etários. Este gráfico é central quando se busca adaptar mensagem, canais ou formato criativo para públicos com perfis distintos.
+
+---
+
+### Concentração por Pessoa ao Longo do Tempo
+
+<img src="/grafico-tempo.png" alt="Concentração por Pessoa ao Longo do Tempo" />
+
+O gráfico de barras mostra a quantidade total estimada por hora, destacando os fluxos absolutos e auxiliando na identificação de padrões diários e eventuais picos.
+
+---
+
+### Concentração por Localidade
+
+<img src="/grafico-local.png" alt="Concentração por Localidade" />
+
+O mapa apresenta a distribuição espacial do público estimado e permite identificar hotspots e padrões territoriais.
+
+---
+
+## Estrutura de Dados e Modelagem
+
+Os dados utilizados estão organizados no BigQuery em tabelas distintas (geodata, target, age, gender, social_class), conforme descrito na seção:
+
+🔗 [schemas do BigQuery](/docs/sprint-2/backend/services/bigquery-writer#saida-schemas-do-bigquery)
+
+Abaixo explico, com mais detalhes, as abordagens testadas e o raciocínio por trás de cada uma.
+
+
+## Abordagens testadas
+
+### Primeira abordagem
+
+Na primeira tentativa unimos os percentuais de classe com os dados de `geodata` e criamos uma nova tabela onde cada coluna representava o total estimado de uma classe social.
+
+Exemplo da tabela resultante:
+
+| class_a | class_b1 | class_b2 | class_c1 | class_c2 | class_de |
+|----------|----------|----------|----------|----------|----------|
+| 2230.67  | 4461.35  | 6692.02  | 4461.35  | 3346.01  | 1115.33  |
+
+O cálculo era feito multiplicando `uniques` pelo percentual de cada classe.
+
+O problema foi que o Looker Studio não permite gerar gráficos quando os dados estão organizados dessa forma. Para criar gráficos categóricos é necessário que os dados estejam no formato tipo e valor. Com as classes em colunas, o gráfico não podia ser construído corretamente.
+
+---
+
+### Segunda abordagem
+
+Na segunda tentativa transformamos as colunas de classe em linhas no formato tipo e valor.
+
+Exemplo da tabela resultante:
+
+| tipo | valor    |
+|------|----------|
+| A    | 2230.67  |
+| B1   | 4461.35  |
+| B2   | 6692.02  |
+| C1   | 4461.35  |
+| C2   | 3346.01  |
+| DE   | 1115.33  |
+
+Essa estrutura permitiu gerar o gráfico da informação específica de classe. A ideia era que o mesmo modelo pudesse ser aplicado depois para gênero e idade.
+
+O problema foi que essa tabela estava separada das demais fontes utilizadas na plataforma. Ao clicar no gráfico de classe, a seleção não propagava para os outros gráficos. A interação simplesmente não acontecia.
+
+---
+
+### Terceira abordagem
+
+Na terceira tentativa juntamos `geodata` com os percentuais de classe, gênero e idade e criamos uma única view contendo todas as colunas originais de `geodata` exceto `target`. Além disso, adicionamos três colunas novas: `tipo`, `label` e `valor`
+
+Exemplo de resultado:
+
+| id                                   | impression_hour | location_id | uniques  | tipo   | label     | valor     | outras_colunas_geodata |
+|--------------------------------------|----------------|------------|----------|--------|----------|----------|------------------------|
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | 22306.73 | class  | A        | 2230.67  | ...                    |
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | 22306.73 | gender | Feminine | 13384.04 | ...                    |
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | 22306.73 | age    | 20-29    | 5576.68  | ...                    |
+
+O que foi feito aqui foi organizar todas as dimensões em uma única estrutura para que todos os gráficos utilizassem a mesma fonte de dados.
+
+O problema surgiu porque cada linha original de `geodata` passou a aparecer três vezes, uma para classe, uma para gênero e uma para idade. Ao criar gráficos mais gerais, como média de pessoas por dia, o valor somado ficava triplicado.
+
+Em um primeiro momento pensamos em dividir os resultados por três. Para gráficos gerais isso até funcionaria. Porém, quando um filtro específico era aplicado, por exemplo apenas uma classe, o valor real ficava incorreto, pois continuaria sendo dividido por três mesmo representando apenas uma dimensão.
+
+Isso tornava os indicadores inconsistentes.
+
+---
+
+### Quarta abordagem
+
+A solução final foi gerar todas as interseções entre classe, gênero e idade para cada linha original de `geodata`.
+
+Partindo da linha:
+
+| id                                   | impression_hour | location_id | uniques  | outras_colunas_geodata |
+|--------------------------------------|----------------|------------|----------|------------------------|
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | 22306.73 | ...                    |
+
+Sabemos que existem:
+
+- 6 classes sociais
+- 2 gêneros
+- 8 faixas etárias
+
+Isso significa que cada linha original gera:
+
+6 × 2 × 8 = 96 combinações
+
+Cada combinação representa uma interseção completa. Por exemplo:
+
+| id                                   | impression_hour | location_id | class_label | gender_label | age_label | joint_count | outras_colunas_geodata |
+|--------------------------------------|----------------|------------|------------|--------------|-----------|------------|------------------------|
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | A          | Feminine     | 20-29    | 3346.01    | ...                    |
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | A          | Masculine    | 30-39    | 3122.94    | ...                    |
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | B2         | Feminine     | 30-39    | 7026.62    | ...                    |
+
+O cálculo utilizado é:
+
+joint_count = uniques × P(classe) × P(gênero) × P(idade)
+
+Agora cada linha já representa uma combinação completa das três dimensões. Isso permite que qualquer filtro aplicado funcione corretamente, sem necessidade de ajustes ou divisões.
+
+O único ponto de atenção é o aumento de volume de dados. Para cada linha original, passamos a ter 96 linhas na nova estrutura. Em grandes volumes, isso pode impactar performance e custo, exigindo estratégias como materialização e particionamento.
+
+---
+
+## Conclusão e Retorno para o Projeto
+
+Esta entrega representa uma evolução significativa para o projeto, pois fornece uma base analítica sólida e interativa.
+
+Para [Mário](../sprint-1/perfil-do-parceiro/personas#persona-1---mário), o executivo, a plataforma permite visualizar impacto real e tomar decisões estratégicas com clareza.  
+
+Para [Carmen](../sprint-1/perfil-do-parceiro/personas#persona-2---carmen), a analista de marketing, a segmentação demográfica e geográfica permite otimizar campanhas com maior precisão.  
+
+Para [Carlos](../sprint-1/perfil-do-parceiro/personas#persona-3---carlos), o administrador da plataforma, a modelagem estruturada garante rastreabilidade e consistência dos dados utilizados nas análises.  
+
+A plataforma consolida dados complexos em visualizações claras, interativas e integradas, permitindo análise multidimensional consistente.
