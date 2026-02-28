@@ -19,6 +19,9 @@ spec:
       - image: bff-storage:latest
         name: bff-storage
         imagePullPolicy: Never
+        ports: 
+          - containerPort: 8080
+            name: http-web-svc
         resources: 
           requests:
             memory: "64Mi"
