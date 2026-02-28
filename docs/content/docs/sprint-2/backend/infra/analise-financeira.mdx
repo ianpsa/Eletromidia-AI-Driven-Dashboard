@@ -30,7 +30,7 @@ Todas as métricas de armazenamento foram calculadas com base no volume real dos
 **2. Recursos computacionais baseados em requests do Kubernetes**  
 Para arquiteturas que envolvem contêineres, os custos foram calculados com base nos *resource requests* de cada Pod — isto é, o mínimo de CPU e memória reservado por contêiner. A fórmula utilizada foi:
 
-```
+```text
 Custo Mensal = [(CPU × Pcpu) + (RAM × Pram)] × Pods × 730h
 ```
 
@@ -167,7 +167,7 @@ Arquitetura baseada em **GKE Autopilot**, o modo totalmente gerenciado do Google
 Aplicando a fórmula `[(CPU × Pcpu) + (RAM × Pram)] × Pods × 730h`:
 
 **Serviços 1, 2, 3 e 4** (idênticos):
-```
+```text
 [(0.128 × $0.0445) + (0.4883 × $0.0049225)] × 2 × 730
 = [$0.005696 + $0.002403] × 1.460
 = $0.008099 × 1.460
@@ -175,7 +175,7 @@ Aplicando a fórmula `[(CPU × Pcpu) + (RAM × Pram)] × Pods × 730h`:
 ```
 
 **Serviço 5:**
-```
+```text
 [(0.500 × $0.0445) + (2.000 × $0.0049225)] × 5 × 730
 = [$0.02225 + $0.009845] × 3.650
 = $0.032095 × 3.650
@@ -183,7 +183,7 @@ Aplicando a fórmula `[(CPU × Pcpu) + (RAM × Pram)] × Pods × 730h`:
 ```
 
 **PersistentVolume (10Gi — Standard Persistent Disk):**
-```
+```text
 10 GiB × $0.04/GiB/mês = $0,40/mês
 ```
 
