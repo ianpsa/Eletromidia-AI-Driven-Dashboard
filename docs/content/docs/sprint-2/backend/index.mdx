@@ -3,6 +3,12 @@ title: Backend
 description: Documentação dos serviços backend da Sprint 2
 ---
 
+## Visão Geral
+
+O backend da Sprint 2 é composto por serviços que implementam o pipeline de ingestão de dados conforme a [arquitetura GCP](/docs/sprint-1/arquitetura). Estes serviços são responsáveis por extrair dados de fontes diversas, processá-los e persisti-los para análise posterior.
+
+---
+
 ## Serviços
 
 | Serviço                      | Linguagem | Função                                                      |
@@ -27,3 +33,5 @@ csv-kafka-producer (Rust)
         │
         └──► (futuros consumidores)
 ```
+
+Esta arquitetura segue o padrão Pub/Sub, permitindo que múltiplos consumidores processem os mesmos dados de forma independente, conforme definido nos [requisitos não funcionais](/docs/sprint-1/requisitos#2-requisitos-não-funcionais-rnf) de processamento assíncrono.

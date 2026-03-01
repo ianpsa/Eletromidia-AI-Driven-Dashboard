@@ -7,35 +7,210 @@ description: Serviço Rust que lê dados CSV e produz mensagens para o Kafka
 
 O csv-kafka-producer é o componente **API Producer** da [arquitetura GCP](/docs/sprint-1/arquitetura): um serviço REST em Rust que lê dados de um arquivo CSV e os produz para o Kafka, servindo como fonte de dados para todo o pipeline de telemetria OOH.
 
+É o serviço responsável por alimentar o tópico Kafka com dados de telemetria da _Eletromidia_, que posteriormente serão consumidos pelo [bigquery-writer](/docs/sprint-2/backend/services/bigquery-writer) para persistência no BigQuery e visualização no Looker.
+
+---
+
+## Onde se encaixa na arquitetura
+
+```text
+Arquivo CSV (dados telemétricos)
+        │
+        ▼
+   csv-kafka-producer   ◄── este serviço
+        │
+        ▼
+   Kafka Topic: csv-topic (3 brokers)
+        │
+        ├──► bigquery-writer ──► BigQuery
+        ├──► redis-writer ──► Redis (cache)
+        └──► (futuros consumidores)
+```
+
+Este serviço é o ponto de entrada do pipeline de dados, transformando dados estáticos em CSV (por enquanto) em eventos.
+
 ---
 
 ## API REST
 
 ### Endpoint principal
 
-```
+```text
 POST /csv
 ```
 
-### Endpoint de health
+#### Corpo da requisição
 
+| Campo                | Tipo    | Obrigatório | Padrão   | Descrição                                               |
+| ------------------- | ------- | ----------- | -------- | ------------------------------------------------------- |
+| `mensagens_por_segundo` | usize   | Não         | 100000   | Taxa alvo de envio de mensagens por segundo            |
+| `tempo_envio_segundos`  | usize   | Sim         | -        | Duração do teste de carga em segundos                  |
+| `log_mensagens`        | bool    | Não         | false    | Se true, exibe cada mensagem enviada no console       |
+| `auto_test`            | bool    | Não         | false    | Se true, executa teste automático de carga            |
+
+#### Exemplos de uso
+
+**Teste simples:**
+
+```bash
+curl -X POST http://localhost:5000/csv \
+  -H "Content-Type: application/json" \
+  -d '{"mensagens_por_segundo": 100000, "tempo_envio_segundos": 5}'
 ```
-GET /health
+
+**Teste com logging:**
+
+```bash
+curl -X POST http://localhost:5000/csv \
+  -H "Content-Type: application/json" \
+  -d '{"mensagens_por_segundo": 10000, "tempo_envio_segundos": 3, "log_mensagens": true}'
 ```
+
+**Teste automático de carga:**
+
+```bash
+curl -X POST http://localhost:5000/csv \
+  -H "Content-Type: application/json" \
+  -d '{"auto_test": true, "tempo_envio_segundos": 3}'
+```
+
+#### Resposta
+
+**Teste simples:**
+
+```json
+{
+  "mensagens_enviadas": 500000,
+  "mensagens_com_erro": 0,
+  "tempo_total_segundos": 5.02,
+  "msgs_por_segundo": 99601.59
+}
+```
+
+**Teste automático:**
+
+```json
+{
+  "taxa_maxima_sustentavel": 3200000,
+  "total_enviado": 5140000,
+  "tempo_total_segundos": 18.03,
+  "testes": [
+    {"taxa_teste": 100000, "mensagens_enviadas": 286000, "mensagens_com_erro": 0, "taxa_erro": 0.0},
+    {"taxa_teste": 200000, "mensagens_enviadas": 544000, "mensagens_com_erro": 0, "taxa_erro": 0.0},
+    {"taxa_teste": 400000, "mensagens_enviadas": 1046000, "mensagens_com_erro": 0, "taxa_erro": 0.0},
+    {"taxa_teste": 3200000, "mensagens_enviadas": 1100000, "mensagens_com_erro": 0, "taxa_erro": 0.0}
+  ]
+}
+```
+
+---
+
+### Modo auto_test
+
+O teste automático de carga foi implementado para identificar a taxa máxima sustentável do sistema. O algoritmo:
+
+- Inicia na taxa especificada (ou 100.000 msgs/s por padrão)
+- Dobra a taxa a cada step se não houver erros (menor que 1%)
+- Reduz em 30% se a taxa de erro ultrapassar 1%
+- Para ao atingir 5.000.000 msgs/s ou quando comecar a falhar
+
+---
+
+## Configurações do Kafka Producer
+
+| Configuração                   | Valor       | Descrição                                                      |
+| ------------------------------ | ----------- | -------------------------------------------------------------- |
+| `bootstrap.servers`           | `kafka:9092` | Endereço dos brokers Kafka                                    |
+| `message.timeout.ms`           | `5000`      | Timeout para entrega da mensagem                               |
+| `compression.type`            | `zstd`      | Algoritmo de compressão                                       |
+| `batch.size`                  | `1048576`   | Tamanho máximo do batch (1MB)                                 |
+| `linger.ms`                   | `5`         | Tempo máximo para aguardar antes de enviar o batch            |
+| `queue.buffering.max.messages` | `5000000`   | Número máximo de mensagens na fila                            |
+| `acks`                        | `1`         | Acknowledgment do broker                                      |
+| `request.timeout.ms`          | `30000`     | Timeout para requisições                                      |
+
+---
+
+## Variáveis de ambiente
+
+| Variável              | Default           | Descrição                           |
+| --------------------- | ----------------- | ---------------------------------- |
+| `KAFKA_BOOTSTRAP_SERVERS` | `kafka:9092`  | Endereço dos brokers Kafka         |
+| `CSV_FILEPATH`        | `/app/data/dados.csv` | Caminho do arquivo CSV           |
 
 ---
 
 ## Estrutura de arquivos
 
-```
+```text
 src/rust-producer/services/csv-kafka-producer/
 ├── Cargo.toml
 ├── Dockerfile
+├── README.md
 └── src/
-    ├── main.rs           # Handlers HTTP
-    ├── models.rs         # Structs CsvRow
+    ├── main.rs        
+    ├── models.rs        
     └── mods/
         ├── mod.rs
-        ├── csv.rs         # CsvManager
-        └── test.rs         # Módulo de teste de carga
+        └── csv.rs         
 ```
+
+---
+
+## Formato da mensagem
+
+As mensagens enviadas ao Kafka seguem o mesmo formato esperado pelo [bigquery-writer](/docs/sprint-2/backend/services/bigquery-writer):
+
+```json
+{
+  "impression_hour": 0,
+  "location_id": 30847,
+  "uniques": 1605.9,
+  "latitude": -23.558334,
+  "longitude": -46.686511,
+  "uf_estado": "SP",
+  "cidade": "São Paulo",
+  "endereco": "Avenida Cidade Jardim",
+  "numero": 897,
+  "target": {
+    "idade": {"18-19": 0.08, "20-29": 0.12},
+    "genero": {"F": 0.38, "M": 0.62},
+    "classe_social": {"A": 0.05}
+  }
+}
+```
+
+---
+
+## Setup de desenvolvimento
+
+```bash
+cd src/rust-producer/services/csv-kafka-producer
+
+# Desenvolvimento
+cargo run
+
+# Build release
+cargo build --release
+```
+
+### Variáveis de ambiente
+
+```bash
+export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+export CSV_FILEPATH=./data/dados.csv
+```
+
+---
+
+## Integração com Sprint 2
+
+Esta implementação atende ao objetivo da Sprint 2 de criar um **pipeline funcional de ingestão de dados**. O csv-kafka-producer complementa o [bigquery-writer](/docs/sprint-2/backend/services/bigquery-writer) ao fornecer a fonte de dados para o pipeline.
+
+O fluxo completo agora é:
+
+1. **csv-kafka-producer** → lê CSV e produz para Kafka
+2. **bigquery-writer** → consome do Kafka e persiste no BigQuery
+3. **Looker** → visualiza os dados (próximas sprints)
+
+Esta arquitetura segue o padrão Pub/Sub descrito na [arquitetura GCP](/docs/sprint-1/arquitetura), permitindo escalabilidade horizontal com múltiplos consumidores do mesmo tópico Kafka.
