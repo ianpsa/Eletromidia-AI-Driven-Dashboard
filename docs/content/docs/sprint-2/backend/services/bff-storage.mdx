@@ -9,7 +9,6 @@ O `bff-storage` é o serviço de **Backend for Frontend (BFF)** responsável por
 
 Na prática, ele oferece uma API simples para:
 
-- verificar saúde do serviço;
 - listar objetos do bucket inteiro;
 - listar objetos por pasta/prefixo;
 - baixar um arquivo específico por ID.
@@ -30,7 +29,7 @@ bucket-consumer
 Google Cloud Storage (bucket kafka-backup-eletromidia)
       │
       ▼
-bff-storage  ◄── este serviço
+bff-storage
       │
       ▼
 UI / cliente HTTP
@@ -46,27 +45,24 @@ Todos os endpoints aceitam apenas método `GET`.
 
 | Endpoint | Query params | Sucesso | Erros comuns | Uso |
 | --- | --- | --- | --- | --- |
-| `/healthz` | - | `200` | `405` | Healthcheck da API |
 | `/bucket/items` | - | `200` | `500`, `405` | Lista todos os objetos do bucket |
 | `/bucket/items/by-folder` | `folder` (obrigatório) | `200` | `400`, `500`, `405` | Lista objetos por prefixo |
-| `/bucket/items/file` | `id` (obrigatório) | `200` (stream de arquivo) | `400`, `404`, `500`, `405` | Baixa um arquivo específico |
+| `/bucket/items/file` | `id` (obrigatório) | `200` | `400`, `404`, `500`, `405` | Baixa um arquivo específico |
 
-### Formato de item retornado nas listagens
+### Exemplo de request/response: listagem por pasta
 
-```json
-{
-  "id": "kafka-backup/topics/geodata/year=2026/month=02/day=27/2-41-41.json",
-  "size": 538,
-  "content_type": "application/json",
-  "updated_at": "2026-02-27T12:29:32Z"
-}
+Requisição:
+
+```bash
+curl -X GET "http://<MINIKUBE_IP>:<NODE_PORT>/bucket/items/by-folder?folder=kafka-backup/topics/geodata/year=2026/month=02/day=27"
 ```
 
-### Exemplo de payload da listagem
+Resposta (`200 OK`):
 
 ```json
 {
   "bucket": "kafka-backup-eletromidia",
+  "folder": "kafka-backup/topics/geodata/year=2026/month=02/day=27/",
   "count": 1,
   "items": [
     {
@@ -78,6 +74,21 @@ Todos os endpoints aceitam apenas método `GET`.
   ]
 }
 ```
+
+### Exemplo de request/response: download de arquivo
+
+Requisição:
+
+```bash
+curl -X GET "http://<MINIKUBE_IP>:<NODE_PORT>/bucket/items/file?id=kafka-backup/topics/geodata/year=2026/month=02/day=27/2-41-41.json" -O
+```
+
+Resposta (`200 OK`):
+
+- Body em streaming com o conteúdo do arquivo solicitado.
+- Header `Content-Type: application/json`.
+- Header `Content-Disposition: attachment; filename="2-41-41.json"`.
+- Header `Content-Length: <tamanho_em_bytes>` (quando disponível).
 
 ---
 
@@ -123,17 +134,13 @@ Objetos terminados em `/` são ignorados nas listagens para não exibir marcador
 
 ## Decisões de design
 
-### API enxuta com `net/http`
+### API com `net/http`
 
 O serviço usa `http.NewServeMux` e handlers diretos para reduzir dependências e manter o binário simples para execução em contêiner.
 
 ### Download por streaming
 
 Arquivos são enviados do GCS para o cliente sem carregar tudo em memória, o que evita picos de RAM com objetos maiores.
-
-### Exposição temporária via NodePort
-
-O manifesto atual expõe o serviço por `NodePort` para testes locais. O próprio repositório indica evolução para API Gateway em ambiente mais próximo de produção.
 
 ### Autenticação por chave de Service Account
 
@@ -175,9 +182,7 @@ src/kubernetes/bff-storage/
 | --- | --- | --- | --- |
 | `PORT` | `8080` | Não | Porta HTTP do serviço |
 | `BUCKET_NAME` | - | Sim | Nome do bucket no GCS |
-| `CS_SA_CREDENTIALS` | - | Sim (no deploy atual) | Caminho do JSON da Service Account |
-
-No `ConfigMap` também existe `PROJECT_ID`, mas o código atual não utiliza essa variável.
+| `CS_SA_CREDENTIALS` | - | Sim | Caminho do JSON da Service Account |
 
 ---
 
@@ -201,33 +206,3 @@ Define `BUCKET_NAME` e caminho de credencial (`/secrets/cs-api-key.json`).
 
 ---
 
-## Setup local com minikube
-
-### 1. Build da imagem no daemon do minikube
-
-```bash
-eval $(minikube docker-env)
-docker build -t bff-storage:latest src/services/bff-storage/
-```
-
-### 2. Criar secret da chave GCS
-
-```bash
-kubectl create secret generic gcs-sa-key \
-  --from-file=cs-api-key.json=./cs-api-key.json
-```
-
-### 3. Aplicar manifestos
-
-```bash
-kubectl apply -f src/kubernetes/bff-storage/
-```
-
-### 4. Obter porta exposta e testar
-
-```bash
-kubectl get svc bff-storage-svc
-curl -X GET http://<MINIKUBE_IP>:<NODE_PORT>/healthz
-curl -X GET "http://<MINIKUBE_IP>:<NODE_PORT>/bucket/items/by-folder?folder=kafka-backup/topics/geodata/year=2026/month=02/day=27"
-curl -X GET "http://<MINIKUBE_IP>:<NODE_PORT>/bucket/items/file?id=kafka-backup/topics/geodata/year=2026/month=02/day=27/2-41-41.json" -O
-```
