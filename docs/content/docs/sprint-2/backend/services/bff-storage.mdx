@@ -1,0 +1,233 @@
+---
+title: BFF Storage
+description: Serviço Go de Backend for Frontend para listar e baixar arquivos do Google Cloud Storage
+---
+
+## O que é
+
+O `bff-storage` é o serviço de **Backend for Frontend (BFF)** responsável por expor, via HTTP, os arquivos armazenados no bucket de histórico (`kafka-backup-eletromidia`).
+
+Na prática, ele oferece uma API simples para:
+
+- verificar saúde do serviço;
+- listar objetos do bucket inteiro;
+- listar objetos por pasta/prefixo;
+- baixar um arquivo específico por ID.
+
+Ele é o ponto de acesso da interface para dados históricos já persistidos no Object Storage.
+
+---
+
+## Onde se encaixa na arquitetura
+
+```text
+Kafka Topic: geodata
+      │
+      ▼
+bucket-consumer
+      │
+      ▼
+Google Cloud Storage (bucket kafka-backup-eletromidia)
+      │
+      ▼
+bff-storage  ◄── este serviço
+      │
+      ▼
+UI / cliente HTTP
+```
+
+O fluxo de arquivos é complementar ao [BigQuery Writer](/docs/sprint-2/backend/services/bigquery-writer): enquanto o writer estrutura dados para analytics no DW, o BFF Storage entrega os artefatos brutos/NDJSON diretamente do bucket.
+
+---
+
+## Endpoints HTTP
+
+Todos os endpoints aceitam apenas método `GET`.
+
+| Endpoint | Query params | Sucesso | Erros comuns | Uso |
+| --- | --- | --- | --- | --- |
+| `/healthz` | - | `200` | `405` | Healthcheck da API |
+| `/bucket/items` | - | `200` | `500`, `405` | Lista todos os objetos do bucket |
+| `/bucket/items/by-folder` | `folder` (obrigatório) | `200` | `400`, `500`, `405` | Lista objetos por prefixo |
+| `/bucket/items/file` | `id` (obrigatório) | `200` (stream de arquivo) | `400`, `404`, `500`, `405` | Baixa um arquivo específico |
+
+### Formato de item retornado nas listagens
+
+```json
+{
+  "id": "kafka-backup/topics/geodata/year=2026/month=02/day=27/2-41-41.json",
+  "size": 538,
+  "content_type": "application/json",
+  "updated_at": "2026-02-27T12:29:32Z"
+}
+```
+
+### Exemplo de payload da listagem
+
+```json
+{
+  "bucket": "kafka-backup-eletromidia",
+  "count": 1,
+  "items": [
+    {
+      "id": "kafka-backup/topics/geodata/year=2026/month=02/day=27/2-41-41.json",
+      "size": 538,
+      "content_type": "application/json",
+      "updated_at": "2026-02-27T12:29:32Z"
+    }
+  ]
+}
+```
+
+---
+
+## Regras de comportamento
+
+### Normalização de pasta (`folder`)
+
+No endpoint `/bucket/items/by-folder`, o serviço:
+
+- remove `/` no início;
+- garante `/` no final;
+- rejeita vazio com `400`.
+
+Exemplo:
+
+```text
+folder=/kafka-backup/topics/geodata/year=2026/month=02/day=27
+↓
+kafka-backup/topics/geodata/year=2026/month=02/day=27/
+```
+
+### Normalização de arquivo (`id`)
+
+No endpoint `/bucket/items/file`, o serviço:
+
+- remove espaços e `/` inicial;
+- retorna `404` quando o objeto não existe;
+- envia resposta em streaming (`io.Copy`) com:
+  - `Content-Type` do objeto (ou `application/octet-stream`);
+  - `Content-Disposition: attachment; filename="<nome-base>"`;
+  - `Content-Length` quando disponível.
+
+### Filtragem de pseudo-diretórios
+
+Objetos terminados em `/` são ignorados nas listagens para não exibir marcadores de pasta como arquivos reais.
+
+### Timeouts e robustez
+
+- `ReadHeaderTimeout`: `5s` no servidor HTTP.
+- `context.WithTimeout`: `30s` para operações no Cloud Storage por requisição.
+
+---
+
+## Decisões de design
+
+### API enxuta com `net/http`
+
+O serviço usa `http.NewServeMux` e handlers diretos para reduzir dependências e manter o binário simples para execução em contêiner.
+
+### Download por streaming
+
+Arquivos são enviados do GCS para o cliente sem carregar tudo em memória, o que evita picos de RAM com objetos maiores.
+
+### Exposição temporária via NodePort
+
+O manifesto atual expõe o serviço por `NodePort` para testes locais. O próprio repositório indica evolução para API Gateway em ambiente mais próximo de produção.
+
+### Autenticação por chave de Service Account
+
+O cliente GCS é inicializado com `option.WithCredentialsFile`, usando caminho vindo da variável `CS_SA_CREDENTIALS` e montado por `Secret` no pod.
+
+---
+
+## Implementação
+
+### Estrutura de arquivos
+
+```text
+src/services/bff-storage/
+├── main.go        # Rotas HTTP, cliente GCS e serialização de resposta
+├── go.mod         # Módulo Go
+├── go.sum
+├── Dockerfile     # Multi-stage (build Go + runtime alpine)
+├── curls.txt      # Exemplos de chamadas HTTP
+└── example.json   # Exemplo de objeto salvo no bucket
+
+src/kubernetes/bff-storage/
+├── configmap.yaml
+├── deployment.yaml
+└── np-service.yaml
+```
+
+### Dependências principais
+
+| Pacote | Versão | Motivo |
+| --- | --- | --- |
+| `cloud.google.com/go/storage` | `v1.59.0` | SDK oficial do Google Cloud Storage |
+| `google.golang.org/api` | `v0.256.0` | Autenticação e integração com APIs Google |
+
+---
+
+## Variáveis de ambiente
+
+| Variável | Default | Obrigatória | Descrição |
+| --- | --- | --- | --- |
+| `PORT` | `8080` | Não | Porta HTTP do serviço |
+| `BUCKET_NAME` | - | Sim | Nome do bucket no GCS |
+| `CS_SA_CREDENTIALS` | - | Sim (no deploy atual) | Caminho do JSON da Service Account |
+
+No `ConfigMap` também existe `PROJECT_ID`, mas o código atual não utiliza essa variável.
+
+---
+
+## Kubernetes
+
+### `configmap.yaml`
+
+Define `BUCKET_NAME` e caminho de credencial (`/secrets/cs-api-key.json`).
+
+### `deployment.yaml`
+
+- 1 réplica;
+- imagem `bff-storage:latest` com `imagePullPolicy: Never` (fluxo local com minikube);
+- requests/limits de CPU e memória;
+- montagem do secret `gcs-sa-key` em `/secrets/cs-api-key.json`.
+
+### `np-service.yaml`
+
+- serviço `NodePort`;
+- porta de serviço `5678` direcionando para `8080` no container.
+
+---
+
+## Setup local com minikube
+
+### 1. Build da imagem no daemon do minikube
+
+```bash
+eval $(minikube docker-env)
+docker build -t bff-storage:latest src/services/bff-storage/
+```
+
+### 2. Criar secret da chave GCS
+
+```bash
+kubectl create secret generic gcs-sa-key \
+  --from-file=cs-api-key.json=./cs-api-key.json
+```
+
+### 3. Aplicar manifestos
+
+```bash
+kubectl apply -f src/kubernetes/bff-storage/
+```
+
+### 4. Obter porta exposta e testar
+
+```bash
+kubectl get svc bff-storage-svc
+curl -X GET http://<MINIKUBE_IP>:<NODE_PORT>/healthz
+curl -X GET "http://<MINIKUBE_IP>:<NODE_PORT>/bucket/items/by-folder?folder=kafka-backup/topics/geodata/year=2026/month=02/day=27"
+curl -X GET "http://<MINIKUBE_IP>:<NODE_PORT>/bucket/items/file?id=kafka-backup/topics/geodata/year=2026/month=02/day=27/2-41-41.json" -O
+```

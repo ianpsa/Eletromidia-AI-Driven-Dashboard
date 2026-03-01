@@ -1,3 +1,6 @@
 {
-  "title": "Backend"
+  "title": "Backend",
+  "pages": [
+    "services"
+  ]
 }
