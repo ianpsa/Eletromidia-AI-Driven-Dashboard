@@ -39,7 +39,7 @@ fn create_producer() -> ThreadedProducer<DefaultProducerContext> {
         .set("compression.type", "zstd")
         .set("batch.size", "1048576")
         .set("linger.ms", "5")
-        .set("queue.buffering.max.messages", "5000000")
+        .set("queue.buffering.max.messages", "100000")
         .set("acks", "1")
         .set("request.timeout.ms", "30000")
         .create()

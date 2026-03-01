@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use tokio::task;
 
-const BATCH_SIZE: usize = 2000;
+const BATCH_SIZE: usize = 500;
 
 #[derive(Debug, Deserialize)]
 pub struct LoadTestConfig {
