@@ -6,7 +6,7 @@ WORKDIR /build
 COPY Cargo.toml ./
 COPY src ./src
 
-RUN apt-get update && apt-get install -y cmake libssl-dev pkg-config && \
+RUN apt-get update && apt-get install -y cmake libssl-dev pkg-config libzstd-dev clang && \
     cargo build --release
 
 # Runtime stage

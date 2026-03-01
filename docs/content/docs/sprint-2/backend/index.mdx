@@ -1,6 +1,29 @@
 ---
 title: Backend
-description: Backend
+description: Documentação dos serviços backend da Sprint 2
 ---
 
-Placeholder.
+## Serviços
+
+| Serviço                      | Linguagem | Função                                                      |
+| ---------------------------- | --------- | ----------------------------------------------------------- |
+| [CSV Kafka Producer](/docs/sprint-2/backend/services/csv-kafka-producer) | Rust      | Produz mensagens de um arquivo CSV para o Kafka            |
+| [BigQuery Writer](/docs/sprint-2/backend/services/bigquery-writer)      | Go        | Consome mensagens do Kafka e persiste no BigQuery           |
+
+---
+
+## Arquitetura de Integração
+
+```text
+CSV (dados telemétricos)
+        │
+        ▼
+csv-kafka-producer (Rust)
+        │
+        ▼
+   Kafka Topic: csv-topic
+        │
+        ├──► bigquery-writer (Go) ──► BigQuery
+        │
+        └──► (futuros consumidores)
+```

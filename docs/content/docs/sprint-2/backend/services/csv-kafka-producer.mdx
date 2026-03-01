@@ -1,0 +1,41 @@
+---
+title: CSV Kafka Producer
+description: Serviço Rust que lê dados CSV e produz mensagens para o Kafka
+---
+
+## O que é
+
+O csv-kafka-producer é o componente **API Producer** da [arquitetura GCP](/docs/sprint-1/arquitetura): um serviço REST em Rust que lê dados de um arquivo CSV e os produz para o Kafka, servindo como fonte de dados para todo o pipeline de telemetria OOH.
+
+---
+
+## API REST
+
+### Endpoint principal
+
+```
+POST /csv
+```
+
+### Endpoint de health
+
+```
+GET /health
+```
+
+---
+
+## Estrutura de arquivos
+
+```
+src/rust-producer/services/csv-kafka-producer/
+├── Cargo.toml
+├── Dockerfile
+└── src/
+    ├── main.rs           # Handlers HTTP
+    ├── models.rs         # Structs CsvRow
+    └── mods/
+        ├── mod.rs
+        ├── csv.rs         # CsvManager
+        └── test.rs         # Módulo de teste de carga
+```

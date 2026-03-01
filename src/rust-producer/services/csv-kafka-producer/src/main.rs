@@ -1,146 +1,134 @@
-use actix_web::{post, web, App, HttpResponse, HttpServer, Responder};
-use rdkafka::config::ClientConfig;
-use rdkafka::producer::{FutureProducer, FutureRecord};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::time::{Duration, Instant};
-
 mod mods;
+mod models;
 
-type TargetData = HashMap<String, HashMap<String, f64>>;
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct CsvRow {
-    impression_hour: usize,
-    location_id: i64,
-    uniques: f64,
-    latitude: f64,
-    longitude: f64,
-    uf_estado: String,
-    cidade: String,
-    endereco: String,
-    numero: isize,
-    target: TargetData,
-}
-
-#[derive(Debug, Deserialize)]
-struct LoadTestConfig {
-    mensagens_por_segundo: usize,
-    tempo_envio_segundos: usize,
-}
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use mods::csv::CsvManager;
+use mods::test::{run_auto_test, run_load_test, LoadTestConfig, LoadTestResult};
+use rdkafka::config::ClientConfig;
+use rdkafka::producer::{DefaultProducerContext, ThreadedProducer};
+use serde::Serialize;
+use std::sync::Arc;
 
 #[derive(Debug, Serialize)]
-struct LoadTestResult {
-    mensagens_enviadas: usize,
-    mensagens_com_erro: usize,
-    tempo_total_segundos: f64,
+struct HealthResponse {
+    status: String,
+    csv_lines: usize,
 }
 
-fn create_producer() -> FutureProducer {
-    let bootstrap_servers = std::env::var("KAFKA_BOOTSTRAP_SERVERS").unwrap_or_else(|_| "kafka:9092".to_string());
-    
+struct AppState {
+    producer: Arc<ThreadedProducer<DefaultProducerContext>>,
+    csv_manager: Arc<CsvManager>,
+}
+
+impl Clone for AppState {
+    fn clone(&self) -> Self {
+        Self {
+            producer: self.producer.clone(),
+            csv_manager: self.csv_manager.clone(),
+        }
+    }
+}
+
+fn create_producer() -> ThreadedProducer<DefaultProducerContext> {
+    let bootstrap_servers =
+        std::env::var("KAFKA_BOOTSTRAP_SERVERS").unwrap_or_else(|_| "kafka:9092".to_string());
+
     ClientConfig::new()
         .set("bootstrap.servers", &bootstrap_servers)
         .set("message.timeout.ms", "5000")
+        .set("compression.type", "zstd")
+        .set("batch.size", "1048576")
+        .set("linger.ms", "5")
+        .set("queue.buffering.max.messages", "5000000")
+        .set("acks", "1")
+        .set("request.timeout.ms", "30000")
         .create()
         .expect("Falha ao criar producer")
 }
 
-async fn build_csv_row() -> Result<CsvRow, String> {
-    let csv_lines = mods::csv::take_csv_line().await.map_err(|e| format!("Falha ao ler CSV: {}", e))?;
+#[get("/health")]
+async fn health(state: web::Data<AppState>) -> impl Responder {
+    let csv_lines = {
+        let cache = state.csv_manager.cache.read().await;
+        cache.len()
+    };
 
-    if csv_lines.len() < 10 {
-        return Err("Linha CSV incompleta".to_string());
-    }
-
-    let impression_hour: usize = csv_lines[0].parse().map_err(|_| "Erro no parsing do impression_hour")?;
-    let location_id: i64 = csv_lines[1].parse().map_err(|_| "Erro no parsing do location_id")?;
-    let uniques: f64 = csv_lines[2].parse().map_err(|_| "Erro no parsing do uniques")?;
-    let latitude: f64 = csv_lines[3].parse().map_err(|_| "Erro no parsing do latitude")?;
-    let longitude: f64 = csv_lines[4].parse().map_err(|_| "Erro no parsing do longitude")?;
-    let numero: isize = csv_lines[8].parse().map_err(|_| "Erro no parsing do numero")?;
-    let target: TargetData = serde_json::from_str(&csv_lines[9].replace("'", "\""))
-        .map_err(|_| "Erro no parsing do target")?;
-
-    Ok(CsvRow {
-        impression_hour,
-        location_id,
-        uniques,
-        latitude,
-        longitude,
-        uf_estado: csv_lines[5].to_string(),
-        cidade: csv_lines[6].to_string(),
-        endereco: csv_lines[7].to_string(),
-        numero,
-        target,
+    HttpResponse::Ok().json(HealthResponse {
+        status: "ok".to_string(),
+        csv_lines,
     })
 }
 
 #[post("/csv")]
-async fn csv_post(config: web::Json<LoadTestConfig>) -> impl Responder {
-    let producer = create_producer();
-    let interval = Duration::from_micros(1_000_000 / config.mensagens_por_segundo as u64);
-    let total_duration = Duration::from_secs(config.tempo_envio_segundos as u64);
-
-    let start = Instant::now();
-    let mut mensagens_enviadas = 0;
-    let mut mensagens_com_erro = 0;
-
-    while start.elapsed() < total_duration {
-        let loop_start = Instant::now();
-
-        let row = match build_csv_row().await {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("Erro ao construir mensagem: {}", e);
-                mensagens_com_erro += 1;
-                continue;
-            }
-        };
-
-        let payload = match serde_json::to_string(&row) {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!("Erro ao serializar: {}", e);
-                mensagens_com_erro += 1;
-                continue;
-            }
-        };
-
-        if let Err((e, _)) = producer
-            .send(
-                FutureRecord::to("csv-topic")
-                    .payload(&payload)
-                    .key("csv-row"),
-                Duration::from_secs(5),
-            )
-            .await
-        {
-            eprintln!("Erro ao enviar para Kafka: {}", e);
-            mensagens_com_erro += 1;
-        } else {
-            mensagens_enviadas += 1;
+async fn csv_post(config: web::Json<LoadTestConfig>, state: web::Data<AppState>) -> actix_web::Result<impl Responder> {
+    let csv_data = {
+        let cache = state.csv_manager.cache.read().await;
+        if cache.is_empty() {
+            let result = LoadTestResult {
+                mensagens_enviadas: 0,
+                mensagens_com_erro: 0,
+                tempo_total_segundos: 0.0,
+                msgs_por_segundo: 0.0,
+            };
+            return Ok(HttpResponse::Ok().json(result));
         }
-
-        let elapsed = loop_start.elapsed();
-        if elapsed < interval {
-            tokio::time::sleep(interval - elapsed).await;
-        }
-    }
-
-    let result = LoadTestResult {
-        mensagens_enviadas,
-        mensagens_com_erro,
-        tempo_total_segundos: start.elapsed().as_secs_f64(),
+        cache.clone()
     };
 
-    HttpResponse::Ok().json(result)
+    let producer = state.producer.clone();
+
+    if config.auto_test {
+        let result = run_auto_test(
+            config.mensagens_por_segundo,
+            config.tempo_envio_segundos,
+            csv_data,
+            producer,
+            config.log_mensagens,
+        )
+        .await;
+        return Ok(HttpResponse::Ok().json(result));
+    }
+
+    let result = run_load_test(
+        config.mensagens_por_segundo,
+        config.tempo_envio_segundos,
+        csv_data,
+        producer,
+        config.log_mensagens,
+    )
+    .await;
+
+    Ok(HttpResponse::Ok().json(result))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().service(csv_post))
-        .bind(("0.0.0.0", 5000))?
-        .run()
+    let csv_filepath =
+        std::env::var("CSV_FILEPATH").unwrap_or_else(|_| "/app/data/dados.csv".to_string());
+
+    let csv_manager = Arc::new(CsvManager::new(csv_filepath));
+
+    csv_manager
+        .initial_load()
         .await
+        .expect("falhou ao carregar csv CSV");
+
+    csv_manager.start_auto_reload().await;
+
+    let producer = Arc::new(create_producer());
+
+    let app_state = AppState {
+        producer,
+        csv_manager,
+    };
+
+    HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(app_state.clone()))
+            .service(health)
+            .service(csv_post)
+    })
+    .bind(("0.0.0.0", 5000))?
+    .run()
+    .await
 }
