@@ -108,10 +108,7 @@ type socialClassRow struct {
 }
 
 type targetRow struct {
-	ID            string  `bigquery:"id"`
-	AgeID         string `bigquery:"age_id"`
-	GenderID      string `bigquery:"gender_id"`
-	SocialClassID string `bigquery:"social_class_id"`
+	ID            string `bigquery:"id"`
 	AgeID         string `bigquery:"age_id"`
 	GenderID      string `bigquery:"gender_id"`
 	SocialClassID string `bigquery:"social_class_id"`
@@ -119,7 +116,6 @@ type targetRow struct {
 
 type geodataRow struct {
 	ID             string  `bigquery:"id"`
-	ImpressionHour int64   `bigquery:"impression_hour"`
 	ImpressionHour int64   `bigquery:"impression_hour"`
 	LocationID     int64   `bigquery:"location_id"`
 	Uniques        float64 `bigquery:"uniques"`
@@ -129,8 +125,7 @@ type geodataRow struct {
 	Cidade         string  `bigquery:"cidade"`
 	Endereco       string  `bigquery:"endereco"`
 	Numero         int64   `bigquery:"numero"`
-	TargetID       string `bigquery:"target_id"`
-	TargetID       string `bigquery:"target_id"`
+	TargetID       string  `bigquery:"target_id"`
 }
 
 // ─── BQ Inserters ─────────────────────────────────────────────────────────────
@@ -250,9 +245,6 @@ func insertTarget(ctx context.Context, ins *bqInserters, msg kafka.Message, ageI
 		AgeID:         ageID,
 		GenderID:      genderID,
 		SocialClassID: socialClassID,
-		AgeID:         ageID,
-		GenderID:      genderID,
-		SocialClassID: socialClassID,
 	}
 	saver := &bigquery.StructSaver{Schema: ins.targetSchema, InsertID: id, Struct: row}
 	if err := ins.target.Put(ctx, saver); err != nil {
@@ -270,15 +262,13 @@ func insertGeodata(ctx context.Context, ins *bqInserters, msg kafka.Message, eve
 		ImpressionHour: event.ImpressionHour,
 		LocationID:     event.LocationID,
 		Uniques:        event.Uniques,
-		LocationID:     event.LocationID,
-		Uniques:        event.Uniques,
 		Latitude:       event.Latitude,
 		Longitude:      event.Longitude,
 		UfEstado:       event.UfEstado,
 		Cidade:         event.Cidade,
 		Endereco:       event.Endereco,
 		Numero:         event.Numero,
-		TargetID:       &targetID,
+		TargetID:       targetID,
 	}
 	saver := &bigquery.StructSaver{Schema: ins.geodataSchema, InsertID: id, Struct: row}
 	if err := ins.geodata.Put(ctx, saver); err != nil {
@@ -318,10 +308,6 @@ func normalizeTarget(raw string) string {
 	return singleQuoteRe.ReplaceAllString(raw, `"$1"`)
 }
 
-// handleMessage inserts rows into all 5 tables sequentially.
-// On partial failure, the caller does NOT commit the Kafka offset,
-// so the message will be redelivered. Deterministic UUID v5 IDs
-// ensure BigQuery deduplicates already-inserted rows via InsertID.
 func handleMessage(ctx context.Context, ins *bqInserters, msg kafka.Message) error {
 	var event KafkaEvent
 	if err := json.Unmarshal(msg.Value, &event); err != nil {
@@ -400,14 +386,13 @@ func main() {
 				return
 			}
 			log.Printf("FetchMessage error: %v", err)
-			log.Printf("FetchMessage error: %v", err)
 			continue
 		}
 
 		if err := handleMessage(ctx, ins, msg); err != nil {
 			log.Printf("handleMessage error | partition=%d offset=%d: %v",
 				msg.Partition, msg.Offset, err)
-			continue // offset NOT committed — message will be redelivered
+			continue
 		}
 
 		log.Printf("OK | key=%s partition=%d offset=%d",

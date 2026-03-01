@@ -28,12 +28,6 @@ spec:
               mountPath: /secrets/key.json
               subPath: key.json
               readOnly: true
-          livenessProbe:
-            exec:
-              command: ["test", "-f", "/tmp/healthy"]
-            initialDelaySeconds: 30
-            periodSeconds: 30
-            failureThreshold: 3
           resources:
             requests:
               memory: "64Mi"
