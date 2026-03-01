@@ -1,0 +1,100 @@
+---
+title: Arquitetura
+description: Arquitetura do projeto - Sprint 2
+---
+
+Na sprint 2, o foco foi sair da versão conceitual da arquitetura e tomar decisões concretas de implementação. A [arquitetura desenhada na sprint 1](/docs/sprint-1/arquitetura) usava serviços gerenciados do GCP (Managed Kafka, Cloud Run, Dataflow, Memorystore) e serviu como ponto de partida para a avaliação. Com o pipeline de dados sendo desenvolvido e os primeiros serviços rodando em Kubernetes, foram comparadas três abordagens: **Managed** (a da sprint 1), **Kubernetes-Native** e **Serverless**. Cada uma resolve o mesmo problema de formas diferentes, com trade-offs de custo, operação e controle.
+
+A decisão foi usar a abordagem **Kubernetes-Native com GKE Autopilot**, que é onde o projeto está sendo implementado.
+
+## As três abordagens
+
+### Managed (v1) — arquitetura da sprint 1
+
+![Arquitetura Managed v1](/Managed%20-%20Arquitetura%20v1.png)
+
+É a arquitetura definida na sprint 1, refinada como uma das opções de implementação. Usa serviços gerenciados do GCP para cada componente:
+
+- **Kafka**: Managed Service for Apache Kafka — o Kafka é operado pelo GCP, sem necessidade de configurar brokers manualmente
+- **Cache**: Memorystore (Redis gerenciado), escrito por um Cloud Run dedicado (Memorystore Writer)
+- **ETL**: Dataflow processa os eventos do Kafka e os escreve no Cloud Storage e no BigQuery
+- **WebSocket**: Cloud Run (WebSocket Service) lê do Memorystore e entrega atualizações em tempo real
+- **BFF**: Cloud Run (API for Data History) serve dados históricos do Cloud Storage e BigQuery
+- **BI**: BigQuery + Looker para análises
+- **CI/CD**: GitLab CI/CD → Container Registry → deploy nos Cloud Runs
+- **Frontend**: Cloud CDN + Cloud Storage (estáticos) → API Gateway → Load Balancing
+
+**Pontos positivos:** a infra é responsabilidade do Google, a complexidade operacional é a menor entre as três abordagens, a elasticidade do Kafka é simplificada pelo serviço gerenciado, e a rotina de integração e deploy é direta.
+
+**Desvantagem principal:** o custo é o mais alto das três opções, já que cada componente managed cobra de forma independente pelo uso. A combinação de vários serviços gerenciados também introduz múltiplas camadas de orquestração entre eles.
+
+---
+
+### Kubernetes-Native (v2) — escolha atual
+
+![Arquitetura Kubernetes v2](/Kubernetes%20-%20Arquitetura%20v2.jpg)
+
+Toda a infraestrutura de backend roda dentro de um cluster **GKE Autopilot**. Em vez de depender de serviços gerenciados separados para cada componente, tudo é orquestrado via Kubernetes:
+
+- **Kafka**: Apache Kafka via operador **Strimzi** com modo **KRAft** (sem Zookeeper). O cluster Kafka tem HPA, PVC e métricas configurados como recursos Kubernetes nativos
+- **Producers**: Kafka Geodata Producer roda como Pod com HPA e Service dentro do cluster
+- **Consumers**:
+  - **Cloud Storage Writer**: Consumer group que lê do Kafka e faz backup dos eventos em `.parquet` no GCS
+  - **BigQuery Writer**: Consumer group que lê do Kafka e escreve nas tabelas do BigQuery (age, gender, social_class, target, geodata)
+- **BFF**: BFF para Cloud Storage expõe a API de dados para a interface, com HPA e Service
+- **Ingress**: Gerencia roteamento, autorização e rate limiting para todos os serviços internos
+- **Frontend**: Cloud CDN + provedor de frontend fora do cluster, apontando para o Ingress
+- **Autenticação**: IAM x OAuth, independente do cluster
+- **BI**: Plataforma de BI conecta ao Data Warehouse (BigQuery) via Service Account
+
+#### GKE Autopilot
+
+O cluster usa o modo **Autopilot** do GKE: os nós são gerenciados automaticamente pelo Google, e **a cobrança é feita pelos recursos solicitados por Pod** (CPU e memória nos `requests` dos manifests), não pelos nós em si. Isso significa que pagar menos é uma questão de dimensionar corretamente os `requests` de cada serviço, e escalar com HPA adiciona custo proporcional ao que está sendo usado.
+
+**Pontos positivos:** ambiente unificado de produção — rede, IAM, Kafka e aplicações vivem no mesmo cluster sem perder alta disponibilidade. A elasticidade do Kafka é simplificada pelo operador Strimzi. É a opção de menor preço entre as três, com gastos proporcionais ao que cada Pod solicita em CPU e memória.
+
+**Desvantagem principal:** maior complexidade de configuração e operação. O time precisa entender Kubernetes, o operador Strimzi e os recursos do GKE Autopilot para manter o ambiente funcionando corretamente.
+
+---
+
+### Serverless (v3)
+
+![Arquitetura Serverless v3](/Serverless%20-%20Arquitetura%20v3.jpg)
+
+A abordagem serverless usa **Cloud Run** para todos os serviços dentro de uma **VPC privada**. É a alternativa mais "managed" dentro das três, mas mantendo o Kafka self-hosted:
+
+- **Kafka**: Apache Kafka com **KRAft** (sem Strimzi, sem operador Kubernetes), rodando como workload dentro da VPC
+- **Producers e Consumers**: BFF, Cloud Storage Writer, BigQuery Writer e Kafka Geodata Producer rodam como serviços Cloud Run
+- **Rede**: Ingresso via Load Balancer na rede privada, com rate limiting e auth na camada de entrada
+- **Frontend**: Cloud CDN fora da VPC, direcionando para o Load Balancer
+- **Autenticação**: IAM x OAuth, igual às outras abordagens
+- **BI**: Conecta ao BigQuery e Data Warehouse via Service Account
+
+**Pontos positivos:** o preço é o mais baixo das três em cenários de baixo tráfego (Cloud Run escala para zero). Baixa complexidade de deploy e uma rotina de integração e implementação mais simples.
+
+**Desvantagens:** a elasticidade do Kafka é dificultada — sem o Strimzi, o cluster Kafka precisa ser gerenciado manualmente, o que vai na contramão do modelo serverless. A arquitetura acaba com múltiplas camadas de orquestração (Cloud Run + Kafka standalone + VPC). Tarefas futuras mais pesadas, como ETLs complexos, se tornam difíceis de escalar nesse modelo.
+
+---
+
+## Comparação das abordagens
+
+| Aspecto                     | Managed (v1)            | Kubernetes-Native (v2) | Serverless (v3)           |
+| --------------------------- | ----------------------- | ---------------------- | ------------------------- |
+| **Custo**                   | Alto (serviços managed) | Menor (por Pod)        | Bem menor (scale-to-zero) |
+| **Complexidade**            | Baixa                   | Alta                   | Baixa                     |
+| **Kafka**                   | Managed (GCP)           | Strimzi + KRAft no GKE | KRAft standalone na VPC   |
+| **Elasticidade do Kafka**   | Simplificada            | Simplificada (Strimzi) | Dificultada               |
+| **Rotina de deploy**        | Simplificada            | —                      | Simplificada              |
+| **Ambiente unificado**      | Não                     | Sim (rede, IAM, Kafka) | Parcial (VPC)             |
+| **ETL complexo futuro**     | Viável (Dataflow)       | Viável                 | Difícil                   |
+| **Camadas de orquestração** | Várias                  | Uma (Kubernetes)       | Várias                    |
+
+## Por que Kubernetes-Native
+
+O pipeline de dados tem componentes stateful (Kafka com PVC) que se encaixam melhor em Kubernetes do que em Cloud Run. O Strimzi permite operar o Kafka com o mesmo nível de controle que os outros serviços, usando os mesmos recursos do cluster (HPA, probes, configmaps, secrets).
+
+Com GKE Autopilot, o overhead de gerenciar nós some: o time declara os `requests` de CPU e memória nos manifests e o GCP aloca os recursos automaticamente. A cobrança segue o mesmo princípio, o que torna o custo mais previsível e diretamente relacionado ao que o sistema está consumindo.
+
+O Kafka self-hosted via Strimzi também elimina o lock-in do Managed Kafka do GCP, permitindo migrar o broker para outro provedor ou on-premise sem mudar os serviços que o consomem.
+
+Os serviços implementados até agora na sprint 2 seguem essa abordagem: `bigquery-writer`, `bucket-consumer` e `bff-storage` rodam como Deployments no cluster com configmaps, secrets e services Kubernetes, e o Kafka é operado pelo Strimzi com o tópico `geodata` configurado com 3 partições e 2 réplicas.
