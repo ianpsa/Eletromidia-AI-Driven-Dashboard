@@ -104,13 +104,13 @@ Os dados utilizados estão organizados no BigQuery em tabelas distintas (geodata
 
 🔗 [schemas do BigQuery](/docs/sprint-2/backend/services/bigquery-writer#saida-schemas-do-bigquery)
 
-Abaixo explico, com mais detalhes, as abordagens testadas e o raciocínio por trás de cada uma.
+Abaixo são detalhadas as abordagens testadas e o raciocínio por trás de cada uma.
 
 ## Abordagens testadas
 
 ### Primeira abordagem
 
-Na primeira tentativa unimos os percentuais de classe com os dados de `geodata` e criamos uma nova tabela onde cada coluna representava o total estimado de uma classe social.
+Na primeira abordagem, os percentuais de classe foram unidos aos dados de `geodata` e uma nova tabela foi criada onde cada coluna representava o total estimado de uma classe social.
 
 Exemplo da tabela resultante:
 
@@ -126,7 +126,7 @@ O problema foi que o Looker Studio não permite gerar gráficos quando os dados 
 
 ### Segunda abordagem
 
-Na segunda tentativa transformamos as colunas de classe em linhas no formato tipo e valor.
+Na segunda abordagem, as colunas de classe foram transformadas em linhas no formato tipo e valor.
 
 Exemplo da tabela resultante:
 
@@ -147,7 +147,7 @@ O problema foi que essa tabela estava separada das demais fontes utilizadas na p
 
 ### Terceira abordagem
 
-Na terceira tentativa juntamos `geodata` com os percentuais de classe, gênero e idade e criamos uma única view contendo todas as colunas originais de `geodata` exceto `target`. Além disso, adicionamos três colunas novas: `tipo`, `label` e `valor`
+Na terceira abordagem, `geodata` foi unida aos percentuais de classe, gênero e idade em uma única view contendo todas as colunas originais de `geodata` exceto `target`, com três colunas adicionais: `tipo`, `label` e `valor`.
 
 Exemplo de resultado:
 
@@ -161,7 +161,7 @@ O que foi feito aqui foi organizar todas as dimensões em uma única estrutura p
 
 O problema surgiu porque cada linha original de `geodata` passou a aparecer três vezes, uma para classe, uma para gênero e uma para idade. Ao criar gráficos mais gerais, como média de pessoas por dia, o valor somado ficava triplicado.
 
-Em um primeiro momento pensamos em dividir os resultados por três. Para gráficos gerais isso até funcionaria. Porém, quando um filtro específico era aplicado, por exemplo apenas uma classe, o valor real ficava incorreto, pois continuaria sendo dividido por três mesmo representando apenas uma dimensão.
+A solução considerada foi dividir os resultados por três. Para gráficos gerais isso funcionaria. Porém, quando um filtro específico era aplicado — por exemplo, apenas uma classe — o valor ficava incorreto, pois continuaria sendo dividido por três mesmo representando apenas uma dimensão.
 
 Isso tornava os indicadores inconsistentes.
 
@@ -177,7 +177,7 @@ Partindo da linha:
 | ------------------------------------ | --------------- | ----------- | -------- | ---------------------- |
 | 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18              | 32366       | 22306.73 | ...                    |
 
-Sabemos que existem:
+Cada linha original contém:
 
 - 6 classes sociais
 - 2 gêneros
@@ -201,7 +201,7 @@ joint_count = uniques × P(classe) × P(gênero) × P(idade)
 
 Agora cada linha já representa uma combinação completa das três dimensões. Isso permite que qualquer filtro aplicado funcione corretamente, sem necessidade de ajustes ou divisões.
 
-O único ponto de atenção é o aumento de volume de dados. Para cada linha original, passamos a ter 96 linhas na nova estrutura. Em grandes volumes, isso pode impactar performance e custo, exigindo estratégias como materialização e particionamento.
+O único ponto de atenção é o aumento de volume de dados. Para cada linha original, a estrutura passa a ter 96 linhas. Em grandes volumes, isso pode impactar performance e custo, exigindo estratégias como materialização e particionamento.
 
 ---
 
