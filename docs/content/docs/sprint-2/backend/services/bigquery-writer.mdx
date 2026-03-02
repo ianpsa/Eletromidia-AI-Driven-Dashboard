@@ -128,14 +128,6 @@ Os schemas são definidos como JSON em `src/iac/terraform/modules/bigquery/schem
 
 ## Decisões de design
 
-### Por que Go e não Python/Node?
-
-O BigQuery e o Kafka têm SDKs sólidos em Go, a linguagem gera binários estáticos sem runtime externo (importante para imagens alpine pequenas) e o modelo de goroutines se encaixa bem no loop de consumer. O time já usava Go no `redis-writer`, então a escolha manteve consistência.
-
-### `segmentio/kafka-go` em vez de `confluent-kafka-go`
-
-A lib da Confluent exige CGO e `librdkafka` compilada no sistema, o que complica o Dockerfile (precisa de gcc, headers C, imagem maior). O `segmentio/kafka-go` é puro Go: `CGO_ENABLED=0` e binário estático funcionam em `alpine:3.19` sem dependências extras.
-
 ### Streaming inserts em vez de batch/load jobs
 
 BigQuery suporta dois modos de escrita: streaming inserts (linha a linha, em tempo real) e load jobs (arquivos em batch). Streaming inserts têm latência de segundos e são a escolha natural para um consumer Kafka que precisa que os dados estejam disponíveis no Looker logo após a ingestão.
@@ -168,16 +160,6 @@ O campo `target` é parseado como mapa (`map[string]float64`). Em Go, acessar um
 
 Por isso o serviço valida explicitamente todas as 16 chaves obrigatórias antes de qualquer insert. Mensagem com chave ausente é descartada com log de erro.
 
-### Normalização do campo `target`
-
-A Claro Geodata envia o campo `target` como um dict Python serializado:
-
-```json
-{ "idade": { "18-19": 0.08 }, "genero": { "F": 0.38 } }
-```
-
-O serviço converte para JSON válido via regex `'([^']*)'` → `"$1"` antes de fazer o `json.Unmarshal`. A regex é segura para o formato atual (chaves alfanuméricas, valores numéricos). Se o produtor passar strings com apóstrofos nos valores (ex: nomes de rua), será necessário substituir por um parser Python literal.
-
 ### Comportamento em falha de mensagem
 
 O serviço usa `ReadMessage` do `kafka-go`, que faz auto-commit do offset após a leitura. Isso significa que **mensagens com erro são puladas** — o consumer avança o offset e a mensagem não é retentada automaticamente. O erro é logado e o loop continua.
@@ -193,9 +175,9 @@ Esse tradeoff foi escolhido para evitar que uma mensagem malformada (ex: campo `
 ```text
 src/services/bigquery-writer/
 ├── main.go          # Toda a lógica: config, structs, inserções, consumer loop
-├── go.mod           # Módulo: bigquery-writer, go 1.21
+├── go.mod
 ├── go.sum
-├── Dockerfile       # Multi-stage alpine, CGO_ENABLED=0, usuário não-root
+├── Dockerfile
 └── .dockerignore
 
 src/kubernetes/bigquery-writer/
@@ -203,14 +185,6 @@ src/kubernetes/bigquery-writer/
 ├── deployment.yaml  # Recreate strategy, volume da SA key
 └── secret-README.md # Instruções para criar o secret (somente local)
 ```
-
-### Dependências Go
-
-| Pacote                          | Versão  | Motivo da escolha                                 |
-| ------------------------------- | ------- | ------------------------------------------------- |
-| `cloud.google.com/go/bigquery`  | v1.59.1 | SDK oficial — streaming inserts com StructSaver   |
-| `github.com/segmentio/kafka-go` | v0.4.47 | Puro Go, sem CGO — compatível com alpine estático |
-| `github.com/google/uuid`        | v1.6.0  | UUID v5 para IDs determinísticos                  |
 
 ### Variáveis de ambiente
 
@@ -333,3 +307,17 @@ cd src/iac/terraform
 terraform init
 terraform apply -var-file=terraform.tfvars
 ```
+
+---
+
+## Integração com Sprint 2
+
+Esta implementação atende ao objetivo da Sprint 2 de criar um **pipeline funcional de ingestão e persistência de dados**. O bigquery-writer é o componente central que fecha o loop entre o Kafka e o Data Warehouse.
+
+O fluxo completo agora é:
+
+1. **csv-kafka-producer** → lê CSV e produz para o tópico Kafka
+2. **bigquery-writer** → consome do Kafka e persiste nas 5 tabelas do BigQuery
+3. **Looker** → consulta os dados no BigQuery (próximas sprints)
+
+A infraestrutura necessária — projeto GCP, dataset `eletromidia_bq` e tabelas — é provisionada via Terraform, conforme descrito na [documentação de infraestrutura](/docs/sprint-2/backend/infra/terraform).

@@ -205,3 +205,15 @@ Define `BUCKET_NAME` e caminho de credencial (`/secrets/cs-api-key.json`).
 - porta de serviço `5678` direcionando para `8080` no container.
 
 ---
+
+## Integração com Sprint 2
+
+Esta implementação atende ao objetivo da Sprint 2 de criar um **acesso estruturado aos dados históricos do pipeline**. O bff-storage expõe, via HTTP, os arquivos persistidos pelo [bucket-consumer](/docs/sprint-2/backend/services/bucket-consumer) no Google Cloud Storage.
+
+O fluxo completo agora é:
+
+1. **csv-kafka-producer** → lê CSV e produz para o tópico Kafka
+2. **bucket-consumer** → persiste eventos Kafka no GCS como backup em NDJSON
+3. **bff-storage** → expõe os arquivos do GCS via API HTTP para a interface
+
+Esta arquitetura complementa o caminho de analytics via BigQuery ao oferecer acesso direto aos dados brutos armazenados em Object Storage.

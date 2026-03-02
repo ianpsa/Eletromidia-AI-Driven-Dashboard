@@ -223,3 +223,18 @@ agregacao concluida: 2 fragmentos (28023 bytes) → gs://kafka-backup-eletromidi
 Em produção, pode rodar como **CronJob no Kubernetes** (ex: todo dia às 00:30 agrega o dia anterior).
 
 > O `Dockerfile` atual builda apenas o consumer. O daily-aggregator roda localmente via `go run`. Quando for necessário incluí-lo no deploy, basta adicionar a linha de build no Dockerfile e criar o manifesto de CronJob no Kubernetes.
+
+---
+
+## Integração com Sprint 2
+
+Esta implementação atende ao objetivo da Sprint 2 de criar um **backup durável dos eventos do pipeline**. O bucket-consumer opera em paralelo ao [bigquery-writer](/docs/sprint-2/backend/services/bigquery-writer), garantindo que os dados brutos sejam preservados no Object Storage independentemente do caminho de analytics.
+
+O fluxo completo agora é:
+
+1. **csv-kafka-producer** → lê CSV e produz para o tópico Kafka
+2. **bucket-consumer** → persiste eventos no GCS em NDJSON (backup)
+3. **daily-aggregator** → consolida os fragmentos do dia em um único arquivo
+4. **bff-storage** → expõe os arquivos do GCS para a interface
+
+Esta arquitetura segue o padrão Pub/Sub, com múltiplos consumidores independentes do mesmo tópico Kafka, garantindo que falhas em um consumer não afetem os demais.
