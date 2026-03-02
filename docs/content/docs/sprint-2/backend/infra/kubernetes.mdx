@@ -1,0 +1,292 @@
+---
+title: Kubernetes
+description: Manifests, organização e fluxo de deploy dos serviços no cluster GKE Autopilot
+---
+
+Os serviços da sprint 2 rodam como Deployments no cluster GKE Autopilot, seguindo a [arquitetura Kubernetes-Native](/docs/sprint-2/arquitetura#kubernetes-native-v2--escolha-atual). Esta página descreve a camada de manifests: o que existe, como está organizado e como fazer deploy.
+
+---
+
+## Estrutura de manifests
+
+```text
+src/kubernetes/
+├── kafka/
+│   ├── template.yaml        # Cluster Kafka (KafkaNodePool + Kafka via Strimzi)
+│   ├── geodata-topic.yaml   # Tópico geodata (KafkaTopic)
+│   └── Makefile             # Atalhos para producer e consumer de debug
+├── bigquery-writer/
+│   ├── configmap.yaml
+│   ├── deployment.yaml
+│   └── secret-README.md     # Instruções para criar o Secret local
+├── bff-storage/
+│   ├── configmap.yaml
+│   ├── deployment.yaml
+│   └── np-service.yaml      # NodePort para acesso externo (minikube)
+├── bucket-consumer/
+│   ├── configmap.yaml
+│   └── deployment.yaml
+└── redis-writer/
+    ├── configmap.yaml
+    └── deployment.yaml
+```
+
+---
+
+## Kafka
+
+O cluster Kafka é gerenciado pelo operador **Strimzi** com modo **KRaft** (sem Zookeeper). Dois recursos definem o cluster: o `KafkaNodePool` (nós) e o `Kafka` (configuração do broker).
+
+### Cluster (`template.yaml`)
+
+**KafkaNodePool `dual-role`** — cada nó acumula os papéis de controller e broker:
+
+| Campo                 | Valor                   |
+| --------------------- | ----------------------- |
+| Réplicas              | 3                       |
+| Roles                 | `controller`, `broker`  |
+| Storage               | JBOD, 10Gi por nó (PVC) |
+| CPU request/limit     | `500m`                  |
+| Memória request/limit | `2Gi`                   |
+
+**Kafka `my-cluster`**:
+
+| Configuração                               | Valor            |
+| ------------------------------------------ | ---------------- |
+| Listener plain (interno)                   | `:9092`, TLS off |
+| Listener tls (interno)                     | `:9093`, TLS on  |
+| `offsets.topic.replication.factor`         | `3`              |
+| `transaction.state.log.replication.factor` | `3`              |
+| `transaction.state.log.min.isr`            | `2`              |
+| `default.replication.factor`               | `3`              |
+
+O endereço interno do bootstrap para todos os serviços é:
+
+```
+my-cluster-kafka-bootstrap.kafka.svc:9092
+```
+
+### Tópico (`geodata-topic.yaml`)
+
+| Campo           | Valor              |
+| --------------- | ------------------ |
+| Nome            | `geodata`          |
+| Namespace       | `kafka`            |
+| Partições       | `3`                |
+| Réplicas        | `2`                |
+| `retention.ms`  | `86400000` (24h)   |
+| `segment.bytes` | `1073741824` (1GB) |
+
+### Makefile de debug
+
+```bash
+# Abre um producer interativo no tópico geodata
+make -C src/kubernetes/kafka producer
+
+# Consome todas as mensagens do início, com metadata
+make -C src/kubernetes/kafka topic-logs
+
+# Descreve partições e líderes do tópico
+make -C src/kubernetes/kafka get-partitions
+```
+
+---
+
+## Serviços
+
+Todos os Deployments compartilham o mesmo padrão: variáveis de ambiente via ConfigMap e credenciais GCP via Secret montado como arquivo.
+
+### bigquery-writer
+
+Consome o tópico `geodata` e escreve nas 5 tabelas do BigQuery. Detalhes do serviço em [BigQuery Writer](/docs/sprint-2/backend/services/bigquery-writer).
+
+**ConfigMap `bigquery-writer-cm`:**
+
+| Variável                         | Valor                                       |
+| -------------------------------- | ------------------------------------------- |
+| `KAFKA_BROKERS`                  | `my-cluster-kafka-bootstrap.kafka.svc:9092` |
+| `KAFKA_TOPIC`                    | `geodata`                                   |
+| `KAFKA_GROUP_ID`                 | `bigquery-writer-group`                     |
+| `KAFKA_MIN_BYTES`                | `1000`                                      |
+| `KAFKA_MAX_BYTES`                | `10000000`                                  |
+| `GCP_PROJECT_ID`                 | `midia-in-da-house`                         |
+| `BQ_DATASET_ID`                  | `eletromidia_bq`                            |
+| `GOOGLE_APPLICATION_CREDENTIALS` | `/secrets/key.json`                         |
+
+**Deployment:**
+
+| Campo                 | Valor                              |
+| --------------------- | ---------------------------------- |
+| Réplicas              | `1`                                |
+| Estratégia            | `Recreate`                         |
+| CPU request/limit     | `250m` / `500m`                    |
+| Memória request/limit | `64Mi` / `128Mi`                   |
+| `imagePullPolicy`     | `Never` (minikube local)           |
+| Secret montado        | `gcp-sa-key` → `/secrets/key.json` |
+
+A estratégia `Recreate` é usada localmente para evitar pico de memória com dois pods simultâneos. Em GKE com recursos suficientes, `RollingUpdate` pode ser adotado.
+
+**Secret (somente local):**
+
+```bash
+# Gerar a chave via CLI do GCP
+gcloud iam service-accounts keys create sa-key.json \
+  --iam-account=bq-data-editor@midia-in-da-house.iam.gserviceaccount.com \
+  --project=midia-in-da-house
+
+# Criar o Secret no cluster
+kubectl create secret generic gcp-sa-key \
+  --from-file=key.json=./sa-key.json
+```
+
+Em produção (GKE), o pod autentica via Workload Identity e o Secret não é necessário. Ver `secret-README.md` para detalhes.
+
+---
+
+### bff-storage
+
+Expõe os arquivos do bucket via HTTP. Detalhes do serviço em [BFF Storage](/docs/sprint-2/backend/services/bff-storage).
+
+**ConfigMap `bff-storage-cm`:**
+
+| Variável            | Valor                      |
+| ------------------- | -------------------------- |
+| `PROJECT_ID`        | `midia-in-da-house`        |
+| `BUCKET_NAME`       | `kafka-backup-eletromidia` |
+| `CS_SA_CREDENTIALS` | `/secrets/cs-api-key.json` |
+
+**Deployment:**
+
+| Campo                 | Valor                                     |
+| --------------------- | ----------------------------------------- |
+| Réplicas              | `1`                                       |
+| CPU request/limit     | `250m` / `500m`                           |
+| Memória request/limit | `64Mi` / `128Mi`                          |
+| `imagePullPolicy`     | `Never` (minikube local)                  |
+| Secret montado        | `gcs-sa-key` → `/secrets/cs-api-key.json` |
+
+**Service (`np-service.yaml`):**
+
+Expõe o serviço via NodePort para acesso externo no minikube. Em produção, será substituído por Ingress ou API Gateway.
+
+| Campo            | Valor      |
+| ---------------- | ---------- |
+| Tipo             | `NodePort` |
+| Porta do serviço | `5678`     |
+| Target port      | `8080`     |
+
+```bash
+# Obter IP e porta do minikube
+minikube service bff-storage-svc --url
+```
+
+**Secret (somente local):**
+
+```bash
+kubectl create secret generic gcs-sa-key \
+  --from-file=cs-api-key.json=./cs-api-key.json
+```
+
+---
+
+### bucket-consumer
+
+Persiste eventos do tópico `geodata` no Google Cloud Storage. Detalhes do serviço em [Bucket Consumer](/docs/sprint-2/backend/services/bucket-consumer).
+
+**ConfigMap `bucket-consumer-cm`:**
+
+| Variável             | Valor                                       |
+| -------------------- | ------------------------------------------- |
+| `KAFKA_BROKERS`      | `my-cluster-kafka-bootstrap.kafka.svc:9092` |
+| `KAFKA_TOPIC`        | `geodata`                                   |
+| `KAFKA_GROUP_ID`     | `bucket-consumer-group`                     |
+| `KAFKA_MIN_BYTES`    | `1000`                                      |
+| `KAFKA_MAX_BYTES`    | `10000000`                                  |
+| `KAFKA_READ_TIMEOUT` | `5s`                                        |
+| `KAFKA_MAX_WAIT`     | `500ms`                                     |
+| `PROCESS_DELAY`      | `0`                                         |
+| `GCS_BUCKET`         | `kafka-backup-eletromidia`                  |
+| `GCS_CREDENTIALS`    | `/secrets/cs-api-key.json`                  |
+| `GCS_BASE_PATH`      | `kafka-backup`                              |
+| `FLUSH_INTERVAL`     | `30s`                                       |
+| `FLUSH_SIZE`         | `500`                                       |
+
+**Deployment:**
+
+| Campo                 | Valor                                     |
+| --------------------- | ----------------------------------------- |
+| Réplicas              | `1`                                       |
+| CPU request/limit     | `250m` / `500m`                           |
+| Memória request/limit | `64Mi` / `128Mi`                          |
+| `imagePullPolicy`     | `Never` (minikube local)                  |
+| Secret montado        | `gcs-sa-key` → `/secrets/cs-api-key.json` |
+
+O bucket-consumer e o bff-storage compartilham o mesmo Secret `gcs-sa-key`. Ambos usam a mesma Service Account do Cloud Storage provisionada via [Terraform](/docs/sprint-2/backend/infra/terraform#módulo-cloud_storage).
+
+---
+
+### redis-writer
+
+Consumer Kafka que escreve eventos no Redis para cache/estado em tempo real. Sem documentação de serviço específica nesta sprint — os manifests estão presentes mas o serviço não está integrado ao pipeline principal ainda.
+
+**ConfigMap `redis-writer-cm`:**
+
+| Variável             | Valor                                       |
+| -------------------- | ------------------------------------------- |
+| `KAFKA_BROKERS`      | `my-cluster-kafka-bootstrap.kafka.svc:9092` |
+| `KAFKA_TOPIC`        | `geodata`                                   |
+| `KAFKA_GROUP_ID`     | `go-consumer-group`                         |
+| `KAFKA_MIN_BYTES`    | `1000`                                      |
+| `KAFKA_MAX_BYTES`    | `10000000`                                  |
+| `KAFKA_READ_TIMEOUT` | `5s`                                        |
+| `KAFKA_MAX_WAIT`     | `500ms`                                     |
+| `PROCESS_DELAY`      | `0`                                         |
+
+**Deployment:** imagem `redis-writer:2.0`, sem Secret montado (sem credenciais GCP necessárias para Redis interno).
+
+---
+
+## Secrets por serviço
+
+| Secret       | Serviços que usam                | O que contém                       |
+| ------------ | -------------------------------- | ---------------------------------- |
+| `gcp-sa-key` | `bigquery-writer`                | Chave SA com `bigquery.dataEditor` |
+| `gcs-sa-key` | `bff-storage`, `bucket-consumer` | Chave SA com `storage.objectUser`  |
+
+Ambos os Secrets são necessários apenas em **minikube local**. Em GKE Autopilot (produção), os pods autenticam via Workload Identity sem chaves de arquivo.
+
+---
+
+## Deploy completo (minikube)
+
+```bash
+# 1. Iniciar cluster
+minikube start --driver=docker --memory=6144 --cpus=4 --disk-size=20g
+
+# 2. Instalar Strimzi e provisionar Kafka
+kubectl create namespace kafka
+kubectl apply -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
+kubectl wait deployment/strimzi-cluster-operator -n kafka --for=condition=Available --timeout=300s
+kubectl apply -f src/kubernetes/kafka/template.yaml -n kafka
+kubectl apply -f src/kubernetes/kafka/geodata-topic.yaml -n kafka
+kubectl wait kafka/my-cluster -n kafka --for=condition=Ready --timeout=600s
+
+# 3. Apontar Docker para o daemon do minikube
+eval $(minikube docker-env)
+
+# 4. Criar Secrets (pedir chaves ao responsável GCP)
+kubectl create secret generic gcp-sa-key --from-file=key.json=./sa-key.json
+kubectl create secret generic gcs-sa-key --from-file=cs-api-key.json=./cs-api-key.json
+
+# 5. Build e deploy dos serviços
+docker build -t bigquery-writer:latest  src/services/bigquery-writer/
+docker build -t bff-storage:latest      src/services/bff-storage/
+docker build -t bucket-consumer:latest  src/services/bucket-consumer/
+
+kubectl apply -f src/kubernetes/bigquery-writer/
+kubectl apply -f src/kubernetes/bff-storage/
+kubectl apply -f src/kubernetes/bucket-consumer/
+
+# 6. Verificar pods
+kubectl get pods
+```

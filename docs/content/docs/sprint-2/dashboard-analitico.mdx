@@ -5,7 +5,7 @@ description: Plataforma de BI desenvolvida no Looker Studio para análise dos da
 
 ## Introdução
 
-Este documento apresenta a primeira versão da plataforma de BI desenvolvida para análise integrada de fluxo de pessoas com segmentação demográfica.  
+Este documento apresenta a primeira versão da plataforma de BI desenvolvida para análise integrada de fluxo de pessoas com segmentação demográfica.
 
 A solução foi construída a partir de dados estruturados no BigQuery e visualizada no Looker Studio, com o objetivo de transformar dados brutos de geolocalização e perfil populacional em uma ferramenta analítica interativa.
 
@@ -115,8 +115,8 @@ Na primeira tentativa unimos os percentuais de classe com os dados de `geodata` 
 Exemplo da tabela resultante:
 
 | class_a | class_b1 | class_b2 | class_c1 | class_c2 | class_de |
-|----------|----------|----------|----------|----------|----------|
-| 2230.67  | 4461.35  | 6692.02  | 4461.35  | 3346.01  | 1115.33  |
+| ------- | -------- | -------- | -------- | -------- | -------- |
+| 2230.67 | 4461.35  | 6692.02  | 4461.35  | 3346.01  | 1115.33  |
 
 O cálculo era feito multiplicando `uniques` pelo percentual de cada classe.
 
@@ -130,14 +130,14 @@ Na segunda tentativa transformamos as colunas de classe em linhas no formato tip
 
 Exemplo da tabela resultante:
 
-| tipo | valor    |
-|------|----------|
-| A    | 2230.67  |
-| B1   | 4461.35  |
-| B2   | 6692.02  |
-| C1   | 4461.35  |
-| C2   | 3346.01  |
-| DE   | 1115.33  |
+| tipo | valor   |
+| ---- | ------- |
+| A    | 2230.67 |
+| B1   | 4461.35 |
+| B2   | 6692.02 |
+| C1   | 4461.35 |
+| C2   | 3346.01 |
+| DE   | 1115.33 |
 
 Essa estrutura permitiu gerar o gráfico da informação específica de classe. A ideia era que o mesmo modelo pudesse ser aplicado depois para gênero e idade.
 
@@ -151,11 +151,11 @@ Na terceira tentativa juntamos `geodata` com os percentuais de classe, gênero e
 
 Exemplo de resultado:
 
-| id                                   | impression_hour | location_id | uniques  | tipo   | label     | valor     | outras_colunas_geodata |
-|--------------------------------------|----------------|------------|----------|--------|----------|----------|------------------------|
-| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | 22306.73 | class  | A        | 2230.67  | ...                    |
-| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | 22306.73 | gender | Feminine | 13384.04 | ...                    |
-| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | 22306.73 | age    | 20-29    | 5576.68  | ...                    |
+| id                                   | impression_hour | location_id | uniques  | tipo   | label    | valor    | outras_colunas_geodata |
+| ------------------------------------ | --------------- | ----------- | -------- | ------ | -------- | -------- | ---------------------- |
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18              | 32366       | 22306.73 | class  | A        | 2230.67  | ...                    |
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18              | 32366       | 22306.73 | gender | Feminine | 13384.04 | ...                    |
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18              | 32366       | 22306.73 | age    | 20-29    | 5576.68  | ...                    |
 
 O que foi feito aqui foi organizar todas as dimensões em uma única estrutura para que todos os gráficos utilizassem a mesma fonte de dados.
 
@@ -174,8 +174,8 @@ A solução final foi gerar todas as interseções entre classe, gênero e idade
 Partindo da linha:
 
 | id                                   | impression_hour | location_id | uniques  | outras_colunas_geodata |
-|--------------------------------------|----------------|------------|----------|------------------------|
-| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | 22306.73 | ...                    |
+| ------------------------------------ | --------------- | ----------- | -------- | ---------------------- |
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18              | 32366       | 22306.73 | ...                    |
 
 Sabemos que existem:
 
@@ -190,10 +190,10 @@ Isso significa que cada linha original gera:
 Cada combinação representa uma interseção completa. Por exemplo:
 
 | id                                   | impression_hour | location_id | class_label | gender_label | age_label | joint_count | outras_colunas_geodata |
-|--------------------------------------|----------------|------------|------------|--------------|-----------|------------|------------------------|
-| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | A          | Feminine     | 20-29    | 3346.01    | ...                    |
-| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | A          | Masculine    | 30-39    | 3122.94    | ...                    |
-| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18             | 32366      | B2         | Feminine     | 30-39    | 7026.62    | ...                    |
+| ------------------------------------ | --------------- | ----------- | ----------- | ------------ | --------- | ----------- | ---------------------- |
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18              | 32366       | A           | Feminine     | 20-29     | 3346.01     | ...                    |
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18              | 32366       | A           | Masculine    | 30-39     | 3122.94     | ...                    |
+| 858d96b4-7f78-4cd4-adf2-b0fe53b4eea8 | 18              | 32366       | B2          | Feminine     | 30-39     | 7026.62     | ...                    |
 
 O cálculo utilizado é:
 
@@ -209,10 +209,10 @@ O único ponto de atenção é o aumento de volume de dados. Para cada linha ori
 
 Esta entrega representa uma evolução significativa para o projeto, pois fornece uma base analítica sólida e interativa.
 
-Para [Mário](../sprint-1/perfil-do-parceiro/personas#persona-1---mário), o executivo, a plataforma permite visualizar impacto real e tomar decisões estratégicas com clareza.  
+Para [Mário](../sprint-1/perfil-do-parceiro/personas#persona-1---mário), o executivo, a plataforma permite visualizar impacto real e tomar decisões estratégicas com clareza.
 
-Para [Carmen](../sprint-1/perfil-do-parceiro/personas#persona-2---carmen), a analista de marketing, a segmentação demográfica e geográfica permite otimizar campanhas com maior precisão.  
+Para [Carmen](../sprint-1/perfil-do-parceiro/personas#persona-2---carmen), a analista de marketing, a segmentação demográfica e geográfica permite otimizar campanhas com maior precisão.
 
-Para [Carlos](../sprint-1/perfil-do-parceiro/personas#persona-3---carlos), o administrador da plataforma, a modelagem estruturada garante rastreabilidade e consistência dos dados utilizados nas análises.  
+Para [Carlos](../sprint-1/perfil-do-parceiro/personas#persona-3---carlos), o administrador da plataforma, a modelagem estruturada garante rastreabilidade e consistência dos dados utilizados nas análises.
 
 A plataforma consolida dados complexos em visualizações claras, interativas e integradas, permitindo análise multidimensional consistente.

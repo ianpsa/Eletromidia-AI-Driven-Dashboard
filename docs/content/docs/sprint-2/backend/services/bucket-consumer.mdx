@@ -103,21 +103,21 @@ bucket-consumer/
 
 ### Variáveis de ambiente
 
-| Variável | Descrição | Default |
-| --- | --- | --- |
-| `KAFKA_BROKERS` | Endereço(s) do Kafka | `my-cluster-kafka-bootstrap.kafka.svc:9092` |
-| `KAFKA_TOPIC` | Tópico para consumir | `geodata` |
-| `KAFKA_GROUP_ID` | Consumer group ID | `go-consumer-group` |
-| `KAFKA_MIN_BYTES` | Mínimo de bytes por fetch | `1000` |
-| `KAFKA_MAX_BYTES` | Máximo de bytes por fetch | `10000000` |
-| `KAFKA_READ_TIMEOUT` | Timeout por leitura de mensagem | `5s` |
-| `KAFKA_MAX_WAIT` | Tempo máximo de espera por batch do broker | `500ms` |
-| `PROCESS_DELAY` | Delay entre processamento de mensagens | `0` |
-| `GCS_BUCKET` | Nome do bucket GCS | `kafka-backup-eletromidia` |
-| `GCS_CREDENTIALS` | Caminho para o JSON de credenciais | _(usa default credentials se vazio)_ |
-| `GCS_BASE_PATH` | Prefixo do path no bucket | `kafka-backup` |
-| `FLUSH_INTERVAL` | Intervalo máximo entre flushes | `30s` |
-| `FLUSH_SIZE` | Quantidade de mensagens para disparar flush | `500` |
+| Variável             | Descrição                                   | Default                                     |
+| -------------------- | ------------------------------------------- | ------------------------------------------- |
+| `KAFKA_BROKERS`      | Endereço(s) do Kafka                        | `my-cluster-kafka-bootstrap.kafka.svc:9092` |
+| `KAFKA_TOPIC`        | Tópico para consumir                        | `geodata`                                   |
+| `KAFKA_GROUP_ID`     | Consumer group ID                           | `go-consumer-group`                         |
+| `KAFKA_MIN_BYTES`    | Mínimo de bytes por fetch                   | `1000`                                      |
+| `KAFKA_MAX_BYTES`    | Máximo de bytes por fetch                   | `10000000`                                  |
+| `KAFKA_READ_TIMEOUT` | Timeout por leitura de mensagem             | `5s`                                        |
+| `KAFKA_MAX_WAIT`     | Tempo máximo de espera por batch do broker  | `500ms`                                     |
+| `PROCESS_DELAY`      | Delay entre processamento de mensagens      | `0`                                         |
+| `GCS_BUCKET`         | Nome do bucket GCS                          | `kafka-backup-eletromidia`                  |
+| `GCS_CREDENTIALS`    | Caminho para o JSON de credenciais          | _(usa default credentials se vazio)_        |
+| `GCS_BASE_PATH`      | Prefixo do path no bucket                   | `kafka-backup`                              |
+| `FLUSH_INTERVAL`     | Intervalo máximo entre flushes              | `30s`                                       |
+| `FLUSH_SIZE`         | Quantidade de mensagens para disparar flush | `500`                                       |
 
 ---
 

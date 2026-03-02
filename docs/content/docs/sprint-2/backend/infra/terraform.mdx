@@ -20,11 +20,11 @@ Por tratar a infraestrutura como código, o Terraform torna o processo de provis
 
 Esta documentação descreve a infraestrutura de nuvem provisionada via **Terraform** para o projeto de visualização de dados de fluxo de pessoas da Eletromídia. Toda a infraestrutura é hospedada no **Google Cloud Platform (GCP)** e é composta por três módulos principais:
 
-| Módulo | Serviço GCP | Finalidade |
-|--------|-------------|------------|
-| `bigquery` | BigQuery | Armazenamento e consulta dos dados de geodata |
-| `iam` | IAM | Controle de acesso e permissões |
-| `cloud_storage` | Cloud Storage | Backup e staging de dados via Kafka |
+| Módulo          | Serviço GCP   | Finalidade                                    |
+| --------------- | ------------- | --------------------------------------------- |
+| `bigquery`      | BigQuery      | Armazenamento e consulta dos dados de geodata |
+| `iam`           | IAM           | Controle de acesso e permissões               |
+| `cloud_storage` | Cloud Storage | Backup e staging de dados via Kafka           |
 
 ---
 
@@ -138,14 +138,14 @@ module "cloud_storage" {
 
 ## Variáveis Raiz (`variables.tf`)
 
-| Variável | Tipo | Padrão | Descrição |
-|----------|------|--------|-----------|
-| `project_id` | `string` | — | ID do projeto no GCP |
-| `location` | `string` | `"US"` | Região de deploy dos recursos |
-| `dataset_id` | `string` | — | Nome do dataset no BigQuery |
-| `admin_email` | `string` | — | E-mail do usuário administrador do BigQuery |
-| `cs_name` | `string` | — | Nome do bucket do Cloud Storage |
-| `tables` | `map(object)` | — | Mapa de tabelas BigQuery com `table_id` e `schema` |
+| Variável      | Tipo          | Padrão | Descrição                                          |
+| ------------- | ------------- | ------ | -------------------------------------------------- |
+| `project_id`  | `string`      | —      | ID do projeto no GCP                               |
+| `location`    | `string`      | `"US"` | Região de deploy dos recursos                      |
+| `dataset_id`  | `string`      | —      | Nome do dataset no BigQuery                        |
+| `admin_email` | `string`      | —      | E-mail do usuário administrador do BigQuery        |
+| `cs_name`     | `string`      | —      | Nome do bucket do Cloud Storage                    |
+| `tables`      | `map(object)` | —      | Mapa de tabelas BigQuery com `table_id` e `schema` |
 
 ### Exemplo de `terraform.tfvars`
 
@@ -156,7 +156,7 @@ project_id = "meu-projeto-gcp"
 location   = "southamerica-east1"
 dataset_id = "eletromidia_dataset"
 admin_email = "admin@meugrupo.com"
-cs_name    = "eletromidia-kafka-backup"
+cs_name    = "kafka-backup-eletromidia"
 
 tables = {
   geodata = {
@@ -198,11 +198,11 @@ Responsável por criar o dataset e as tabelas no BigQuery, além de uma service 
 
 Cria o dataset que agrupa todas as tabelas do projeto.
 
-| Atributo | Valor |
-|----------|-------|
-| `project` | `var.project_id` |
+| Atributo     | Valor            |
+| ------------ | ---------------- |
+| `project`    | `var.project_id` |
 | `dataset_id` | `var.dataset_id` |
-| `location` | `var.location` |
+| `location`   | `var.location`   |
 
 #### `google_bigquery_table.tables`
 
@@ -227,11 +227,11 @@ Cria a service account `bq-data-editor` usada por serviços internos que precisa
 
 ### Outputs
 
-| Output | Descrição |
-|--------|-----------|
+| Output                  | Descrição                                                       |
+| ----------------------- | --------------------------------------------------------------- |
 | `service_account_email` | E-mail da service account do BigQuery (repassado ao módulo IAM) |
-| `dataset_id` | ID do dataset criado |
-| `table_ids` | Mapa com os IDs de todas as tabelas criadas |
+| `dataset_id`            | ID do dataset criado                                            |
+| `table_ids`             | Mapa com os IDs de todas as tabelas criadas                     |
 
 ---
 
@@ -261,16 +261,16 @@ Concede a role `roles/bigquery.dataViewer` à service account do Looker, garanti
 
 ### Resumo de Permissões
 
-| Identidade | Role | Nível de Acesso |
-|------------|------|-----------------|
-| `var.admin_email` (usuário) | `bigquery.admin` | Administração total |
-| `bq-data-editor` (SA) | `bigquery.dataEditor` | Leitura e escrita de dados |
-| `bq-looker-reader` (SA) | `bigquery.dataViewer` | Somente leitura |
+| Identidade                  | Role                  | Nível de Acesso            |
+| --------------------------- | --------------------- | -------------------------- |
+| `var.admin_email` (usuário) | `bigquery.admin`      | Administração total        |
+| `bq-data-editor` (SA)       | `bigquery.dataEditor` | Leitura e escrita de dados |
+| `bq-looker-reader` (SA)     | `bigquery.dataViewer` | Somente leitura            |
 
 ### Outputs
 
-| Output | Descrição |
-|--------|-----------|
+| Output                   | Descrição                                  |
+| ------------------------ | ------------------------------------------ |
 | `bq_looker_reader_email` | E-mail da service account do Looker Studio |
 
 ---
@@ -287,18 +287,18 @@ Cria um bucket no Cloud Storage para armazenar backups dos dados consumidos via 
 
 Bucket principal de armazenamento.
 
-| Configuração | Valor | Descrição |
-|-------------|-------|-----------|
-| `uniform_bucket_level_access` | `true` | Controle de acesso uniforme (sem ACLs por objeto) |
-| `versioning.enabled` | `false` | Versionamento desabilitado |
-| `force_destroy` | `true` | Permite destruição mesmo com objetos dentro |
+| Configuração                  | Valor   | Descrição                                         |
+| ----------------------------- | ------- | ------------------------------------------------- |
+| `uniform_bucket_level_access` | `true`  | Controle de acesso uniforme (sem ACLs por objeto) |
+| `versioning.enabled`          | `false` | Versionamento desabilitado                        |
+| `force_destroy`               | `true`  | Permite destruição mesmo com objetos dentro       |
 
 **Regras de Ciclo de Vida:**
 
-| Condição | Ação | Descrição |
-|----------|------|-----------|
-| Objetos com mais de **30 dias** | Mover para `NEARLINE` | Reduz custo de armazenamento para dados acessados com menos frequência |
-| Objetos com mais de **360 dias** | `Delete` | Remove dados antigos automaticamente |
+| Condição                         | Ação                  | Descrição                                                              |
+| -------------------------------- | --------------------- | ---------------------------------------------------------------------- |
+| Objetos com mais de **30 dias**  | Mover para `NEARLINE` | Reduz custo de armazenamento para dados acessados com menos frequência |
+| Objetos com mais de **360 dias** | `Delete`              | Remove dados antigos automaticamente                                   |
 
 #### `google_storage_managed_folder.topics`
 
@@ -314,9 +314,9 @@ Concede a role `roles/storage.objectUser` à service account `cs-kafka-consumer`
 
 ### Outputs
 
-| Output | Descrição |
-|--------|-----------|
-| `bucket_name` | Nome do bucket criado |
+| Output                  | Descrição                                  |
+| ----------------------- | ------------------------------------------ |
+| `bucket_name`           | Nome do bucket criado                      |
 | `service_account_email` | E-mail da service account do Cloud Storage |
 
 ---
@@ -329,64 +329,64 @@ As tabelas são criadas com schemas definidos em arquivos `.json` dentro de `mod
 
 Tabela central com os registros de fluxo de pessoas por localização e horário.
 
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
-| `id` | STRING | ✅ | Identificador único (UUID gerado automaticamente) |
-| `impression_hour` | STRING | ✅ | Horário da leitura |
-| `location_id` | INTEGER | ✅ | ID da localização |
-| `uniques` | FLOAT | ✅ | Quantidade estimada de pessoas únicas no local |
-| `latitude` | STRING | ✅ | Latitude do ponto de leitura |
-| `longitude` | STRING | ✅ | Longitude do ponto de leitura |
-| `uf_estado` | STRING | ✅ | Estado (UF) |
-| `cidade` | STRING | ✅ | Cidade |
-| `endereco` | STRING | ✅ | Endereço do local |
-| `numero` | INTEGER | ✅ | Número do endereço |
-| `target_id` | STRING | ❌ | FK para a tabela `target` |
+| Campo             | Tipo    | Obrigatório | Descrição                                         |
+| ----------------- | ------- | ----------- | ------------------------------------------------- |
+| `id`              | STRING  | ✅          | Identificador único (UUID gerado automaticamente) |
+| `impression_hour` | STRING  | ✅          | Horário da leitura                                |
+| `location_id`     | INTEGER | ✅          | ID da localização                                 |
+| `uniques`         | FLOAT   | ✅          | Quantidade estimada de pessoas únicas no local    |
+| `latitude`        | STRING  | ✅          | Latitude do ponto de leitura                      |
+| `longitude`       | STRING  | ✅          | Longitude do ponto de leitura                     |
+| `uf_estado`       | STRING  | ✅          | Estado (UF)                                       |
+| `cidade`          | STRING  | ✅          | Cidade                                            |
+| `endereco`        | STRING  | ✅          | Endereço do local                                 |
+| `numero`          | INTEGER | ✅          | Número do endereço                                |
+| `target_id`       | STRING  | ❌          | FK para a tabela `target`                         |
 
 ### `target` — Segmentação Demográfica
 
 Tabela de relacionamento que agrupa as segmentações de um evento geodata.
 
-| Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
-| `id` | STRING | ✅ | Identificador único |
-| `age_id` | STRING | ❌ | FK para a tabela `age` |
-| `gender_id` | STRING | ❌ | FK para a tabela `gender` |
-| `social_class_id` | STRING | ❌ | FK para a tabela `social_class` |
+| Campo             | Tipo   | Obrigatório | Descrição                       |
+| ----------------- | ------ | ----------- | ------------------------------- |
+| `id`              | STRING | ✅          | Identificador único             |
+| `age_id`          | STRING | ❌          | FK para a tabela `age`          |
+| `gender_id`       | STRING | ❌          | FK para a tabela `gender`       |
+| `social_class_id` | STRING | ❌          | FK para a tabela `social_class` |
 
 ### `age` — Distribuição por Faixa Etária
 
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `id` | STRING | Identificador único |
-| `x18_19` | FLOAT | % de pessoas de 18-19 anos |
-| `x20_29` | FLOAT | % de pessoas de 20-29 anos |
-| `x30_39` | FLOAT | % de pessoas de 30-39 anos |
-| `x40_49` | FLOAT | % de pessoas de 40-49 anos |
-| `x50_59` | FLOAT | % de pessoas de 50-59 anos |
-| `x60_69` | FLOAT | % de pessoas de 60-69 anos |
-| `x70_79` | FLOAT | % de pessoas de 70-79 anos |
-| `x80_plus` | FLOAT | % de pessoas acima de 80 anos |
+| Campo      | Tipo   | Descrição                     |
+| ---------- | ------ | ----------------------------- |
+| `id`       | STRING | Identificador único           |
+| `x18_19`   | FLOAT  | % de pessoas de 18-19 anos    |
+| `x20_29`   | FLOAT  | % de pessoas de 20-29 anos    |
+| `x30_39`   | FLOAT  | % de pessoas de 30-39 anos    |
+| `x40_49`   | FLOAT  | % de pessoas de 40-49 anos    |
+| `x50_59`   | FLOAT  | % de pessoas de 50-59 anos    |
+| `x60_69`   | FLOAT  | % de pessoas de 60-69 anos    |
+| `x70_79`   | FLOAT  | % de pessoas de 70-79 anos    |
+| `x80_plus` | FLOAT  | % de pessoas acima de 80 anos |
 
 ### `gender` — Distribuição por Gênero
 
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `id` | STRING | Identificador único |
-| `feminine` | FLOAT | % do gênero feminino |
-| `masculine` | FLOAT | % do gênero masculino |
+| Campo       | Tipo   | Descrição             |
+| ----------- | ------ | --------------------- |
+| `id`        | STRING | Identificador único   |
+| `feminine`  | FLOAT  | % do gênero feminino  |
+| `masculine` | FLOAT  | % do gênero masculino |
 
 ### `social_class` — Distribuição por Classe Social
 
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `id` | STRING | Identificador único |
-| `a_class` | FLOAT | % da classe A |
-| `b1_class` | FLOAT | % da classe B1 |
-| `b2_class` | FLOAT | % da classe B2 |
-| `c1_class` | FLOAT | % da classe C1 |
-| `c2_class` | FLOAT | % da classe C2 |
-| `de_class` | FLOAT | % da classe DE |
+| Campo      | Tipo   | Descrição           |
+| ---------- | ------ | ------------------- |
+| `id`       | STRING | Identificador único |
+| `a_class`  | FLOAT  | % da classe A       |
+| `b1_class` | FLOAT  | % da classe B1      |
+| `b2_class` | FLOAT  | % da classe B2      |
+| `c1_class` | FLOAT  | % da classe C1      |
+| `c2_class` | FLOAT  | % da classe C2      |
+| `de_class` | FLOAT  | % da classe DE      |
 
 ---
 

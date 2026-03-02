@@ -5,7 +5,7 @@ description: Serviço Go que consome eventos do Kafka e escreve nas tabelas do B
 
 ## O que é
 
-O bigquery-writer é o componente **API Writer (Data Warehouse)** da [arquitetura GCP](/docs/sprint-1/arquitetura): um consumer Kafka escrito em Go que transforma eventos de telemetria de fluxo de pessoas em linhas nas 5 tabelas do BigQuery — `age`, `gender`, `social_class`, `target` e `geodata`.
+O bigquery-writer é o componente **API Writer (Data Warehouse)** da [arquitetura Kubernetes-Native](/docs/sprint-2/arquitetura#kubernetes-native-v2--escolha-atual): um consumer Kafka escrito em Go que transforma eventos de telemetria de fluxo de pessoas em linhas nas 5 tabelas do BigQuery — `age`, `gender`, `social_class`, `target` e `geodata`.
 
 É o serviço responsável por tornar os dados da Claro Geodata consultáveis no BigQuery e, por extensão, visíveis no Looker.
 
@@ -173,14 +173,10 @@ Por isso o serviço valida explicitamente todas as 16 chaves obrigatórias antes
 A Claro Geodata envia o campo `target` como um dict Python serializado:
 
 ```json
-{'idade': {'18-19': 0.08}, 'genero': {'F': 0.38}}
+{ "idade": { "18-19": 0.08 }, "genero": { "F": 0.38 } }
 ```
 
 O serviço converte para JSON válido via regex `'([^']*)'` → `"$1"` antes de fazer o `json.Unmarshal`. A regex é segura para o formato atual (chaves alfanuméricas, valores numéricos). Se o produtor passar strings com apóstrofos nos valores (ex: nomes de rua), será necessário substituir por um parser Python literal.
-
-### Liveness probe via arquivo
-
-O serviço escreve `/tmp/healthy` após processar a primeira mensagem com sucesso. O Kubernetes verifica esse arquivo a cada 30 segundos e reinicia o pod automaticamente se o consumer travar (ex: deadlock, conexão Kafka presa).
 
 ### Comportamento em falha de mensagem
 
@@ -204,7 +200,7 @@ src/services/bigquery-writer/
 
 src/kubernetes/bigquery-writer/
 ├── configmap.yaml   # Variáveis de ambiente: Kafka + BigQuery
-├── deployment.yaml  # Recreate strategy, liveness probe, volume da SA key
+├── deployment.yaml  # Recreate strategy, volume da SA key
 └── secret-README.md # Instruções para criar o secret (somente local)
 ```
 

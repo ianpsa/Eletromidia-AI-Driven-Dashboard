@@ -5,7 +5,7 @@ description: Serviço Rust que lê dados CSV e produz mensagens para o Kafka
 
 ## O que é
 
-O csv-kafka-producer é o componente **API Producer** da [arquitetura GCP](/docs/sprint-1/arquitetura): um serviço REST em Rust que lê dados de um arquivo CSV e os produz para o Kafka, servindo como fonte de dados para todo o pipeline de telemetria OOH.
+O csv-kafka-producer é o componente **API Producer** da [arquitetura Kubernetes-Native](/docs/sprint-2/arquitetura#kubernetes-native-v2--escolha-atual): um serviço REST em Rust que lê dados de um arquivo CSV e os produz para o Kafka, servindo como fonte de dados para todo o pipeline de telemetria OOH.
 
 É o serviço responsável por alimentar o tópico Kafka com dados de telemetria da _Eletromidia_, que posteriormente serão consumidos pelo [bigquery-writer](/docs/sprint-2/backend/services/bigquery-writer) para persistência no BigQuery e visualização no Looker.
 
@@ -41,12 +41,12 @@ POST /csv
 
 #### Corpo da requisição
 
-| Campo                | Tipo    | Obrigatório | Padrão   | Descrição                                               |
-| ------------------- | ------- | ----------- | -------- | ------------------------------------------------------- |
-| `mensagens_por_segundo` | usize   | Não         | 100000   | Taxa alvo de envio de mensagens por segundo            |
-| `tempo_envio_segundos`  | usize   | Sim         | -        | Duração do teste de carga em segundos                  |
-| `log_mensagens`        | bool    | Não         | false    | Se true, exibe cada mensagem enviada no console       |
-| `auto_test`            | bool    | Não         | false    | Se true, executa teste automático de carga            |
+| Campo                   | Tipo  | Obrigatório | Padrão | Descrição                                       |
+| ----------------------- | ----- | ----------- | ------ | ----------------------------------------------- |
+| `mensagens_por_segundo` | usize | Não         | 100000 | Taxa alvo de envio de mensagens por segundo     |
+| `tempo_envio_segundos`  | usize | Sim         | -      | Duração do teste de carga em segundos           |
+| `log_mensagens`         | bool  | Não         | false  | Se true, exibe cada mensagem enviada no console |
+| `auto_test`             | bool  | Não         | false  | Se true, executa teste automático de carga      |
 
 #### Exemplos de uso
 
@@ -95,10 +95,30 @@ curl -X POST http://localhost:5000/csv \
   "total_enviado": 5140000,
   "tempo_total_segundos": 18.03,
   "testes": [
-    {"taxa_teste": 100000, "mensagens_enviadas": 286000, "mensagens_com_erro": 0, "taxa_erro": 0.0},
-    {"taxa_teste": 200000, "mensagens_enviadas": 544000, "mensagens_com_erro": 0, "taxa_erro": 0.0},
-    {"taxa_teste": 400000, "mensagens_enviadas": 1046000, "mensagens_com_erro": 0, "taxa_erro": 0.0},
-    {"taxa_teste": 3200000, "mensagens_enviadas": 1100000, "mensagens_com_erro": 0, "taxa_erro": 0.0}
+    {
+      "taxa_teste": 100000,
+      "mensagens_enviadas": 286000,
+      "mensagens_com_erro": 0,
+      "taxa_erro": 0.0
+    },
+    {
+      "taxa_teste": 200000,
+      "mensagens_enviadas": 544000,
+      "mensagens_com_erro": 0,
+      "taxa_erro": 0.0
+    },
+    {
+      "taxa_teste": 400000,
+      "mensagens_enviadas": 1046000,
+      "mensagens_com_erro": 0,
+      "taxa_erro": 0.0
+    },
+    {
+      "taxa_teste": 3200000,
+      "mensagens_enviadas": 1100000,
+      "mensagens_com_erro": 0,
+      "taxa_erro": 0.0
+    }
   ]
 }
 ```
@@ -118,25 +138,25 @@ O teste automático de carga foi implementado para identificar a taxa máxima su
 
 ## Configurações do Kafka Producer
 
-| Configuração                   | Valor       | Descrição                                                      |
-| ------------------------------ | ----------- | -------------------------------------------------------------- |
-| `bootstrap.servers`           | `kafka:9092` | Endereço dos brokers Kafka                                    |
-| `message.timeout.ms`           | `5000`      | Timeout para entrega da mensagem                               |
-| `compression.type`            | `zstd`      | Algoritmo de compressão                                       |
-| `batch.size`                  | `1048576`   | Tamanho máximo do batch (1MB)                                 |
-| `linger.ms`                   | `5`         | Tempo máximo para aguardar antes de enviar o batch            |
-| `queue.buffering.max.messages` | `100000`   | Número máximo de mensagens na fila                            |
-| `acks`                        | `1`         | Acknowledgment do broker                                      |
-| `request.timeout.ms`          | `30000`     | Timeout para requisições                                      |
+| Configuração                   | Valor        | Descrição                                          |
+| ------------------------------ | ------------ | -------------------------------------------------- |
+| `bootstrap.servers`            | `kafka:9092` | Endereço dos brokers Kafka                         |
+| `message.timeout.ms`           | `5000`       | Timeout para entrega da mensagem                   |
+| `compression.type`             | `zstd`       | Algoritmo de compressão                            |
+| `batch.size`                   | `1048576`    | Tamanho máximo do batch (1MB)                      |
+| `linger.ms`                    | `5`          | Tempo máximo para aguardar antes de enviar o batch |
+| `queue.buffering.max.messages` | `100000`     | Número máximo de mensagens na fila                 |
+| `acks`                         | `1`          | Acknowledgment do broker                           |
+| `request.timeout.ms`           | `30000`      | Timeout para requisições                           |
 
 ---
 
 ## Variáveis de ambiente
 
-| Variável              | Default           | Descrição                           |
-| --------------------- | ----------------- | ---------------------------------- |
-| `KAFKA_BOOTSTRAP_SERVERS` | `kafka:9092`  | Endereço dos brokers Kafka         |
-| `CSV_FILEPATH`        | `/app/data/dados.csv` | Caminho do arquivo CSV           |
+| Variável                  | Default               | Descrição                  |
+| ------------------------- | --------------------- | -------------------------- |
+| `KAFKA_BOOTSTRAP_SERVERS` | `kafka:9092`          | Endereço dos brokers Kafka |
+| `CSV_FILEPATH`            | `/app/data/dados.csv` | Caminho do arquivo CSV     |
 
 ---
 
@@ -148,11 +168,11 @@ src/rust-producer/services/csv-kafka-producer/
 ├── Dockerfile
 ├── README.md
 └── src/
-    ├── main.rs        
-    ├── models.rs        
+    ├── main.rs
+    ├── models.rs
     └── mods/
         ├── mod.rs
-        └── csv.rs         
+        └── csv.rs
 ```
 
 ---
@@ -173,9 +193,9 @@ As mensagens enviadas ao Kafka seguem o mesmo formato esperado pelo [bigquery-wr
   "endereco": "Avenida Cidade Jardim",
   "numero": 897,
   "target": {
-    "idade": {"18-19": 0.08, "20-29": 0.12},
-    "genero": {"F": 0.38, "M": 0.62},
-    "classe_social": {"A": 0.05}
+    "idade": { "18-19": 0.08, "20-29": 0.12 },
+    "genero": { "F": 0.38, "M": 0.62 },
+    "classe_social": { "A": 0.05 }
   }
 }
 ```

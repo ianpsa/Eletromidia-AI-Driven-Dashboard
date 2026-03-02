@@ -9,7 +9,7 @@ Este documento apresenta a análise de custos das três arquiteturas de nuvem pr
 
 ## Por que uma Análise Financeira importa para o projeto?
 
-Antes de construir qualquer coisa em nuvem, é fundamental entender *quanto custa rodar o que você está propondo*. Para um projeto acadêmico com impacto real como este, uma análise financeira cumpre três papéis críticos:
+Antes de construir qualquer coisa em nuvem, é fundamental entender _quanto custa rodar o que você está propondo_. Para um projeto acadêmico com impacto real como este, uma análise financeira cumpre três papéis críticos:
 
 **Validação de viabilidade:** A Eletromídia precisa saber se a solução é sustentável para adotar em produção. Uma ferramenta tecnicamente brilhante que custa 10x mais do que o problema vale não será adotada.
 
@@ -25,11 +25,11 @@ Neste documento comparamos **três arquiteturas** para hospedar o Visualizador d
 
 Antes de analisar os números, é importante registrar os critérios e premissas que nortearam todos os cálculos:
 
-**1. Volume de dados baseado no fluxo real**  
+**1. Volume de dados baseado no fluxo real**
 Todas as métricas de armazenamento foram calculadas com base no volume real dos dados fornecidos pela Claro Geodata: **1 arquivo `fluxo_diario.csv` (9 MB) por dia**, totalizando **270 MB por mês**.
 
-**2. Recursos computacionais baseados em requests do Kubernetes**  
-Para arquiteturas que envolvem contêineres, os custos foram calculados com base nos *resource requests* de cada Pod — isto é, o mínimo de CPU e memória reservado por contêiner. A fórmula utilizada foi:
+**2. Recursos computacionais baseados em requests do Kubernetes**
+Para arquiteturas que envolvem contêineres, os custos foram calculados com base nos _resource requests_ de cada Pod — isto é, o mínimo de CPU e memória reservado por contêiner. A fórmula utilizada foi:
 
 ```text
 Custo Mensal = [(CPU × Pcpu) + (RAM × Pram)] × Pods × 730h
@@ -46,10 +46,10 @@ Onde:
 
 > Os preços de CPU e memória do GKE Autopilot são os preços padrão (on-demand) da região **Iowa (us-central1)**, conforme tabela oficial do Google Cloud. Para a região **southamerica-east1 (São Paulo)** pode haver uma pequena variação de preço.
 
-**3. Custos mínimos de operação**  
+**3. Custos mínimos de operação**
 Todos os valores apresentados representam o **custo mínimo mensal**, considerando escala mínima (2 réplicas por serviço). Apesar disso, as três arquiteturas suportam escala elástica para qualquer volume de dados ou tráfego.
 
-**4. Todos os serviços rodam com 2 réplicas 24/7**  
+**4. Todos os serviços rodam com 2 réplicas 24/7**
 Em todas as três arquiteturas, cada serviço opera com **no mínimo 2 réplicas rodando continuamente**, 24 horas por dia, 7 dias por semana. Isso garante alta disponibilidade e elimina pontos únicos de falha. O número máximo de réplicas pode chegar a 15 por serviço durante picos de tráfego.
 
 ---
@@ -74,7 +74,7 @@ Bucket para armazenamento e staging dos arquivos CSV recebidos da Claro Geodata.
 
 ## Arquitetura 1 — Managed by Google
 
-**Custo Total: $766,66/mês**  
+**Custo Total: $766,66/mês**
 🔗 [Ver cálculo no Google Cloud Pricing Calculator](https://cloud.google.com/products/calculator?hl=pt_br&dl=CjhDaVJsTm1KaVlqQTNaQzFrTmprMUxUUTRaR0V0WVdFeU9TMW1ObVZoTURsaVpqVXhaVE1RQVE9PRALGiQyRTU1RDBDNC1GOTUwLTQwNTEtOUEwQS03MUI2NkZBMjczOTk)
 
 ### Descrição
@@ -83,19 +83,19 @@ Arquitetura baseada inteiramente em serviços gerenciados pelo Google, sem neces
 
 ### Componentes e Custos
 
-| Serviço | Categoria | Custo/mês |
-|---------|-----------|-----------|
-| Managed Service for Apache Kafka | Streaming | $283,47 |
-| Redis Writer | Processamento | $19,71 |
-| BigQuery Writer (Dataflow) | Processamento | $108,00 |
-| Cloud Storage Writer (Dataflow) | Processamento | $2,93 |
-| Data Source API | Backend | $19,71 |
-| Cloud Storage BFF | Backend | $19,71 |
-| WebSocket Service | Backend | $19,71 |
-| BI Engine (BigQuery) | Analytics | $7,59 |
-| Cloud Storage | Armazenamento | $5,06 |
-| Memory Store (Redis) | Cache/State | $280,76 |
-| **Total** | | **$766,65** |
+| Serviço                          | Categoria     | Custo/mês   |
+| -------------------------------- | ------------- | ----------- |
+| Managed Service for Apache Kafka | Streaming     | $283,47     |
+| Redis Writer                     | Processamento | $19,71      |
+| BigQuery Writer (Dataflow)       | Processamento | $108,00     |
+| Cloud Storage Writer (Dataflow)  | Processamento | $2,93       |
+| Data Source API                  | Backend       | $19,71      |
+| Cloud Storage BFF                | Backend       | $19,71      |
+| WebSocket Service                | Backend       | $19,71      |
+| BI Engine (BigQuery)             | Analytics     | $7,59       |
+| Cloud Storage                    | Armazenamento | $5,06       |
+| Memory Store (Redis)             | Cache/State   | $280,76     |
+| **Total**                        |               | **$766,65** |
 
 > \* A arquitetura Managed by Google inclui um banco de dados **Memory Store (Redis)** adicional para gerenciamento de estado e cache, componente que não está presente nas demais arquiteturas.
 
@@ -107,7 +107,7 @@ Esta é a arquitetura **mais cara**, porém com o **menor esforço operacional**
 
 ## Arquitetura 2 — Serverless Native
 
-**Custo Total: $233,22/mês**  
+**Custo Total: $233,22/mês**
 🔗 [Ver cálculo no Google Cloud Pricing Calculator](https://cloud.google.com/products/calculator?hl=pt-BR&authuser=3&pageId=none&dl=CjhDaVE1Tm1NMU5HVTJPQzB6WVROa0xUUTVPR1l0T1RjMk15MHpZVEJpWm1Rek5UYzNZMllRQVE9PRALGiRCRDJBMUE1Ni0xMEU1LTQwMDctOTRGNS0yM0ZBRjNBQ0MzRkM)
 
 ### Descrição
@@ -116,16 +116,16 @@ Arquitetura baseada em **Cloud Run**, o serviço serverless de contêineres do G
 
 ### Componentes e Custos
 
-| Serviço | Plataforma | Custo/mês |
-|---------|------------|-----------|
-| Cluster Apache Kafka | Compute Engine (3 instâncias) | ~141,72 |
-| BigQuery Writer (2 réplicas) | Cloud Run | ~$19,71 |
-| Cloud Storage Writer (2 réplicas) | Cloud Run | ~$19,71 |
-| Kafka Geodata Producer (2 réplicas) | Cloud Run | ~$19,71 |
-| Cloud Storage BFF (2 réplicas) | Cloud Run | ~$19,71 |
-| BI Engine (BigQuery) | Analytics | $7,59 |
-| Cloud Storage | Armazenamento | $5,06 |
-| **Total** | | **$233,21** |
+| Serviço                             | Plataforma                    | Custo/mês   |
+| ----------------------------------- | ----------------------------- | ----------- |
+| Cluster Apache Kafka                | Compute Engine (3 instâncias) | ~141,72     |
+| BigQuery Writer (2 réplicas)        | Cloud Run                     | ~$19,71     |
+| Cloud Storage Writer (2 réplicas)   | Cloud Run                     | ~$19,71     |
+| Kafka Geodata Producer (2 réplicas) | Cloud Run                     | ~$19,71     |
+| Cloud Storage BFF (2 réplicas)      | Cloud Run                     | ~$19,71     |
+| BI Engine (BigQuery)                | Analytics                     | $7,59       |
+| Cloud Storage                       | Armazenamento                 | $5,06       |
+| **Total**                           |                               | **$233,21** |
 
 ### Análise
 
@@ -137,32 +137,32 @@ Um ponto de atenção importante nessa arquitetura, no entanto, é a **elasticid
 
 ## Arquitetura 3 — Kubernetes-Native (GKE Autopilot)
 
-**Custo Base (fixo): $12,65/mês + Custo Computacional: ~$164,43/mês**  
+**Custo Base (fixo): $12,65/mês + Custo Computacional: ~$164,43/mês**
 **Custo Total Estimado: ~$177,08/mês**
 
 ### Descrição
 
-Arquitetura baseada em **GKE Autopilot**, o modo totalmente gerenciado do Google Kubernetes Engine. No Autopilot, você não gerencia nós — o Google provisiona a infraestrutura automaticamente com base nos *resource requests* dos Pods. Você paga apenas pelos recursos solicitados pelos Pods enquanto estão em execução.
+Arquitetura baseada em **GKE Autopilot**, o modo totalmente gerenciado do Google Kubernetes Engine. No Autopilot, você não gerencia nós — o Google provisiona a infraestrutura automaticamente com base nos _resource requests_ dos Pods. Você paga apenas pelos recursos solicitados pelos Pods enquanto estão em execução.
 
 ### Preços GKE Autopilot (padrão on-demand)
 
-| Recurso | Preço |
-|---------|-------|
-| vCPU (por hora) | **$0.0445** |
+| Recurso                | Preço          |
+| ---------------------- | -------------- |
+| vCPU (por hora)        | **$0.0445**    |
 | Memória GiB (por hora) | **$0.0049225** |
 
 > Fonte: [Tabela oficial de preços do GKE](https://cloud.google.com/kubernetes-engine/pricing) — região Iowa (us-central1), valores padrão sem desconto por compromisso.
 
 ### Resource Requests por Serviço
 
-| Serviço | CPU (request) | Memória (request) | Réplicas (mín/máx) |
-|---------|---------------|-------------------|-------------------|
-| 1 - BigQuery Writer | 128m (0.128 vCPU) | 500Mi (0.488 GiB) | 2 / 15 |
-| 2 - Cloud Storage Writer | 128m (0.128 vCPU) | 500Mi (0.488 GiB) | 2 / 15 |
-| 3 - Kafka Geodata Producer | 128m (0.128 vCPU) | 500Mi (0.488 GiB) | 2 / 15 |
-| 4 - Cloud Storage BFF | 128m (0.128 vCPU) | 500Mi (0.488 GiB) | 2 / 15 |
-| 5 - Kafka Broker | 500m (0.500 vCPU) | 2Gi (2.000 GiB) | 5 / 15 |
-| PersistentVolume | — | — | 10Gi (Standard PD) |
+| Serviço                    | CPU (request)     | Memória (request) | Réplicas (mín/máx) |
+| -------------------------- | ----------------- | ----------------- | ------------------ |
+| 1 - BigQuery Writer        | 128m (0.128 vCPU) | 500Mi (0.488 GiB) | 2 / 15             |
+| 2 - Cloud Storage Writer   | 128m (0.128 vCPU) | 500Mi (0.488 GiB) | 2 / 15             |
+| 3 - Kafka Geodata Producer | 128m (0.128 vCPU) | 500Mi (0.488 GiB) | 2 / 15             |
+| 4 - Cloud Storage BFF      | 128m (0.128 vCPU) | 500Mi (0.488 GiB) | 2 / 15             |
+| 5 - Kafka Broker           | 500m (0.500 vCPU) | 2Gi (2.000 GiB)   | 5 / 15             |
+| PersistentVolume           | —                 | —                 | 10Gi (Standard PD) |
 
 ### Cálculo Detalhado por Serviço
 
@@ -194,18 +194,18 @@ Aplicando a fórmula `[(CPU × Pcpu) + (RAM × Pram)] × Pods × 730h`:
 
 ### Resumo dos Custos Computacionais
 
-| Serviço | Custo/mês |
-|---------|-----------|
-| Serviço 1 | $11,82 |
-| Serviço 2 | $11,82 |
-| Serviço 3 | $11,82 |
-| Serviço 4 | $11,82 |
-| Serviço 5 | $117,15 |
-| PersistentVolume (10Gi) | $0,40 |
-| **Subtotal Computacional** | **$164,43** |
-| BigQuery BI Engine | $7,59 |
-| Cloud Storage | $5,06 |
-| **Total Geral** | **~$177,08** |
+| Serviço                    | Custo/mês    |
+| -------------------------- | ------------ |
+| Serviço 1                  | $11,82       |
+| Serviço 2                  | $11,82       |
+| Serviço 3                  | $11,82       |
+| Serviço 4                  | $11,82       |
+| Serviço 5                  | $117,15      |
+| PersistentVolume (10Gi)    | $0,40        |
+| **Subtotal Computacional** | **$164,43**  |
+| BigQuery BI Engine         | $7,59        |
+| Cloud Storage              | $5,06        |
+| **Total Geral**            | **~$177,08** |
 
 ### Análise
 
@@ -215,11 +215,11 @@ Esta é a arquitetura **mais barata** em custo absoluto, sendo também a **mais 
 
 ## Comparativo Geral
 
-| Arquitetura | Custo Mínimo/mês | Complexidade Operacional | Escalabilidade | Ideal para |
-|-------------|-----------------|--------------------------|----------------|------------|
-| **Managed by Google** | $766,65 | ⭐ Baixa | ✅ Automática | Times que priorizam agilidade |
-| **Serverless Native** | ~$233,21 | ⭐⭐ Média | ✅ Automática | Equipes de médio porte |
-| **Kubernetes-Native** | ~$177,08 | ⭐⭐⭐ Alta | ✅ Configurável | Times com expertise em K8s |
+| Arquitetura           | Custo Mínimo/mês | Complexidade Operacional | Escalabilidade  | Ideal para                    |
+| --------------------- | ---------------- | ------------------------ | --------------- | ----------------------------- |
+| **Managed by Google** | $766,65          | ⭐ Baixa                 | ✅ Automática   | Times que priorizam agilidade |
+| **Serverless Native** | ~$233,21         | ⭐⭐ Média               | ✅ Automática   | Equipes de médio porte        |
+| **Kubernetes-Native** | ~$177,08         | ⭐⭐⭐ Alta              | ✅ Configurável | Times com expertise em K8s    |
 
 ### Gráfico de Custo Mensal (Mínimo)
 

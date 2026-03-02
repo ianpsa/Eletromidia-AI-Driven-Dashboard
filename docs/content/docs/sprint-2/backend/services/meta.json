@@ -1,7 +1,9 @@
 {
   "title": "Serviços",
   "pages": [
+    "csv-kafka-producer",
     "bigquery-writer",
+    "bucket-consumer",
     "bff-storage"
   ]
 }

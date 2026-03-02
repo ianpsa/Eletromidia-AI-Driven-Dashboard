@@ -5,16 +5,18 @@ description: Documentação dos serviços backend da Sprint 2
 
 ## Visão Geral
 
-O backend da Sprint 2 é composto por serviços que implementam o pipeline de ingestão de dados conforme a [arquitetura GCP](/docs/sprint-1/arquitetura). Estes serviços são responsáveis por extrair dados de fontes diversas, processá-los e persisti-los para análise posterior.
+O backend da Sprint 2 é composto por serviços que implementam o pipeline de ingestão de dados conforme a [arquitetura Kubernetes-Native](/docs/sprint-2/arquitetura#kubernetes-native-v2--escolha-atual). Estes serviços são responsáveis por extrair dados de fontes diversas, processá-los e persisti-los para análise posterior.
 
 ---
 
 ## Serviços
 
-| Serviço                      | Linguagem | Função                                                      |
-| ---------------------------- | --------- | ----------------------------------------------------------- |
-| [CSV Kafka Producer](/docs/sprint-2/backend/services/csv-kafka-producer) | Rust      | Produz mensagens de um arquivo CSV para o Kafka            |
-| [BigQuery Writer](/docs/sprint-2/backend/services/bigquery-writer)      | Go        | Consome mensagens do Kafka e persiste no BigQuery           |
+| Serviço                                                                  | Linguagem | Função                                                    |
+| ------------------------------------------------------------------------ | --------- | --------------------------------------------------------- |
+| [CSV Kafka Producer](/docs/sprint-2/backend/services/csv-kafka-producer) | Rust      | Produz mensagens de um arquivo CSV para o Kafka           |
+| [BigQuery Writer](/docs/sprint-2/backend/services/bigquery-writer)       | Go        | Consome mensagens do Kafka e persiste no BigQuery         |
+| [Bucket Consumer](/docs/sprint-2/backend/services/bucket-consumer)       | Go        | Consome mensagens do Kafka e faz backup no Cloud Storage  |
+| [BFF Storage](/docs/sprint-2/backend/services/bff-storage)               | Go        | Expõe os arquivos do bucket via HTTP para a interface     |
 
 ---
 
@@ -27,11 +29,14 @@ CSV (dados telemétricos)
 csv-kafka-producer (Rust)
         │
         ▼
-   Kafka Topic: csv-topic
+   Kafka Topic: geodata
         │
-        ├──► bigquery-writer (Go) ──► BigQuery
+        ├──► bigquery-writer (Go)  ──► BigQuery
         │
-        └──► (futuros consumidores)
+        └──► bucket-consumer (Go)  ──► Cloud Storage
+                                              │
+                                              ▼
+                                        bff-storage (Go) ──► UI
 ```
 
 Esta arquitetura segue o padrão Pub/Sub, permitindo que múltiplos consumidores processem os mesmos dados de forma independente, conforme definido nos [requisitos não funcionais](/docs/sprint-1/requisitos#2-requisitos-não-funcionais-rnf) de processamento assíncrono.

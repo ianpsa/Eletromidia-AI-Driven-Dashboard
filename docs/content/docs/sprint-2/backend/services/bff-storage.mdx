@@ -43,11 +43,11 @@ O fluxo de arquivos é complementar ao [BigQuery Writer](/docs/sprint-2/backend/
 
 Todos os endpoints aceitam apenas método `GET`.
 
-| Endpoint | Query params | Sucesso | Erros comuns | Uso |
-| --- | --- | --- | --- | --- |
-| `/bucket/items` | - | `200` | `500`, `405` | Lista todos os objetos do bucket |
-| `/bucket/items/by-folder` | `folder` (obrigatório) | `200` | `400`, `500`, `405` | Lista objetos por prefixo |
-| `/bucket/items/file` | `id` (obrigatório) | `200` | `400`, `404`, `500`, `405` | Baixa um arquivo específico |
+| Endpoint                  | Query params           | Sucesso | Erros comuns               | Uso                              |
+| ------------------------- | ---------------------- | ------- | -------------------------- | -------------------------------- |
+| `/bucket/items`           | -                      | `200`   | `500`, `405`               | Lista todos os objetos do bucket |
+| `/bucket/items/by-folder` | `folder` (obrigatório) | `200`   | `400`, `500`, `405`        | Lista objetos por prefixo        |
+| `/bucket/items/file`      | `id` (obrigatório)     | `200`   | `400`, `404`, `500`, `405` | Baixa um arquivo específico      |
 
 ### Exemplo de request/response: listagem por pasta
 
@@ -169,20 +169,20 @@ src/kubernetes/bff-storage/
 
 ### Dependências principais
 
-| Pacote | Versão | Motivo |
-| --- | --- | --- |
-| `cloud.google.com/go/storage` | `v1.59.0` | SDK oficial do Google Cloud Storage |
-| `google.golang.org/api` | `v0.256.0` | Autenticação e integração com APIs Google |
+| Pacote                        | Versão     | Motivo                                    |
+| ----------------------------- | ---------- | ----------------------------------------- |
+| `cloud.google.com/go/storage` | `v1.59.0`  | SDK oficial do Google Cloud Storage       |
+| `google.golang.org/api`       | `v0.256.0` | Autenticação e integração com APIs Google |
 
 ---
 
 ## Variáveis de ambiente
 
-| Variável | Default | Obrigatória | Descrição |
-| --- | --- | --- | --- |
-| `PORT` | `8080` | Não | Porta HTTP do serviço |
-| `BUCKET_NAME` | - | Sim | Nome do bucket no GCS |
-| `CS_SA_CREDENTIALS` | - | Sim | Caminho do JSON da Service Account |
+| Variável            | Default | Obrigatória | Descrição                          |
+| ------------------- | ------- | ----------- | ---------------------------------- |
+| `PORT`              | `8080`  | Não         | Porta HTTP do serviço              |
+| `BUCKET_NAME`       | -       | Sim         | Nome do bucket no GCS              |
+| `CS_SA_CREDENTIALS` | -       | Sim         | Caminho do JSON da Service Account |
 
 ---
 

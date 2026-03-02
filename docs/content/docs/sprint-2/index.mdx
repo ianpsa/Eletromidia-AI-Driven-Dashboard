@@ -11,19 +11,21 @@ Implementar a base técnica do sistema, criando um pipeline funcional de ingest�
 
 ## Entregáveis
 
-| Entregável                              | Status | Descrição                                                                 |
-| --------------------------------------- | ------ | ------------------------------------------------------------------------- |
-| [Backend - Visão Geral](/docs/sprint-2/backend) | ✓      | Serviços API Producer e Writer para o pipeline de dados                  |
-| [CSV Kafka Producer](/docs/sprint-2/backend/services/csv-kafka-producer) | ✓      | Serviço Rust que produz mensagens do CSV para o Kafka                     |
-| [BigQuery Writer](/docs/sprint-2/backend/services/bigquery-writer) | ✓      | Serviço Go que consome Kafka e persiste no BigQuery                       |
-| Pipeline de ingestão de dados           | ✓      | Fluxo completo: CSV → Kafka → BigQuery                                   |
-| Estrutura do banco de dados             | ✓      | Schemas definidos no Terraform para as 5 tabelas do BigQuery             |
-| API para consumo de dados               | ✓      | Endpoints REST para teste de carga e ingestion                             |
-| Mapa inicial em hexbin                  | ⏳      | Visualização geoespacial (próxima sprint)                                |
-| Início da UI de visualização           | ⏳      | Interface para visualização de dados (próxima sprint)                    |
+| Entregável                                                               | Status | Descrição                                                    |
+| ------------------------------------------------------------------------ | ------ | ------------------------------------------------------------ |
+| [Backend - Visão Geral](/docs/sprint-2/backend)                          | ✓      | Quatro serviços formando o pipeline de ingestão e acesso     |
+| [CSV Kafka Producer](/docs/sprint-2/backend/services/csv-kafka-producer) | ✓      | Serviço Rust que produz mensagens do CSV para o Kafka        |
+| [BigQuery Writer](/docs/sprint-2/backend/services/bigquery-writer)       | ✓      | Serviço Go que consome Kafka e persiste no BigQuery          |
+| [Bucket Consumer](/docs/sprint-2/backend/services/bucket-consumer)       | ✓      | Serviço Go que persiste eventos do Kafka no Cloud Storage    |
+| [BFF Storage](/docs/sprint-2/backend/services/bff-storage)               | ✓      | Serviço Go que expõe os arquivos do bucket via HTTP          |
+| Pipeline de ingestão de dados                                            | ✓      | Fluxo completo: CSV → Kafka → BigQuery + Cloud Storage       |
+| Estrutura do banco de dados                                              | ✓      | Schemas definidos no Terraform para as 5 tabelas do BigQuery |
+| [Dashboard Analítico](/docs/sprint-2/dashboard-analitico)                | ✓      | Plataforma de BI no Looker Studio com dados do BigQuery      |
+| Mapa inicial em hexbin                                                   | ⏳     | Visualização geoespacial (próxima sprint)                    |
+| Início da UI de visualização                                             | ⏳     | Interface para visualização de dados (próxima sprint)        |
 
 ---
 
 ## Progresso
 
-O desenvolvimento do backend foi concluído com a implementação de dois serviços principais que formam o pipeline de dados. O csv-kafka-producer em Rust oferece alta performance no envio de mensagens para o Kafka, enquanto o bigquery-writer em Go persiste os dados no BigQuery para análise.
+O desenvolvimento do backend foi concluído com quatro serviços formando o pipeline de dados: o `csv-kafka-producer` em Rust produz eventos para o Kafka; o `bigquery-writer` em Go persiste os dados no BigQuery; o `bucket-consumer` faz backup dos eventos no Cloud Storage; e o `bff-storage` expõe os arquivos via HTTP para a interface. O dashboard analítico no Looker Studio foi entregue com visualizações interativas de fluxo de pessoas segmentado por classe social, gênero e faixa etária.
