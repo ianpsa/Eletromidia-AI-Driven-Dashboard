@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bigquery-writer-np
+spec:
+  podSelector:
+    matchLabels:
+      app: bigquery-writer
+  policyTypes:
+  - Egress
+  - Ingress
+  egress:
+  - to:
+    - 
+    ports:
+    - protocol: TCP
+      port: 9092
+
+
+      ### CRIAR EGRESSO PARA BIGQUERY <- ESTUDAR SOBRE
