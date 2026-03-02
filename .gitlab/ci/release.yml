@@ -44,4 +44,4 @@ release:create:
         --name "Release $VERSION" \
         --tag-name "$VERSION" \
         --ref "$CI_COMMIT_SHA" \
-        --description "Release $VERSION - See releases/$VERSION for details"
+        --description "$RELEASE_NOTES"
