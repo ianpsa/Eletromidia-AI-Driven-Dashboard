@@ -1,6 +1,8 @@
 {
   "title": "Sprint 2",
   "pages": [
-    "backend"
+    "arquitetura",
+    "backend",
+    "dashboard-analitico"
   ]
 }

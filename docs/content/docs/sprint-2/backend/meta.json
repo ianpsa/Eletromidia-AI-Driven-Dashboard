@@ -1,6 +1,7 @@
 {
   "title": "Backend",
   "pages": [
+    "index",
     "services",
     "infra"
   ]
