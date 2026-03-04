@@ -8,7 +8,7 @@
     },
     {
         "name": "impression_hour",
-        "type": "STRING",
+        "type": "INTEGER",
         "mode": "REQUIRED",
         "description": "Horário da leitura"
     },
@@ -22,7 +22,7 @@
     {
         "name": "uniques",
         "type": "FLOAT",
-        "mode": "REQUIRED",
+        "mode": "NULLABLE",
         "description": "Quantidade de pessoas únicas estimadas no local no período"
     },
     {
