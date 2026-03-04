@@ -10,5 +10,5 @@ output "dataset_id_dev" {
 
 output "table_ids" {
     description = "Id das tabelas criadas no BigQuery-Dev"
-    value = { for k, v in googoogle_bigquery_table.tables : k => v.table_id}
+    value = { for k, v in google_bigquery_table.tables : k => v.table_id}
 }
