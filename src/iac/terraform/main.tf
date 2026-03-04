@@ -25,6 +25,15 @@ module "iam" {
   service_account_email = module.bigquery.service_account_email
 }
 
+module "iam_dev" {
+  source = "./modules/iam_dev"
+
+  project_id                   = var.project_id
+  service_account_bq_dev_email = module.bigquery_dev.service_account_email_dev
+  cs_dev_name                  = var.cs_dev_name
+  service_account_cs_dev_email = module.cloud_storage_dev.service_account_cs_dev_email
+}
+
 module "cloud_storage" {
   source = "./modules/cloud_storage"
 

@@ -1,16 +1,16 @@
 variable "project_id" {
-    description = "Id do Projeto no GCP"
-    type = string
+  description = "Id do Projeto no GCP"
+  type        = string
 }
 
 variable "location" {
-    description = "Localização do BigQuery"
-    type = string
+  description = "Localização do BigQuery"
+  type        = string
 }
 
 variable "dataset_id" {
-    description = "Nome do Dataset do BigQuery"
-    type = string
+  description = "Nome do Dataset do BigQuery"
+  type        = string
 }
 
 variable "tables" {
