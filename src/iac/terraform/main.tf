@@ -8,6 +8,15 @@ module "bigquery" {
     tables          = var.tables
 }
 
+module "bigquery_dev" {
+  source = "./modules/bigquery_dev"
+
+  project_id = var.project_id
+  location = var.location
+  dataset_id_dev = var.dataset_id_dev
+  tables = var.tables
+}
+
 module "iam" {
     source = "./modules/iam"
 

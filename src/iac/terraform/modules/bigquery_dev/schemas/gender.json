@@ -1,0 +1,21 @@
+[
+    {
+        "name": "id",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Identificador único do registro Gender",
+        "defaultValueExpression": "GENERATE_UUID()"
+    },
+    {
+        "name": "feminine",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem de pessoas, do gênero feminino, de um evento Geodata"
+    },
+    {
+        "name": "masculine",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem de pessoas, do gênero masculino, de um evento Geodata"
+    }
+]

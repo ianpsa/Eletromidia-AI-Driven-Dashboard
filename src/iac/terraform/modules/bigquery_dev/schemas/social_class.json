@@ -1,0 +1,45 @@
+[
+    {
+        "name": "id",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Identificador único do registro Social Class",
+        "defaultValueExpression": "GENERATE_UUID()"
+    },
+    {
+        "name": "a_class",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem de pessoas, da classe social A, de um evento Geodata"
+    },
+    {
+        "name": "b1_class",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem de pessoas, da classe social B1, de um evento Geodata"
+    },
+    {
+        "name": "b2_class",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem de pessoas, da classe social B2, de um evento Geodata"
+    },
+    {
+        "name": "c1_class",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem de pessoas, da classe social C1, de um evento Geodata"
+    },
+    {
+        "name": "c2_class",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem de pessoas, da classe social C2, de um evento Geodata"
+    },
+    {
+        "name": "de_class",
+        "type": "FLOAT",
+        "mode": "REQUIRED",
+        "description": "Porcentagem de pessoas, da classe social DE, de um evento Geodata"
+    }
+]

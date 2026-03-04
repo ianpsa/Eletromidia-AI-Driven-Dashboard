@@ -14,6 +14,11 @@ variable "dataset_id" {
     type = string
 }
 
+variable "dataset_id_dev" {
+    description = "Nome do Dataset no BigQuery"
+    type = string
+}
+
 variable "tables" {
     description = "Nomes das tabelas do BigQuery"
     type = map(object({

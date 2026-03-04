@@ -1,0 +1,27 @@
+[
+    {
+        "name": "id",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Identificador único do registro Target",
+        "defaultValueExpression": "GENERATE_UUID()"
+    },
+    {
+        "name": "age_id",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "Foreign Key referente ao Id da tabela `age`"
+    },
+    {
+        "name": "gender_id",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "Foreign Key referente ao Id da tabela `gender`"
+    },
+    {
+        "name": "social_class_id",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "Foreign Key referente ao Id da tabela `social_class`"
+    }
+]
