@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bff-storage-cm
+data:
+  PROJECT_ID: "midia-in-da-house"
+  BUCKET_NAME: "kafka-backup-eletromidia-dev"
+  CS_SA_CREDENTIALS: "/secrets/cs-api-key.json"
