@@ -1,0 +1,17 @@
+# Para criar grupos preciso de uma organização verificada
+# Poderia usar o Inteli, mas minha conta do Inteli não tem mais créditos
+# Por isso vou precisar criar uma RoleBiding uma por uma, pra cada Dev
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: dev
+  name: developer-binding
+subjects:
+- kind: User
+  name: ian.simao@sou.inteli.edu.br
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: developer
+  apiGroup: rbac.authorization.k8s.io
