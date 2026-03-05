@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bucket-consumer-cm
+data:
+  KAFKA_BROKERS: "my-cluster-kafka-bootstrap.kafka.svc:9092"
+  KAFKA_TOPIC: "geodata-dev"
+  KAFKA_GROUP_ID: "bucket-consumer-group-dev"
+  KAFKA_MIN_BYTES: "1000"
+  KAFKA_MAX_BYTES: "10000000"
+  KAFKA_READ_TIMEOUT: "5s"
+  KAFKA_MAX_WAIT: "500ms"
+  PROCESS_DELAY: "0"
+  GCS_BUCKET: "kafka-backup-eletromidia-dev"
+  GCS_CREDENTIALS: "/secrets/cs-api-key.json"
+  GCS_BASE_PATH: "kafka-backup"
+  FLUSH_INTERVAL: "30s"
+  FLUSH_SIZE: "500"
