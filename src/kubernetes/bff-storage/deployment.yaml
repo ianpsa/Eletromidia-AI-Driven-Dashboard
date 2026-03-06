@@ -18,6 +18,7 @@ spec:
       securityContext:
         runAsUser: 1010
         runAsNonRoot: true
+      automountServiceAccountToken: false
       containers:
       - image: bff-storage:latest
         name: bff-storage

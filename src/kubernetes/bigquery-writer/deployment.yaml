@@ -22,6 +22,7 @@ spec:
       securityContext:
         runAsUser: 1010
         runAsNonRoot: true
+      automountServiceAccountToken: false
       containers:
         - image: bigquery-writer:latest
           imagePullPolicy: Never
