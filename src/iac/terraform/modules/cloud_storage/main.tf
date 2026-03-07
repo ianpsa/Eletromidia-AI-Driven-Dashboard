@@ -46,3 +46,9 @@ resource "google_storage_bucket_iam_member" "cs_sa" {
   role   = "roles/storage.objectUser"
   member = "serviceAccount:${google_service_account.cs_sa.email}"
 }
+
+resource "google_storage_bucket_iam_member" "cs_sa_bucket_reader" {
+  bucket = google_storage_bucket.kafka_backup.name
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${google_service_account.cs_sa.email}"
+}
