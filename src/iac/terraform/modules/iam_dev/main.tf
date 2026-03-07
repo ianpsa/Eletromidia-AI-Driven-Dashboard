@@ -9,3 +9,9 @@ resource "google_storage_bucket_iam_member" "cs_dev_sa" {
   role   = "roles/storage.objectUser"
   member = "serviceAccount:${var.service_account_cs_dev_email}"
 }
+
+resource "google_storage_bucket_iam_member" "cs_dev_sa_bucket_reader" {
+  bucket = var.cs_dev_name
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${var.service_account_cs_dev_email}"
+}

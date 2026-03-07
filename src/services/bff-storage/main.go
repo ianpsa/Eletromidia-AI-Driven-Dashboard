@@ -1,10 +1,10 @@
 package main
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joho/godotenv"
+	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
@@ -37,9 +37,15 @@ type objectItem struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+
 type folderListing struct {
 	Items   []objectItem `json:"items"`
 	Folders []string     `json:"folders"`
+}
+
+type heatlhAssistant struct {
+	Api 		*api
+	Context 	context.Context
 }
 
 func main() {
@@ -64,11 +70,17 @@ func main() {
 		bucket:     client.Bucket(cfg.BucketName),
 	}
 
+	ha := heatlhAssistant{
+		Api: h,
+		Context: ctx,
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", h.health)
 	mux.HandleFunc("/bucket/items", h.listItems)
 	mux.HandleFunc("/bucket/items/by-folder", h.listItemsByFolder)
 	mux.HandleFunc("/bucket/items/file", h.getFileByID)
+	mux.HandleFunc("/probe/startup", ha.startUpProbe)
 
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
@@ -80,6 +92,37 @@ func main() {
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("server error: %v", err)
 	}
+}
+
+func (ha *heatlhAssistant) startUpProbe(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	_, err := ha.Api.bucket.Attrs(ha.Context)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"message": fmt.Sprintf("Bucket não conectado: %v", err),
+		})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"message": "BFF Storage funcionando a todo vapor!!!",
+	})
+	return
+
+}
+
+func (a *api) health(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func loadConfig() config {
@@ -97,14 +140,7 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-func (a *api) health(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-}
 
 func (a *api) listItems(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
