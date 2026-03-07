@@ -29,6 +29,18 @@ spec:
         ports: 
           - containerPort: 8080
             name: http-web-svc
+        livenessProbe:
+          httpGet:
+            path: /probe/healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /probe/healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 3
         resources: 
           requests:
             memory: "64Mi"
