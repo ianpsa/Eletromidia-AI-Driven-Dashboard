@@ -70,7 +70,7 @@ func main() {
 	mux.HandleFunc("/bucket/items", h.listItems)
 	mux.HandleFunc("/bucket/items/by-folder", h.listItemsByFolder)
 	mux.HandleFunc("/bucket/items/file", h.getFileByID)
-	mux.HandleFunc("/probe/startup", ha.startUpProbe)
+	mux.HandleFunc("/probe/healthz", ha.healthProbe)
 
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
@@ -84,7 +84,8 @@ func main() {
 	}
 }
 
-func (ha *heatlhAssistant) startUpProbe(w http.ResponseWriter, r *http.Request) {
+func (ha *heatlhAssistant) healthProbe(w http.ResponseWriter, r *http.Request) {
+	log.Println("Opa, fizeram chamada no healthProbe!")
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
