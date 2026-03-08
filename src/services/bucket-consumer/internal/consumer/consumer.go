@@ -9,17 +9,18 @@ import (
 	"os"
 	"sync"
 	"time"
+	"fmt"
 
 	kafka "github.com/segmentio/kafka-go"
 )
 
 type Consumer struct {
-	cfg    config.Config
+	Cfg    config.Config
 	writer *storage.Writer
 }
 
 func New(cfg config.Config, writer *storage.Writer) *Consumer {
-	return &Consumer{cfg: cfg, writer: writer}
+	return &Consumer{Cfg: cfg, writer: writer}
 }
 
 var healthOnce sync.Once
@@ -34,20 +35,20 @@ func touchHealthFile() {
 
 func (c *Consumer) Run(ctx context.Context) {
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  c.cfg.KafkaBrokers,
-		Topic:    c.cfg.KafkaTopic,
-		GroupID:  c.cfg.KafkaGroupID,
-		MinBytes: c.cfg.KafkaMinBytes,
-		MaxBytes: c.cfg.KafkaMaxBytes,
-		MaxWait:  c.cfg.KafkaMaxWait,
+		Brokers:  c.Cfg.KafkaBrokers,
+		Topic:    c.Cfg.KafkaTopic,
+		GroupID:  c.Cfg.KafkaGroupID,
+		MinBytes: c.Cfg.KafkaMinBytes,
+		MaxBytes: c.Cfg.KafkaMaxBytes,
+		MaxWait:  c.Cfg.KafkaMaxWait,
 	})
 	defer reader.Close()
 
 	log.Printf("consumer iniciado | brokers=%v topico=%s grupo=%s bucket=gs://%s/%s",
-		c.cfg.KafkaBrokers, c.cfg.KafkaTopic, c.cfg.KafkaGroupID,
-		c.cfg.GCSBucket, c.cfg.GCSBasePath)
+		c.Cfg.KafkaBrokers, c.Cfg.KafkaTopic, c.Cfg.KafkaGroupID,
+		c.Cfg.GCSBucket, c.Cfg.GCSBasePath)
 
-	ticker := time.NewTicker(c.cfg.FlushInterval)
+	ticker := time.NewTicker(c.Cfg.FlushInterval)
 	defer ticker.Stop()
 
 	go func() {
@@ -64,7 +65,7 @@ func (c *Consumer) Run(ctx context.Context) {
 	}()
 
 	for {
-		readCtx, cancelRead := context.WithTimeout(ctx, c.cfg.KafkaReadTimeout)
+		readCtx, cancelRead := context.WithTimeout(ctx, c.Cfg.KafkaReadTimeout)
 		msg, err := reader.ReadMessage(readCtx)
 		cancelRead()
 
@@ -80,9 +81,9 @@ func (c *Consumer) Run(ctx context.Context) {
 			continue
 		}
 
-		if c.cfg.ProcessDelay > 0 {
+		if c.Cfg.ProcessDelay > 0 {
 			select {
-			case <-time.After(c.cfg.ProcessDelay):
+			case <-time.After(c.Cfg.ProcessDelay):
 			case <-ctx.Done():
 				log.Println("consumer encerrado")
 				return
@@ -112,4 +113,25 @@ func (c *Consumer) Run(ctx context.Context) {
 		log.Printf("bufferizado | particao=%d offset=%d pendentes=%d",
 			msg.Partition, msg.Offset, c.writer.Pending())
 	}
+}
+
+func KafkaReadinessProbe(brokerAddress string, timeout time.Duration) error {
+	conn, err := kafka.DialContext(
+		context.Background(),
+		"tcp",
+		brokerAddress,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to connect to kafka broker: %w", err)
+	}
+	defer conn.Close()
+
+	conn.SetDeadline(time.Now().Add(timeout))
+
+	_, err = conn.ReadPartitions()
+	if err != nil {
+		return fmt.Errorf("kafka broker unreachable: %w", err)
+	}
+
+	return nil
 }
