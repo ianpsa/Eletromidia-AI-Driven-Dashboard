@@ -190,3 +190,12 @@ func (w *Writer) Pending() int {
 	defer w.mu.Unlock()
 	return len(w.buffer)
 }
+
+func (w *Writer) BucketReadnessProbe(ctx context.Context) error {
+	_, err := w.client.Bucket(w.bucket).Attrs(ctx)
+	if err != nil {
+		return fmt.Errorf("Erro ao se conectar com o Bucket: %v", err)
+	}
+
+	return nil
+}
