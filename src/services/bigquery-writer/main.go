@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"net/http"
 	"cloud.google.com/go/bigquery"
 	"github.com/google/uuid"
+	"errors"
 	kafka "github.com/segmentio/kafka-go"
 )
 
@@ -346,6 +347,66 @@ func handleMessage(ctx context.Context, ins *bqInserters, msg kafka.Message) err
 	return insertGeodata(ctx, ins, msg, event, targetID)
 }
 
+// ─── Health Probe ─────────────────────────────────────────────────────────────
+
+type healthAssistant struct{
+	bigQueryClient	*bigquery.Client
+	context 		context.Context	
+	config 			Config
+}
+
+func (ha *healthAssistant) bigqueryHealth() error {
+	ctx, cancel := context.WithTimeout(ha.context, 5*time.Second)
+	defer cancel()
+
+	_, err := ha.bigQueryClient.Dataset(ha.config.BQDatasetID).Metadata(ctx)
+	if err != nil {
+		log.Printf("Algo deu errado ao se conectar com o BigQuery: %s", err)
+		return fmt.Errorf("Algo deu errado ao se conectar com o BigQuery: %v", err)
+	}
+	return nil
+}
+
+func (ha *healthAssistant) kafkaHealth() error {
+	conn, err := kafka.DialContext(
+		context.Background(),
+		"tcp",
+		ha.config.KafkaBrokers,
+	)
+	if err != nil {
+		log.Printf("failed to connect to kafka broker: %v", err)
+		return fmt.Errorf("failed to connect to kafka broker: %v", err)
+	}
+	defer conn.Close()
+
+	conn.SetDeadline(time.Now().Add(5 * time.Second))
+
+	_, err = conn.ReadPartitions()
+	if err != nil {
+		log.Printf("kafka broker unreachable: %v\n", err)
+		return fmt.Errorf("kafka broker unreachable: %v", err)
+	}
+
+	return nil
+}
+
+func (ha *healthAssistant) healthCheck(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Opa, chamada no Health Check!")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := ha.bigqueryHealth()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+
+}
+
+
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 func main() {
@@ -377,6 +438,23 @@ func main() {
 
 	log.Printf("Consumer iniciado | brokers=%s topic=%s group=%s",
 		cfg.KafkaBrokers, cfg.KafkaTopic, cfg.KafkaGroupID)
+
+	ha := healthAssistant{  bigQueryClient: bqClient, context: ctx, config: cfg,   }
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", ha.healthCheck)
+
+	server := &http.Server{
+		Addr: ":8080",
+		Handler: mux,
+		ReadTimeout: 5 * time.Second,
+	}
+
+	go func(){
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("server error: %v\n", err)
+		}
+	}()
 
 	for {
 		msg, err := reader.ReadMessage(ctx)

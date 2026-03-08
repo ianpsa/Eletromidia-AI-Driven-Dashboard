@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bucket-consumer/consumer"
-	"bucket-consumer/internal/consumer"
 	"context"
 	"encoding/json"
 	"fmt"
