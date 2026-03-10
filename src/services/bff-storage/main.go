@@ -13,8 +13,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"google.golang.org/api/option"
+
+	"github.com/joho/godotenv"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
 type config struct {
@@ -35,7 +37,16 @@ type objectItem struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+type folderListing struct {
+	Items   []objectItem `json:"items"`
+	Folders []string     `json:"folders"`
+}
+
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("no .env file found, using environment variables")
+	}
+
 	cfg := loadConfig()
 	if cfg.BucketName == "" {
 		log.Fatal("missing env var: BUCKET_NAME")
@@ -125,15 +136,11 @@ func (a *api) listItemsByFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	folder := normalizeFolderPrefix(r.URL.Query().Get("folder"))
-	if folder == "" {
-		writeError(w, http.StatusBadRequest, "query param 'folder' is required")
-		return
-	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
-	items, err := a.listObjects(ctx, folder)
+	listing, err := a.listLevel(ctx, folder)
 	if err != nil {
 		log.Printf("error listing bucket items by folder: %v", err)
 		writeError(w, http.StatusInternalServerError, "error listing bucket items by folder")
@@ -141,10 +148,11 @@ func (a *api) listItemsByFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"bucket": a.bucketName,
-		"folder": folder,
-		"count":  len(items),
-		"items":  items,
+		"bucket":  a.bucketName,
+		"folder":  folder,
+		"folders": listing.Folders,
+		"count":   len(listing.Items),
+		"items":   listing.Items,
 	})
 }
 
@@ -190,6 +198,47 @@ func (a *api) getFileByID(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(w, reader); err != nil {
 		log.Printf("error streaming file %s: %v", id, err)
 	}
+}
+
+func (a *api) listLevel(ctx context.Context, prefix string) (*folderListing, error) {
+	query := &storage.Query{
+		Prefix:    prefix,
+		Delimiter: "/",
+	}
+
+	it := a.bucket.Objects(ctx, query)
+	listing := &folderListing{
+		Items:   make([]objectItem, 0),
+		Folders: make([]string, 0),
+	}
+
+	for {
+		attrs, err := it.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if attrs.Prefix != "" {
+			listing.Folders = append(listing.Folders, attrs.Prefix)
+			continue
+		}
+
+		if strings.HasSuffix(attrs.Name, "/") {
+			continue
+		}
+
+		listing.Items = append(listing.Items, objectItem{
+			ID:          attrs.Name,
+			Size:        attrs.Size,
+			ContentType: attrs.ContentType,
+			UpdatedAt:   attrs.Updated,
+		})
+	}
+
+	return listing, nil
 }
 
 func (a *api) listObjects(ctx context.Context, prefix string) ([]objectItem, error) {
