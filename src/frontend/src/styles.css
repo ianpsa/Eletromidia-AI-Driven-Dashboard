@@ -1,13 +1,13 @@
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Sora:wght@500;600;700&display=swap");
 
 :root {
-  --orange-strong: #FB5100;
-  --orange-mid: #FD8C5C;
-  --peach-light: #FED3C0;
-  --paper: #FFFDF8;
+  --orange-strong: #fb5100;
+  --orange-mid: #fd8c5c;
+  --peach-light: #fed3c0;
+  --paper: #fffdf8;
   --ink: #111111;
-  --line: #E9E1DC;
-  --muted: #5B5754;
+  --line: #e9e1dc;
+  --muted: #5b5754;
   --card-shadow: 0 16px 40px rgba(17, 17, 17, 0.08);
 }
 
@@ -21,8 +21,16 @@ body {
   color: var(--ink);
   font-family: "Manrope", "Sora", sans-serif;
   background:
-    radial-gradient(1000px 500px at -5% -10%, rgba(251, 81, 0, 0.2), transparent 60%),
-    radial-gradient(900px 440px at 105% -5%, rgba(253, 140, 92, 0.25), transparent 62%),
+    radial-gradient(
+      1000px 500px at -5% -10%,
+      rgba(251, 81, 0, 0.2),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 440px at 105% -5%,
+      rgba(253, 140, 92, 0.25),
+      transparent 62%
+    ),
     linear-gradient(145deg, #ffffff 20%, #fff7f1 100%);
 }
 
@@ -38,7 +46,11 @@ body {
 
 .sidebar {
   border-right: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(254, 211, 192, 0.45), rgba(255, 255, 255, 0.92));
+  background: linear-gradient(
+    180deg,
+    rgba(254, 211, 192, 0.45),
+    rgba(255, 255, 255, 0.92)
+  );
   padding: 26px 20px;
   display: flex;
   flex-direction: column;
@@ -85,7 +97,11 @@ body {
 }
 
 .nav-item-active {
-  background: linear-gradient(120deg, rgba(251, 81, 0, 0.15), rgba(253, 140, 92, 0.25));
+  background: linear-gradient(
+    120deg,
+    rgba(251, 81, 0, 0.15),
+    rgba(253, 140, 92, 0.25)
+  );
   color: #2f2926;
 }
 
@@ -227,8 +243,8 @@ body {
 
 .status-error {
   border-color: rgba(251, 81, 0, 0.28);
-  color: #B12600;
-  background: #FFF1EB;
+  color: #b12600;
+  background: #fff1eb;
 }
 
 /* Table */
@@ -292,6 +308,10 @@ tbody tr:hover {
 
 .file-icon {
   font-size: 16px;
+}
+
+.row-clickable {
+  cursor: pointer;
 }
 
 @media (max-width: 980px) {
