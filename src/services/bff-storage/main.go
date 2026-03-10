@@ -75,11 +75,6 @@ func main() {
 		Context: ctx,
 	}
 
-	ha := heatlhAssistant{
-		Api: h,
-		Context: ctx,
-	}
-
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", h.health)
 	mux.HandleFunc("/bucket/items", h.listItems)
