@@ -14,11 +14,11 @@ pub struct CsvManager {
 }
 
 impl CsvManager {
-    pub fn new(filepath: String) -> Self {
+    pub fn new(filepath: String, reload_interval_secs: u64) -> Self {
         Self {
             cache: Arc::new(RwLock::new(Arc::new(Vec::new()))),
             filepath,
-            reload_interval: Duration::from_secs(86400),
+            reload_interval: Duration::from_secs(reload_interval_secs),
         }
     }
 
