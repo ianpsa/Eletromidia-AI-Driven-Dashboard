@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Login } from "./components/Login";
 import { useBucketFolder } from "./hooks/useBucketFolder";
 import { computeSortedItems } from "./utils/sort";
 import { Sidebar } from "./components/Sidebar";
@@ -8,7 +9,7 @@ import { SummaryCards } from "./components/SummaryCards";
 import { StatusMessage } from "./components/StatusMessage";
 import { FilesTable } from "./components/FilesTable";
 
-function App() {
+function Dashboard() {
   const bucket = useBucketFolder();
   const [query, setQuery] = useState("");
   const [sortField, setSortField] = useState<"name" | "size">("name");
@@ -80,6 +81,14 @@ function App() {
       </main>
     </div>
   );
+}
+
+function App() {
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  if (!loggedIn) return <Login onLogin={() => setLoggedIn(true)} />;
+
+  return <Dashboard />;
 }
 
 export default App;
