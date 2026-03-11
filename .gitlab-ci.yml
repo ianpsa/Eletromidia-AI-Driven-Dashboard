@@ -11,4 +11,5 @@ include:
   - local: ".gitlab/ci/pipeline-check.yml"
   - local: ".gitlab/ci/docs.yml"
   - local: ".gitlab/ci/release.yml"
+  - local: ".gitlab/ci/frontend.yml"
   # more component pipelines
