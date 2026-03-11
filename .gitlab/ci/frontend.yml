@@ -1,0 +1,36 @@
+frontend:typecheck:
+  stage: test
+  image: node:20-alpine
+  extends:
+    - .actions-rules:frontend
+  cache:
+    key:
+      files:
+        - src/frontend/package-lock.json
+    paths:
+      - .npm/
+  script:
+    - cd src/frontend
+    - npm ci
+    - npm run typecheck
+
+frontend:build:
+  stage: build
+  image: node:20-alpine
+  extends:
+    - .actions-rules:frontend
+  cache:
+    key:
+      files:
+        - src/frontend/package-lock.json
+    paths:
+      - .npm/
+      - src/frontend/node_modules/.vite/
+  script:
+    - cd src/frontend
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - src/frontend/dist/
+    expire_in: 1 hour

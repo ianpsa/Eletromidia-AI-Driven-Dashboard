@@ -21,4 +21,13 @@
       changes:
         - docs/**/*
 
+.actions-rules:frontend:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - src/frontend/**/*
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - src/frontend/**/*
+
 # new rules
