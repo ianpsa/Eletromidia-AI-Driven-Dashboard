@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: rust-producer
+    kafka-role: producer
+  name: rust-producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rust-producer
+      kafka-role: producer
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: rust-producer
+        kafka-role: producer
+    spec:
+      securityContext:
+        runAsUser: 1010
+        runAsNonRoot: true
+      automountServiceAccountToken: false
+      containers:
+      - image: rust-producer:latest
+        imagePullPolicy: Never
+        name: rust-producer
+        ports:
+          - containerPort: 5000
+        securityContext:
+          allowPrivilegeEscalation: false
+          # readOnlyRootFilesystem: true
+        envFrom:
+          - configMapRef:
+              name: rust-producer-cm
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "64Mi"
+          limits:
+            cpu: "500m"
+            memory: "128Mi"
