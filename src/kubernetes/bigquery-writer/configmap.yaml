@@ -11,3 +11,5 @@ data:
   GCP_PROJECT_ID: "midia-in-da-house"
   BQ_DATASET_ID: "eletromidia_bq"
   GOOGLE_APPLICATION_CREDENTIALS: "/secrets/key.json"
+  FLUSH_SIZE: "500"
+  FLUSH_INTERVAL: "30s"
