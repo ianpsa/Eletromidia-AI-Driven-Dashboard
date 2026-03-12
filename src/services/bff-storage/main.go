@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/joho/godotenv"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
@@ -38,14 +39,14 @@ type objectItem struct {
 }
 
 
-type folderListing struct {
-	Items   []objectItem `json:"items"`
-	Folders []string     `json:"folders"`
-}
-
 type heatlhAssistant struct {
 	Api 		*api
 	Context 	context.Context
+}
+
+type folderListing struct {
+	Items   []objectItem `json:"items"`
+	Folders []string     `json:"folders"`
 }
 
 func main() {
