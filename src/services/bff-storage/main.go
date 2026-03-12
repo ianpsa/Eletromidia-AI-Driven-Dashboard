@@ -38,7 +38,6 @@ type objectItem struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-
 type heatlhAssistant struct {
 	Api 		*api
 	Context 	context.Context
@@ -76,12 +75,17 @@ func main() {
 		Context: ctx,
 	}
 
+	ha := heatlhAssistant{
+		Api: h,
+		Context: ctx,
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", h.health)
 	mux.HandleFunc("/bucket/items", h.listItems)
 	mux.HandleFunc("/bucket/items/by-folder", h.listItemsByFolder)
 	mux.HandleFunc("/bucket/items/file", h.getFileByID)
-	mux.HandleFunc("/probe/healthz", ha.healthProbe)
+	mux.HandleFunc("/probe/startup", ha.startUpProbe)
 
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
@@ -95,8 +99,7 @@ func main() {
 	}
 }
 
-func (ha *heatlhAssistant) healthProbe(w http.ResponseWriter, r *http.Request) {
-	log.Println("Opa, fizeram chamada no healthProbe!")
+func (ha *heatlhAssistant) startUpProbe(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
