@@ -100,3 +100,7 @@ src/services/bigquery-writer/bigquery-writer
 # Chaves de API
 *api-key.json
 *key.json
+
+# Dados do parceiro
+/data/*
+!/data/.gitkeep
