@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Login } from "./components/Login";
+import { LookerDashboardPage } from "./components/LookerDashboardPage";
 import { useBucketFolder } from "./hooks/useBucketFolder";
 import { computeSortedItems } from "./utils/sort";
 import { Sidebar } from "./components/Sidebar";
@@ -9,7 +10,9 @@ import { SummaryCards } from "./components/SummaryCards";
 import { StatusMessage } from "./components/StatusMessage";
 import { FilesTable } from "./components/FilesTable";
 
-function Dashboard() {
+type Page = "dashboard" | "cloud";
+
+function CloudPage({ onNavigate }: { onNavigate: (page: Page) => void }) {
   const bucket = useBucketFolder();
   const [query, setQuery] = useState("");
   const [sortField, setSortField] = useState<"name" | "size">("name");
@@ -44,8 +47,8 @@ function Dashboard() {
   const isEmpty = !bucket.loading && !bucket.error && sortedItems.length === 0;
 
   return (
-    <div className="drive-shell">
-      <Sidebar />
+    <>
+      <Sidebar activePage="cloud" onNavigate={onNavigate} />
       <main className="content">
         <TopBar
           bucketName={bucket.bucketName}
@@ -79,6 +82,23 @@ function Dashboard() {
           />
         )}
       </main>
+    </>
+  );
+}
+
+function AppShell() {
+  const [page, setPage] = useState<Page>("dashboard");
+
+  return (
+    <div className="drive-shell">
+      {page === "dashboard" ? (
+        <>
+          <Sidebar activePage="dashboard" onNavigate={setPage} />
+          <LookerDashboardPage />
+        </>
+      ) : (
+        <CloudPage onNavigate={setPage} />
+      )}
     </div>
   );
 }
@@ -88,7 +108,7 @@ function App() {
 
   if (!loggedIn) return <Login onLogin={() => setLoggedIn(true)} />;
 
-  return <Dashboard />;
+  return <AppShell />;
 }
 
 export default App;
