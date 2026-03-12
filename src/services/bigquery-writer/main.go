@@ -58,7 +58,7 @@ func loadConfig() Config {
 }
 
 // ─── Kafka Message Structs ────────────────────────────────────────────────────
-
+//
 type KafkaEvent struct {
 	ImpressionHour int64   `json:"impression_hour"`
 	LocationID     int64   `json:"location_id"`

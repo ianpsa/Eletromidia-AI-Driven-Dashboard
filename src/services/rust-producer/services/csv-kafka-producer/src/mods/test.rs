@@ -145,7 +145,7 @@ pub async fn run_load_test(
                         Err(_) => return false,
                     };
                     let key = uuid::Uuid::new_v4().to_string();
-                    let record: BaseRecord<'_, str, str> = BaseRecord::to(&topic).payload(&payload).key(&key);
+                    let record = BaseRecord::to(&topic).payload(&payload).key(&key);
                     match producer.send(record) {
                         Ok(_) => true,
                         Err(_) => false,
