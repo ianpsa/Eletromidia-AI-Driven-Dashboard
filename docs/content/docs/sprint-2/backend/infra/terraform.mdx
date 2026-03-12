@@ -3,22 +3,9 @@ title: Terraform
 description: Documentação da configuração da infraestrutura em nuvem (GCP)
 ---
 
-## Documentação Terraform
-
-Este documento descreve a infraestrutura de nuvem do projeto Hiperconectividade para Cidades Inteligentes, desenvolvido pelo grupo Mídia in da House em parceria com a Eletromídia. Toda a infraestrutura é provisionada como código (Infrastructure as Code) utilizando Terraform, garantindo que o ambiente seja reproduzível, versionável e auditável — qualquer membro do time pode recriar o ambiente completo a partir dos arquivos .tf, sem configuração manual.
-A abordagem de IaC é especialmente relevante para este projeto pois, à medida que novos dados forem recebidos da Claro Geodata ou novas cidades forem incorporadas ao escopo, a infraestrutura pode ser expandida com alterações mínimas de configuração. Além disso, o uso de módulos separados para BigQuery, IAM e Cloud Storage garante que cada camada da infraestrutura seja independente, facilitando manutenção, revisão de código e eventuais substituições de serviço sem impacto no restante do stack.
-
----
-
 ## Visão Geral
 
-O Terraform é uma ferramenta de Infrastructure as Code (IaC) criada pela HashiCorp que permite criar e gerenciar infraestrutura através de arquivos de configuração. Em vez de provisionar servidores, redes e outros recursos manualmente, você descreve o que precisa em código e o Terraform cuida do resto.
-
-Ele utiliza uma linguagem própria chamada HCL (HashiCorp Configuration Language) e é compatível com os principais provedores de nuvem do mercado, como AWS, Azure e Google Cloud. O fluxo de trabalho é simples: você escreve a configuração desejada, visualiza o plano de execução para conferir o que será criado ou modificado, e então aplica as mudanças.
-
-Por tratar a infraestrutura como código, o Terraform torna o processo de provisionamento reproduzível, versionável e muito menos suscetível a erros manuais, sendo uma das ferramentas mais adotadas por times de DevOps e engenharia de plataforma atualmente.
-
-Esta documentação descreve a infraestrutura de nuvem provisionada via **Terraform** para o projeto de visualização de dados de fluxo de pessoas da Eletromídia. Toda a infraestrutura é hospedada no **Google Cloud Platform (GCP)** e é composta por três módulos principais:
+Infraestrutura do projeto Mídia in da House × Eletromídia, provisionada como código com [Terraform](https://developer.hashicorp.com/terraform/docs). Toda a infraestrutura é hospedada no **Google Cloud Platform (GCP)** e organizada em três módulos principais, cada um responsável por uma camada independente do stack:
 
 | Módulo          | Serviço GCP   | Finalidade                                    |
 | --------------- | ------------- | --------------------------------------------- |
