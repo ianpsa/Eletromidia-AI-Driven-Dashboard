@@ -42,6 +42,7 @@ type objectItem struct {
 type heatlhAssistant struct {
 	Api 		*api
 	Context 	context.Context
+}
 type folderListing struct {
 	Items   []objectItem `json:"items"`
 	Folders []string     `json:"folders"`
