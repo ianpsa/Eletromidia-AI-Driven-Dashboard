@@ -391,7 +391,7 @@ func (ha *healthAssistant) kafkaHealth() error {
 }
 
 func (ha *healthAssistant) healthCheck(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Opa, chamada no Health Check!")
+	// log.Printf("Opa, chamada no Health Check!")
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -400,8 +400,16 @@ func (ha *healthAssistant) healthCheck(w http.ResponseWriter, r *http.Request) {
 	err := ha.bigqueryHealth()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
+	err = ha.kafkaHealth()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 
 }
 
