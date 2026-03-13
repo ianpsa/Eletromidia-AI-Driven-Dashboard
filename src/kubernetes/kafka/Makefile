@@ -5,7 +5,10 @@ producer:
 	kubectl -n kafka run kafka-producer \
 	-ti --image=quay.io/strimzi/kafka:0.42.0-kafka-3.7.1 \
 	--rm=true --restart=Never \
-	-- bin/kafka-console-producer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic geodata
+	-- bin/kafka-console-producer.sh \
+	--bootstrap-server my-cluster-kafka-bootstrap:9092 \
+	--topic geodata-dev \
+	--producer-property partitioner.class=org.apache.kafka.clients.producer.RoundRobinPartitioner
 
 .PHONY: producer-dev
 producer-dev:
@@ -32,4 +35,4 @@ get-partitions:
   bin/kafka-topics.sh \
   --bootstrap-server my-cluster-kafka-bootstrap:9092 \
   --describe \
-  --topic geodata
+  --topic geodata-dev

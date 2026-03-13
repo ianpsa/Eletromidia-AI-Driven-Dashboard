@@ -71,7 +71,7 @@ type KafkaEvent struct {
 	Cidade         string  `json:"cidade"`
 	Endereco       string  `json:"endereco"`
 	Numero         int64   `json:"numero"`
-	Target         string  `json:"target"`
+	Target         map[string]map[string]float64  `json:"target"`
 }
 
 type TargetData struct {
@@ -227,10 +227,15 @@ func (w *Writer) Flush(ctx context.Context) error {
 		}
 
 		var td TargetData
-		if err := json.Unmarshal([]byte(normalizeTarget(event.Target)), &td); err != nil {
-			log.Printf("flush: target parse error | partition=%d offset=%d: %v",
-				msg.Partition, msg.Offset, err)
-			continue
+		// if err := json.Unmarshal([]byte(normalizeTarget(event.Target)), &td); err != nil {
+		// 	log.Printf("flush: target parse error | partition=%d offset=%d: %v",
+		// 		msg.Partition, msg.Offset, err)
+		// 	continue
+		// }
+		td = TargetData{
+			Idade: event.Target["idade"],
+			Genero: event.Target["genero"],
+			ClasseSocial: event.Target["classe_social"],
 		}
 
 		if err := validateMapKeys(td); err != nil {

@@ -17,9 +17,6 @@ fn kafka_topic() -> String {
     env::var("KAFKA_TOPIC").unwrap_or_else(|_| "csv-topic".to_string())
 }
 
-fn kafka_record_key() -> String {
-    env::var("KAFKA_RECORD_KEY").unwrap_or_else(|_| "csv-row".to_string())
-}
 
 fn auto_taxa_inicial_min() -> usize {
     env::var("LOAD_TEST_AUTO_TAXA_INICIAL_MIN")
@@ -114,7 +111,6 @@ pub async fn run_load_test(
 ) -> LoadTestResult {
     let batch_size = load_test_batch_size();
     let topic = kafka_topic();
-    let key = kafka_record_key();
 
     let start = Instant::now();
     let mut mensagens_enviadas = 0;
@@ -135,7 +131,6 @@ pub async fn run_load_test(
                 let data = csv_data.clone();
                 let producer = producer.clone();
                 let topic = topic.clone();
-                let key = key.clone();
                 async move {
                     let index = rand::random::<usize>() % data.len();
                     let row = &data[index];
@@ -149,7 +144,7 @@ pub async fn run_load_test(
                         }
                         Err(_) => return false,
                     };
-
+                    let key = uuid::Uuid::new_v4().to_string();
                     let record = BaseRecord::to(&topic).payload(&payload).key(&key);
                     match producer.send(record) {
                         Ok(_) => true,

@@ -69,8 +69,6 @@ impl CsvManager {
             let impression_hour: usize = csv_lines[0].parse().unwrap_or(0);
             let location_id: i64 = csv_lines[1].parse().unwrap_or(0);
             let uniques: f64 = csv_lines[2].parse().unwrap_or(0.0);
-            let latitude: f64 = csv_lines[3].parse().unwrap_or(0.0);
-            let longitude: f64 = csv_lines[4].parse().unwrap_or(0.0);
             let numero: Option<isize> = csv_lines[8].parse().ok();
 
             let target: Option<TargetData> =
@@ -80,8 +78,8 @@ impl CsvManager {
                 impression_hour,
                 location_id,
                 uniques,
-                latitude,
-                longitude,
+                latitude: csv_lines[3].to_string(),
+                longitude: csv_lines[4].to_string(),
                 uf_estado: csv_lines[5].to_string(),
                 cidade: csv_lines[6].to_string(),
                 endereco: csv_lines[7].to_string(),

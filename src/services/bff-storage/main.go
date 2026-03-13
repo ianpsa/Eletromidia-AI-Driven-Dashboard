@@ -112,7 +112,6 @@ func (ha *heatlhAssistant) startUpProbe(w http.ResponseWriter, r *http.Request) 
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"message": "BFF Storage funcionando a todo vapor!!!",
 	})
-	return
 
 }
 
