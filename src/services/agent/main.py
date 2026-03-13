@@ -5,7 +5,8 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from core.llm import parse_prompt
-from core.report import build_report, print_table
+from core.report import build_report
+from core.answer import generate_final_answer
 
 
 load_dotenv()
@@ -21,12 +22,36 @@ def main():
     if not token:
         sys.exit("GROQ_API_KEY not set")
 
-    filters = parse_prompt(args.prompt, token)
+    user_prompt = args.prompt
+
+    filters = parse_prompt(user_prompt, token)
 
     df = pd.read_csv("../../../data/claro.csv")
+
     rows = build_report(df, filters)
 
-    print_table(rows, args.limit)
+    city_fallback = False
+
+    if not rows and "city" in filters:
+        original_city = filters["city"]
+        del filters["city"]
+        rows = build_report(df, filters)
+        city_fallback = True
+
+    if not rows:
+        print("Nenhum dado encontrado para os filtros informados.")
+        return
+
+    final_answer = generate_final_answer(
+        user_prompt=user_prompt,
+        filters=filters,
+        ranking=rows[:args.limit],
+        api_key=token,
+        city_fallback=city_fallback
+    )
+
+    print("\nResposta Estratégica:\n")
+    print(final_answer)
 
 
 if __name__ == "__main__":
