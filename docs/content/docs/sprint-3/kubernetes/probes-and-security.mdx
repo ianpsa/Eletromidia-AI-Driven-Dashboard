@@ -1,0 +1,176 @@
+---
+title: Probes & Security Contexts
+description: Descrição das configurações de saúde e segurança nos Pods
+---
+
+
+
+## 1. Introdução
+
+Este documento descreve as decisões técnicas tomadas durante a sprint relacionadas à configuração de saúde (**Liveness** e **Readiness Probes**) e contextos de segurança (**Security Context**) nos deployments Kubernetes dos serviços: `bff-storage`, `bigquery-writer` e `bucket-consumer`.
+
+---
+
+## 2. Liveness Probe
+
+A **Liveness Probe** é utilizada pelo Kubernetes para determinar se um container ainda está em execução de forma saudável. Caso a probe falhe repetidamente (conforme o limiar configurado em `failureThreshold`), o Kubernetes reinicia automaticamente o container.
+
+> _Ela responde à seguinte pergunta: "O container está vivo e respondendo?"_
+
+Se a aplicação travar em um deadlock ou entrar em um estado inconsistente do qual não consiga se recuperar sozinha, a Liveness Probe permite que o Kubernetes detecte isso e realize o restart, garantindo a disponibilidade do serviço sem intervenção manual.
+
+### 2.1 Configuração nos Deployments
+
+| Serviço | Endpoint | Porta | Delay Inicial | Período | Threshold de Falha |
+|---|---|---|---|---|---|
+| `bff-storage` | `/probe/healthz` | 8080 | 10s | 3s | 5 |
+| `bigquery-writer` | `/healthz` | 8080 | 5s | 3s | 5 |
+| `bucket-consumer` | `/healthz` | 8080 | 5s | 3s | 5 |
+
+### 2.2 Explicação dos Parâmetros
+
+- **`initialDelaySeconds`**: tempo que o Kubernetes aguarda antes de iniciar as verificações após o container subir. O `bff-storage` utiliza 10 segundos pois seu processo de inicialização (conexão ao Cloud Storage, setup de configurações) é mais lento.
+- **`periodSeconds`**: intervalo entre cada verificação. O valor de 3 segundos garante detecção rápida de falhas.
+- **`failureThreshold`**: número de falhas consecutivas toleradas antes de reiniciar o container. O valor `5` evita reinicializações precipitadas por falhas transitórias de rede.
+
+---
+
+## 3. Readiness Probe
+
+A **Readiness Probe** indica ao Kubernetes se um container está pronto para receber tráfego. Diferente da Liveness Probe, quando a Readiness falha o container **não é reiniciado** — ele é apenas removido temporariamente do balanceamento de carga (Service endpoints).
+
+> _Ela responde à seguinte pergunta: "O container está pronto para atender requisições?"_
+
+Isso é especialmente importante durante a inicialização do serviço ou em situações em que uma dependência externa (como Kafka ou Cloud Storage) está temporariamente indisponível. O serviço permanece de pé, mas sem receber tráfego até se recuperar.
+
+### 3.1 Configuração nos Deployments
+
+| Serviço | Endpoint | Porta | Delay Inicial | Período | Threshold de Falha |
+|---|---|---|---|---|---|
+| `bff-storage` | `/probe/healthz` | 8080 | 5s | 10s | 2 |
+| `bigquery-writer` | `/healthz` | 8080 | 5s | 3s | 2 |
+| `bucket-consumer` | `/healthz` | 8080 | 5s | 3s | 2 |
+
+### 3.2 Diferenças em Relação à Liveness
+
+- O `failureThreshold` é `2` (mais conservador que a Liveness), pois deseja-se remover o serviço do tráfego rapidamente caso ele não consiga atender requisições, mas sem reiniciá-lo desnecessariamente.
+- O `bff-storage` possui `periodSeconds` de 10 segundos na Readiness (vs. 3s na Liveness), pois verificações de conectividade ao Cloud Storage têm maior custo e devem ser menos frequentes.
+
+### 3.3 Lógica de Health Check por Serviço
+
+#### bff-storage
+
+Verifica se o serviço está conectado ao **Google Cloud Storage** e respondendo corretamente às requisições HTTP. O endpoint `/probe/healthz` retorna `HTTP 200` quando ambas as condições são satisfeitas, ou `HTTP 500` em caso de falha de conectividade.
+
+#### bigquery-writer
+
+Verifica a conexão com dois sistemas externos: **Apache Kafka** (broker de mensagens) e **Google BigQuery** (destino dos dados). O código abaixo ilustra a lógica implementada:
+
+```go
+func (ha *healthAssistant) healthCheck(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ha.ctx, 5*time.Second)
+	defer cancel()
+
+	if err := ha.writer.HealthCheck(ctx); err != nil {
+		// falha na conexão com BigQuery
+		log.Printf("health check failed (bigquery): %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := consumer.KafkaReadinessProbe(ha.consumer.Cfg.KafkaBrokers[0], 5*time.Second); err != nil {
+		// falha na conexão com Kafka
+		log.Printf("health check failed (kafka): %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+```
+
+O timeout de 5 segundos nas verificações garante que a probe não bloqueie indefinidamente em caso de indisponibilidade das dependências.
+
+#### bucket-consumer
+
+Verifica a conectividade com **Apache Kafka** (para consumo de mensagens) e **Google Cloud Storage** (destino dos objetos gravados). Segue a mesma estrutura do `bigquery-writer`, garantindo que o serviço só receba tráfego quando ambas as dependências estiverem acessíveis.
+
+---
+
+## 4. Security Context
+
+O **Security Context** é uma configuração do Kubernetes que define privilégios e controles de acesso para Pods e containers. Ele permite restringir o que um processo pode fazer no sistema operacional host, reduzindo significativamente a superfície de ataque em caso de comprometimento da aplicação.
+
+### 4.1 Configurações Aplicadas
+
+| Parâmetro | Nível | Valor | Efeito |
+|---|---|---|---|
+| `runAsUser` | Pod | `1010` | Executa o processo como usuário não-root com UID 1010 |
+| `runAsNonRoot` | Pod | `true` | Kubernetes rejeita o container se a imagem tentar rodar como root |
+| `allowPrivilegeEscalation` | Container | `false` | Impede que o processo obtenha privilégios além dos definidos |
+| `readOnlyRootFilesystem` | Container | `true` | Sistema de arquivos raiz somente leitura |
+
+### 4.2 Vantagens do Security Context
+
+#### `runAsUser` e `runAsNonRoot`
+
+Executar processos como root dentro de containers é uma das principais vulnerabilidades em ambientes Kubernetes. Se um atacante explorar uma vulnerabilidade na aplicação e conseguir escapar do container (_container escape_), um processo rodando como root no container pode ter poderes de root no host.
+
+Com `runAsUser: 1010` e `runAsNonRoot: true`, garantimos que:
+
+- O processo jamais rode como root, mesmo que a imagem Docker não especifique um usuário
+- O Kubernetes valida isso na inicialização e rejeita o Pod se a condição não for atendida
+- Arquivos e recursos criados pela aplicação pertencem a um usuário sem privilégios
+
+#### `allowPrivilegeEscalation: false`
+
+Esta configuração impede que o processo filho de um container adquira mais privilégios do que o processo pai — mesmo que o binário tenha o bit `setuid` ativado. Isso bloqueia ataques como:
+
+- Exploração de binários `setuid` para escalada de privilégio
+- Uso de syscalls que elevam capabilities do processo
+
+#### `readOnlyRootFilesystem: true`
+
+Com o sistema de arquivos raiz em modo somente leitura, a aplicação não consegue modificar seus próprios binários ou arquivos de configuração em tempo de execução. As vantagens são:
+
+- Impede que um atacante instale ferramentas maliciosas no filesystem do container
+- Garante que o estado da aplicação em disco seja imutável (toda escrita deve ser em volumes explicitamente montados)
+- Facilita a detecção de desvios: qualquer tentativa de escrita não autorizada falha explicitamente
+
+Nos deployments documentados, as únicas escritas permitidas são nos volumes montados explicitamente (como `/secrets/`), que contêm apenas chaves de serviço com `readOnly: true`.
+
+---
+
+## 5. `automountServiceAccountToken: false`
+
+Por padrão, o Kubernetes monta automaticamente um token de Service Account em todos os Pods, disponível em `/var/run/secrets/kubernetes.io/serviceaccount/token`. Este token pode ser utilizado para autenticar requisições à API do Kubernetes.
+
+### 5.1 Por que desabilitar?
+
+Os serviços documentados (`bff-storage`, `bigquery-writer` e `bucket-consumer`) não precisam interagir com a API do Kubernetes em nenhum momento de sua operação normal. Manter o token montado desnecessariamente representa um risco de segurança:
+
+- Se um atacante comprometer o container, ele poderia usar o token para explorar a API do Kubernetes
+- Dependendo das permissões do Service Account, o atacante poderia listar outros Pods, Secrets, ou até escalar privilégios dentro do cluster
+- O **Princípio do Menor Privilégio** (_Principle of Least Privilege_) determina que um serviço não deve ter acesso a recursos que não necessita
+
+### 5.2 Impacto
+
+Com `automountServiceAccountToken: false`, o token simplesmente não é montado no filesystem do container. Isso não afeta a operação da aplicação — que se autentica nas APIs do GCP via chaves de serviço montadas em `/secrets/` — mas elimina um vetor de ataque desnecessário.
+
+---
+
+## 6. Resumo das Decisões de Segurança
+
+| Prática | Benefício Principal |
+|---|---|
+| `runAsNonRoot` + `runAsUser: 1010` | Elimina riscos de execução como root no host |
+| `allowPrivilegeEscalation: false` | Bloqueia escalada de privilégio via setuid/capabilities |
+| `readOnlyRootFilesystem: true` | Imutabilidade do filesystem, impedindo instalação de malware |
+| `automountServiceAccountToken: false` | Remove token desnecessário, reduz superfície de ataque na API K8s |
+| Volumes com `readOnly: true` | Chaves de serviço GCP acessíveis somente para leitura |
+| Liveness + Readiness Probes | Alta disponibilidade e remoção automática de instâncias degradadas |
