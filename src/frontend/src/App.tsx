@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { Login } from "./components/Login";
 import { useBucketFolder } from "./hooks/useBucketFolder";
 import { computeSortedItems } from "./utils/sort";
-import { Sidebar } from "./components/Sidebar";
+import Sidebar from "./components/Sidebar";
+import AgentFullPage from "./pages/AgentFullPage";
 import { TopBar } from "./components/TopBar";
 import { Breadcrumb } from "./components/Breadcrumb";
 import { SummaryCards } from "./components/SummaryCards";
@@ -44,51 +45,57 @@ function Dashboard() {
   const isEmpty = !bucket.loading && !bucket.error && sortedItems.length === 0;
 
   return (
-    <div className="drive-shell">
-      <Sidebar />
-      <main className="content">
-        <TopBar
-          bucketName={bucket.bucketName}
-          query={query}
-          onQueryChange={setQuery}
-          onRefresh={bucket.refresh}
-        />
-        <Breadcrumb
+    <>
+      <TopBar
+        bucketName={bucket.bucketName}
+        query={query}
+        onQueryChange={setQuery}
+        onRefresh={bucket.refresh}
+      />
+      <Breadcrumb
+        currentFolder={bucket.currentFolder}
+        breadcrumbs={bucket.breadcrumbs}
+        onNavigate={navigateTo}
+      />
+      <SummaryCards folders={bucket.folders} files={bucket.files} />
+      <StatusMessage
+        loading={bucket.loading}
+        error={bucket.error}
+        empty={isEmpty}
+        downloadError={bucket.downloadError}
+      />
+      {!bucket.loading && !bucket.error && sortedItems.length > 0 && (
+        <FilesTable
+          items={sortedItems}
           currentFolder={bucket.currentFolder}
-          breadcrumbs={bucket.breadcrumbs}
+          sortField={sortField}
+          sortAsc={sortAsc}
+          downloadingId={bucket.downloadingId}
+          onSort={handleSort}
           onNavigate={navigateTo}
+          onNavigateUp={bucket.navigateUp}
+          onDownload={bucket.handleDownload}
         />
-        <SummaryCards folders={bucket.folders} files={bucket.files} />
-        <StatusMessage
-          loading={bucket.loading}
-          error={bucket.error}
-          empty={isEmpty}
-          downloadError={bucket.downloadError}
-        />
-        {!bucket.loading && !bucket.error && sortedItems.length > 0 && (
-          <FilesTable
-            items={sortedItems}
-            currentFolder={bucket.currentFolder}
-            sortField={sortField}
-            sortAsc={sortAsc}
-            downloadingId={bucket.downloadingId}
-            onSort={handleSort}
-            onNavigate={navigateTo}
-            onNavigateUp={bucket.navigateUp}
-            onDownload={bucket.handleDownload}
-          />
-        )}
-      </main>
-    </div>
+      )}
+    </>
   );
 }
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
+  const [route, setRoute] = useState<"cloud" | "agent">("cloud");
 
   if (!loggedIn) return <Login onLogin={() => setLoggedIn(true)} />;
 
-  return <Dashboard />;
+  return (
+    <div className="drive-shell">
+      <Sidebar onNavigate={(r) => setRoute(r as any)} active={route} />
+      <main className="content">
+        {route === "cloud" ? <Dashboard /> : <AgentFullPage />}
+      </main>
+    </div>
+  );
 }
 
 export default App;
+
