@@ -1,0 +1,116 @@
+---
+title: Frontend — BFF Storage
+description: Interface web para navegação e download de arquivos do bucket via BFF Storage
+---
+
+## Frontend — BFF Storage
+
+A interface do BFF Storage é uma aplicação web que permite ao usuário navegar pela estrutura de pastas do bucket do Google Cloud Storage, visualizar metadados dos arquivos persistidos pelo pipeline e realizar downloads diretamente pelo navegador.
+
+Trata-se de uma SPA construída em React + TypeScript com Vite, sem dependências externas de UI — utiliza apenas CSS puro seguindo a identidade visual da Eletromidia (paleta laranja, tipografia Manrope/Sora).
+
+---
+
+## Onde se encaixa na arquitetura
+
+```text
+Google Cloud Storage (bucket kafka-backup-eletromidia)
+      │
+      ▼
+bff-storage (Go, API HTTP)
+      │
+      ▼
+Frontend React ← esta aplicação
+      │
+      ▼
+Navegador do usuário
+```
+
+O frontend consome os endpoints do [BFF Storage](/docs/sprint-2/backend/services/bff-storage), completando o ciclo do pipeline que começa na ingestão via Kafka e termina na visualização pelo usuário.
+
+---
+
+## Funcionalidades
+
+A aplicação possui duas telas:
+
+### Login
+
+Tela de autenticação com layout em duas colunas — formulário à esquerda sobre fundo laranja e carrossel de imagens à direita com transição automática a cada 4 segundos. Responsivo: em telas menores o carrossel é ocultado.
+
+### Dashboard (explorador de arquivos)
+
+Após login, o usuário acessa um explorador de arquivos com:
+
+- **Sidebar** com marca "MIH Cloud — Storage BFF"
+- **Barra superior** com nome do bucket, campo de busca por nome e botão de atualizar
+- **Breadcrumb** clicável para navegação entre níveis de pasta
+- **Cards de resumo** com contagem de pastas, arquivos e tamanho total
+- **Tabela de arquivos** com ordenação por nome/tamanho, navegação por pastas e botão de download
+
+A busca filtra itens localmente (sem nova requisição). O download é feito via `fetch` + `blob`, extraindo o nome do arquivo do header `Content-Disposition`.
+
+---
+
+## Mudanças na API do BFF Storage
+
+Para suportar a navegação hierárquica por pastas no frontend, o serviço [bff-storage](/docs/sprint-2/backend/services/bff-storage) precisou de alterações em relação à versão da Sprint 2:
+
+### Nova função `listLevel` (substitui `listObjects` no endpoint `/by-folder`)
+
+A listagem original (`listObjects`) retornava todos os objetos recursivamente sob um prefixo, sem distinção entre pastas e arquivos. A nova implementação `listLevel` utiliza o parâmetro `Delimiter: "/"` na query ao GCS, o que faz com que o Cloud Storage retorne:
+
+- **Subpastas** como prefixos (campo `attrs.Prefix`) — agrupadas no array `folders` da resposta
+- **Arquivos** apenas do nível atual — agrupados no array `items`
+
+Isso permite que o frontend renderize a estrutura de diretórios de forma hierárquica, nível por nível.
+
+### Novo tipo `folderListing`
+
+```go
+type folderListing struct {
+    Items   []objectItem `json:"items"`
+    Folders []string     `json:"folders"`
+}
+```
+
+A resposta do endpoint `/bucket/items/by-folder` passa a incluir o campo `folders` além de `items`.
+
+### Startup Probe
+
+Adicionado endpoint `/probe/startup` que verifica a conectividade com o bucket GCS ao iniciar o pod. Isso garante que o serviço só receba tráfego quando a conexão com o storage está de fato estabelecida.
+
+### Outras mudanças
+
+- Autenticação via `option.WithCredentialsFile` para o cliente GCS (variável `CS_SA_CREDENTIALS`)
+- Suporte a `.env` via `godotenv` para facilitar desenvolvimento local
+
+---
+
+## Stack técnica
+
+| Tecnologia        | Versão    | Finalidade                          |
+| ----------------- | --------- | ----------------------------------- |
+| React             | 18.3.1    | Biblioteca de UI                    |
+| TypeScript        | 5.6       | Tipagem estática                    |
+| Vite              | 5.4.11    | Bundler e dev server com HMR        |
+
+---
+
+## Variáveis de ambiente
+
+| Variável                 | Default                  | Descrição                            |
+| ------------------------ | ------------------------ | ------------------------------------ |
+| `VITE_BASE_URL`          | `/api`                   | URL base para chamadas ao BFF        |
+| `VITE_DEV_PROXY_TARGET`  | `http://localhost:8080`  | Destino do proxy em desenvolvimento  |
+
+---
+
+## Integração com Sprint 3
+
+Esta interface completa o fluxo ponta a ponta do pipeline de dados. Enquanto a Sprint 2 construiu os serviços backend, a Sprint 3 entrega a camada visual que consome esses serviços:
+
+1. **csv-kafka-producer** → produz mensagens para o Kafka
+2. **bucket-consumer** → persiste eventos no Google Cloud Storage
+3. **bff-storage** → expõe os arquivos via API HTTP (com mudanças para suportar navegação por nível)
+4. **Frontend BFF** → permite navegação visual e download pelo navegador

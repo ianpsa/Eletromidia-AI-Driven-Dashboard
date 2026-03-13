@@ -1,32 +1,40 @@
-type Props = {
-  onNavigate?: (route: string) => void;
-  active?: string;
-};
+type Page = "dashboard" | "cloud" | "agent";
 
-export function Sidebar({ onNavigate, active = "cloud" }: Props) {
+interface SidebarProps {
+  activePage: Page;
+  onNavigate: (page: Page) => void;
+}
+
+export function Sidebar({ activePage, onNavigate }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="brand">
         <span className="brand-dot" />
         <div>
-          <strong>MIH Cloud</strong>
-          <small>Storage BFF</small>
+          <strong>Eletromidia</strong>
         </div>
       </div>
 
       <nav className="nav-list" aria-label="Navegacao">
         <button
           type="button"
-          className={`nav-item ${active === "cloud" ? "nav-item-active" : ""}`}
-          onClick={() => onNavigate?.("cloud")}
+          className={`nav-item ${activePage === "dashboard" ? "nav-item-active" : ""}`}
+          onClick={() => onNavigate("dashboard")}
+        >
+          Dashboard
+        </button>
+        <button
+          type="button"
+          className={`nav-item ${activePage === "cloud" ? "nav-item-active" : ""}`}
+          onClick={() => onNavigate("cloud")}
         >
           Cloud
         </button>
 
         <button
           type="button"
-          className={`nav-item ${active === "agent" ? "nav-item-active" : ""}`}
-          onClick={() => onNavigate?.("agent")}
+          className={`nav-item ${activePage === "agent" ? "nav-item-active" : ""}`}
+          onClick={() => onNavigate("agent")}
         >
           Agente IA
         </button>

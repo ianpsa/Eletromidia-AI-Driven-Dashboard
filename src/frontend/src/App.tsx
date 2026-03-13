@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Login } from "./components/Login";
+import { LookerDashboardPage } from "./components/LookerDashboardPage";
 import { useBucketFolder } from "./hooks/useBucketFolder";
 import { computeSortedItems } from "./utils/sort";
 import Sidebar from "./components/Sidebar";
@@ -10,7 +11,9 @@ import { SummaryCards } from "./components/SummaryCards";
 import { StatusMessage } from "./components/StatusMessage";
 import { FilesTable } from "./components/FilesTable";
 
-function Dashboard() {
+type Page = "dashboard" | "cloud" | "agent";
+
+function CloudPage({ onNavigate }: { onNavigate: (page: Page) => void }) {
   const bucket = useBucketFolder();
   const [query, setQuery] = useState("");
   const [sortField, setSortField] = useState<"name" | "size">("name");
@@ -46,56 +49,74 @@ function Dashboard() {
 
   return (
     <>
-      <TopBar
-        bucketName={bucket.bucketName}
-        query={query}
-        onQueryChange={setQuery}
-        onRefresh={bucket.refresh}
-      />
-      <Breadcrumb
-        currentFolder={bucket.currentFolder}
-        breadcrumbs={bucket.breadcrumbs}
-        onNavigate={navigateTo}
-      />
-      <SummaryCards folders={bucket.folders} files={bucket.files} />
-      <StatusMessage
-        loading={bucket.loading}
-        error={bucket.error}
-        empty={isEmpty}
-        downloadError={bucket.downloadError}
-      />
-      {!bucket.loading && !bucket.error && sortedItems.length > 0 && (
-        <FilesTable
-          items={sortedItems}
-          currentFolder={bucket.currentFolder}
-          sortField={sortField}
-          sortAsc={sortAsc}
-          downloadingId={bucket.downloadingId}
-          onSort={handleSort}
-          onNavigate={navigateTo}
-          onNavigateUp={bucket.navigateUp}
-          onDownload={bucket.handleDownload}
+      <Sidebar activePage="cloud" onNavigate={onNavigate} />
+      <main className="content">
+        <TopBar
+          bucketName={bucket.bucketName}
+          query={query}
+          onQueryChange={setQuery}
+          onRefresh={bucket.refresh}
         />
-      )}
+        <Breadcrumb
+          currentFolder={bucket.currentFolder}
+          breadcrumbs={bucket.breadcrumbs}
+          onNavigate={navigateTo}
+        />
+        <SummaryCards folders={bucket.folders} files={bucket.files} />
+        <StatusMessage
+          loading={bucket.loading}
+          error={bucket.error}
+          empty={isEmpty}
+          downloadError={bucket.downloadError}
+        />
+        {!bucket.loading && !bucket.error && sortedItems.length > 0 && (
+          <FilesTable
+            items={sortedItems}
+            currentFolder={bucket.currentFolder}
+            sortField={sortField}
+            sortAsc={sortAsc}
+            downloadingId={bucket.downloadingId}
+            onSort={handleSort}
+            onNavigate={navigateTo}
+            onNavigateUp={bucket.navigateUp}
+            onDownload={bucket.handleDownload}
+          />
+        )}
+      </main>
     </>
+  );
+}
+
+function AppShell() {
+  const [page, setPage] = useState<Page>("dashboard");
+
+  return (
+    <div className="drive-shell">
+      {page === "dashboard" ? (
+        <>
+          <Sidebar activePage="dashboard" onNavigate={setPage} />
+          <LookerDashboardPage />
+        </>
+      ) : page === "agent" ? (
+        <>
+          <Sidebar activePage="agent" onNavigate={setPage} />
+          <main className="content">
+            <AgentFullPage />
+          </main>
+        </>
+      ) : (
+        <CloudPage onNavigate={setPage} />
+      )}
+    </div>
   );
 }
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
-  const [route, setRoute] = useState<"cloud" | "agent">("cloud");
 
   if (!loggedIn) return <Login onLogin={() => setLoggedIn(true)} />;
 
-  return (
-    <div className="drive-shell">
-      <Sidebar onNavigate={(r) => setRoute(r as any)} active={route} />
-      <main className="content">
-        {route === "cloud" ? <Dashboard /> : <AgentFullPage />}
-      </main>
-    </div>
-  );
+  return <AppShell />;
 }
 
 export default App;
-
