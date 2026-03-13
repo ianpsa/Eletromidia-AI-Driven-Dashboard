@@ -1,0 +1,546 @@
+2026/03/13 00:08:22 age inserted          | id=bd345fd5-0fd2-583f-90d1-5744baefb4ee
+2026/03/13 00:08:22 gender inserted       | id=c19f127a-1de3-5198-8942-90c29d25af1d
+2026/03/13 00:08:22 social_class inserted | id=acfe05f0-e9b7-5a9a-99d3-8dd63a3fd5d4
+2026/03/13 00:08:22 target inserted       | id=f0252517-aa0f-535c-9434-0dc2ae41f98d
+2026/03/13 00:08:22 geodata inserted      | id=3611d85f-7e52-5916-9f91-317f68bff53b target_id=f0252517-aa0f-535c-9434-0dc2ae41f98d
+2026/03/13 00:08:22 OK | key=e66a56fd-8729-4357-9060-92ac4a27c1b2 partition=0 offset=2279
+2026/03/13 00:08:22 age inserted          | id=cc14ac0f-47b4-5e31-bc79-e4d35eddf822
+2026/03/13 00:08:22 gender inserted       | id=9f7fcb63-f5aa-5c68-aaf0-7748213edbdf
+2026/03/13 00:08:22 social_class inserted | id=c4544d8c-0c49-51c9-8b8a-7c1a8e9ccdfb
+2026/03/13 00:08:22 target inserted       | id=8e302701-4a12-5000-a14a-3d02e117fa85
+2026/03/13 00:08:22 geodata inserted      | id=ee155df0-a91f-5931-b32b-1a8b4afe9502 target_id=8e302701-4a12-5000-a14a-3d02e117fa85
+2026/03/13 00:08:22 OK | key=32da7be9-414d-4d72-b748-b56326237a2d partition=0 offset=2280
+2026/03/13 00:08:22 age inserted          | id=460bcb8c-4f5b-5ffb-9c24-f4ba56a721cd
+2026/03/13 00:08:22 gender inserted       | id=f437598c-2821-57c1-9e51-ff3d79b6f881
+2026/03/13 00:08:22 social_class inserted | id=7af294aa-5bfa-5e54-9a68-a31a3a844142
+2026/03/13 00:08:22 target inserted       | id=dae2f4af-6583-5d7b-aa6d-af9ed1fa95d6
+2026/03/13 00:08:22 geodata inserted      | id=385812d7-3a96-542f-a39e-42d6ca7203c9 target_id=dae2f4af-6583-5d7b-aa6d-af9ed1fa95d6
+2026/03/13 00:08:22 OK | key=764d6a74-ffc7-4aab-a626-dbdca2d8d6b9 partition=0 offset=2281
+2026/03/13 00:08:22 age inserted          | id=b065a630-efa2-5820-8046-16d3d6bc0536
+2026/03/13 00:08:22 gender inserted       | id=58f21cb7-9fa6-5a76-8fd9-e2d734bc563a
+2026/03/13 00:08:22 social_class inserted | id=bfa0963a-b48c-524c-bd5a-c5744fabf69d
+2026/03/13 00:08:22 target inserted       | id=854dcb39-b3d9-5a2b-8515-37615e1dfbd6
+2026/03/13 00:08:23 geodata inserted      | id=bd72a795-3793-5255-a5ff-af888565bf90 target_id=854dcb39-b3d9-5a2b-8515-37615e1dfbd6
+2026/03/13 00:08:23 OK | key=d53662e2-d02c-401a-a0e6-61962969d719 partition=0 offset=2282
+2026/03/13 00:08:23 age inserted          | id=4579326c-e924-5997-8715-8cff2df73e88
+2026/03/13 00:08:23 gender inserted       | id=ce064813-e879-5f28-bf52-64302b0a50fc
+2026/03/13 00:08:23 social_class inserted | id=a1e41795-4cba-5b6b-aa21-0b42f1f5a08d
+2026/03/13 00:08:23 target inserted       | id=0a9ebda9-5743-587f-a2e2-eb724e07f026
+2026/03/13 00:08:23 geodata inserted      | id=8b282fd2-4982-5a78-ab5d-77bda206117f target_id=0a9ebda9-5743-587f-a2e2-eb724e07f026
+2026/03/13 00:08:23 OK | key=8458559c-ce44-468d-a887-ed6d30a343db partition=0 offset=2283
+2026/03/13 00:08:23 age inserted          | id=7d4563f8-63f9-5e2c-839a-9dc70d69d6c4
+2026/03/13 00:08:23 gender inserted       | id=a6e75b1d-78ec-540f-8822-70669426c0e8
+2026/03/13 00:08:23 social_class inserted | id=90b3d0ca-203e-5c9c-940a-7528766eed2b
+2026/03/13 00:08:23 target inserted       | id=dab17b80-d1b1-56b6-8409-3d0ad473145c
+2026/03/13 00:08:23 geodata inserted      | id=0cd57e68-06e9-50e0-8e3c-77071c69963e target_id=dab17b80-d1b1-56b6-8409-3d0ad473145c
+2026/03/13 00:08:23 OK | key=00ce9fab-8c98-4218-8c18-8da1a0685561 partition=0 offset=2284
+2026/03/13 00:08:23 age inserted          | id=7b815850-1f89-5501-b465-dd33200d0819
+2026/03/13 00:08:23 gender inserted       | id=5cf9bb83-ffa1-5f20-9092-fd52b3a98ce3
+2026/03/13 00:08:23 social_class inserted | id=7c904364-4cf0-5268-a945-0efed826c7b4
+2026/03/13 00:08:23 target inserted       | id=2556b81a-fb47-5bf0-aed9-59a3b1205c73
+2026/03/13 00:08:23 geodata inserted      | id=cc378f8a-b905-5157-aca8-6c4040e6ee97 target_id=2556b81a-fb47-5bf0-aed9-59a3b1205c73
+2026/03/13 00:08:23 OK | key=24c9d08d-2c33-4d5c-a4b1-d1ad649a6486 partition=0 offset=2285
+2026/03/13 00:08:23 age inserted          | id=98a4fee7-0d26-5237-b51c-0ae8dc85b024
+2026/03/13 00:08:23 gender inserted       | id=d7df8684-22a9-52cc-9e8c-22f5a3c6a143
+2026/03/13 00:08:23 social_class inserted | id=7bc066ab-2c33-5087-b33a-196cc23a1aad
+2026/03/13 00:08:23 target inserted       | id=e69deb09-35a7-53a9-a6f4-47d87bfd0578
+2026/03/13 00:08:23 geodata inserted      | id=aa3624f2-bf0c-5131-988e-e90199d30d02 target_id=e69deb09-35a7-53a9-a6f4-47d87bfd0578
+2026/03/13 00:08:23 OK | key=b722099d-117b-4086-bdf1-f6102c4396f1 partition=0 offset=2286
+2026/03/13 00:08:23 age inserted          | id=5fcf3177-a65d-57f7-a536-10785024e43c
+2026/03/13 00:08:23 gender inserted       | id=399259eb-f29f-587c-8ec7-cc499af684f5
+2026/03/13 00:08:23 social_class inserted | id=1b9e9ffb-56ff-5967-a65f-abb06795db63
+2026/03/13 00:08:23 target inserted       | id=2b0599ef-dd20-5b19-9ac4-bb00b5ca2a97
+2026/03/13 00:08:23 geodata inserted      | id=21abbf26-869b-56fd-868c-19bc10678605 target_id=2b0599ef-dd20-5b19-9ac4-bb00b5ca2a97
+2026/03/13 00:08:23 OK | key=4e66d108-aa80-4a1f-835d-044683d0f17a partition=0 offset=2287
+2026/03/13 00:08:23 age inserted          | id=bf5d64c8-5e57-5fc3-b373-5d0468efb69b
+2026/03/13 00:08:23 gender inserted       | id=56a9fe0e-e4b9-5628-9b82-14ea1d5c1e10
+2026/03/13 00:08:23 social_class inserted | id=805bc315-881b-5785-8b24-52d19f36bacf
+2026/03/13 00:08:23 target inserted       | id=7a391fed-5246-5af3-9214-bc248f474289
+2026/03/13 00:08:23 geodata inserted      | id=182867a4-157b-58c8-896a-6ed417cfdeda target_id=7a391fed-5246-5af3-9214-bc248f474289
+2026/03/13 00:08:23 OK | key=465dd64d-a169-46a1-b374-d0f8ce6f363e partition=0 offset=2288
+2026/03/13 00:08:23 age inserted          | id=f6302ed4-5a3e-5a29-821f-d425abc653cd
+2026/03/13 00:08:23 gender inserted       | id=b96f7321-6c56-5be1-ba42-2d6b730083da
+2026/03/13 00:08:23 social_class inserted | id=8a598d23-4f44-59ea-8d01-a0eb4a2d7e7b
+2026/03/13 00:08:23 target inserted       | id=5ca03629-a6ac-5962-8af9-770d079e1db2
+2026/03/13 00:08:23 geodata inserted      | id=468b4887-e894-5955-8136-20a99715796c target_id=5ca03629-a6ac-5962-8af9-770d079e1db2
+2026/03/13 00:08:23 OK | key=b9756cfd-3714-4e07-992e-71ae9196a129 partition=0 offset=2289
+2026/03/13 00:08:24 age inserted          | id=67b93030-ad79-5d41-b895-80dd468b16de
+2026/03/13 00:08:24 gender inserted       | id=7e2e5162-3daf-5b04-bfbe-fe2227d9de53
+2026/03/13 00:08:24 social_class inserted | id=d98d7850-16d0-564d-baa0-5b779f577262
+2026/03/13 00:08:24 target inserted       | id=0323b907-c88b-59a2-a36c-14cf9d698f38
+2026/03/13 00:08:24 geodata inserted      | id=65d83332-27a4-567d-b5e9-bf603ac37d24 target_id=0323b907-c88b-59a2-a36c-14cf9d698f38
+2026/03/13 00:08:24 OK | key=90fd5f6e-9ef6-4e54-8619-6c3214664cab partition=0 offset=2290
+2026/03/13 00:08:24 age inserted          | id=a4f70fbc-c7cf-5d49-aa02-8f034db0cb24
+2026/03/13 00:08:24 gender inserted       | id=d5d66b06-1a12-5df7-8009-8ba9c5ec0ea2
+2026/03/13 00:08:24 social_class inserted | id=e43479af-8665-56cf-bf0e-9d8bf3ece02f
+2026/03/13 00:08:24 target inserted       | id=4c53ef67-efd9-5fab-83b5-30cb3929151f
+2026/03/13 00:08:24 geodata inserted      | id=89e8cece-07ac-5352-add7-95b804ae0f52 target_id=4c53ef67-efd9-5fab-83b5-30cb3929151f
+2026/03/13 00:08:24 OK | key=21f24637-cc33-43c0-aff8-8ff8058e6b9b partition=0 offset=2291
+2026/03/13 00:08:24 age inserted          | id=7435a6a8-f466-597b-8be5-ecc220391739
+2026/03/13 00:08:24 gender inserted       | id=313ae63c-1ae0-5506-8a05-5aac178ccd2a
+2026/03/13 00:08:24 social_class inserted | id=1f52701e-e6b7-5e72-a4b9-164054b0adc1
+2026/03/13 00:08:24 target inserted       | id=e27abfe6-207a-544b-92d9-eac59c25e77a
+2026/03/13 00:08:24 geodata inserted      | id=d0c8b6eb-2b60-57ae-b889-f6d40ca62f58 target_id=e27abfe6-207a-544b-92d9-eac59c25e77a
+2026/03/13 00:08:24 OK | key=9285b3b3-7b55-48e3-b0a3-3708d9ff30c3 partition=0 offset=2292
+2026/03/13 00:08:24 age inserted          | id=fee3a64d-0bab-538c-a489-3a2410995565
+2026/03/13 00:08:24 gender inserted       | id=f73b2ccf-a484-57fb-86ca-1fd879151ddd
+2026/03/13 00:08:24 social_class inserted | id=f4b3e8bc-219e-5ad2-8ea5-5c21fd525760
+2026/03/13 00:08:24 target inserted       | id=96751a22-55b8-51a0-8a7c-e7a389291251
+2026/03/13 00:08:24 geodata inserted      | id=65ad767f-7315-5845-bbc0-3275d4e6fb6a target_id=96751a22-55b8-51a0-8a7c-e7a389291251
+2026/03/13 00:08:24 OK | key=8cbefc94-b9d4-4bbf-bada-b1831f02e83c partition=0 offset=2293
+2026/03/13 00:08:24 age inserted          | id=4704b791-356c-5f8d-bce1-183b7fe58633
+2026/03/13 00:08:24 gender inserted       | id=d929a3c3-a6d9-5d17-99f1-885198aeef26
+2026/03/13 00:08:24 social_class inserted | id=ce3cb5a7-b09f-5591-842a-264335ae6bb2
+2026/03/13 00:08:24 target inserted       | id=359c679e-74be-5ddd-b9cd-5b00940a093e
+2026/03/13 00:08:24 geodata inserted      | id=fd2c2616-1bee-5dbf-b2dc-299f97396091 target_id=359c679e-74be-5ddd-b9cd-5b00940a093e
+2026/03/13 00:08:24 OK | key=ba0713dc-92e8-4ebc-86aa-61af8044f289 partition=0 offset=2294
+2026/03/13 00:08:24 age inserted          | id=a9cfc041-99af-5398-b261-73f11e7f271d
+2026/03/13 00:08:24 gender inserted       | id=760175d9-6a79-5c2d-9dc3-f42a7f14169c
+2026/03/13 00:08:25 social_class inserted | id=889ea00d-052d-5d94-b0b7-f37ec0e42a89
+2026/03/13 00:08:25 target inserted       | id=baec7618-e390-5f85-87ab-c17bf8edd65c
+2026/03/13 00:08:25 geodata inserted      | id=516e315e-ccaf-55f1-83d8-016fca41256c target_id=baec7618-e390-5f85-87ab-c17bf8edd65c
+2026/03/13 00:08:25 OK | key=e8f3baa6-6e84-48c5-897b-19014f175275 partition=0 offset=2295
+2026/03/13 00:08:25 age inserted          | id=5acc34af-38a9-5f15-946a-7a265d423f51
+2026/03/13 00:08:25 gender inserted       | id=d2941b2c-3cad-526d-ac5c-eb5dab3da286
+2026/03/13 00:08:25 social_class inserted | id=88e71da3-180b-55d3-a9b9-be2a677ffba5
+2026/03/13 00:08:25 target inserted       | id=cdf66362-c42b-538e-adb1-b6b9e90b1045
+2026/03/13 00:08:25 geodata inserted      | id=1cfa8175-467e-5be3-acd8-60a7b0718949 target_id=cdf66362-c42b-538e-adb1-b6b9e90b1045
+2026/03/13 00:08:25 OK | key=875f0ce3-aba8-4f8f-95bf-a60412755e25 partition=0 offset=2296
+2026/03/13 00:08:25 age inserted          | id=9abe3ac6-5a0f-5880-b3d0-98e045cc2d61
+2026/03/13 00:08:25 gender inserted       | id=ff6e0e33-11ea-5c68-9825-291cf5441bad
+2026/03/13 00:08:25 social_class inserted | id=3ead69df-54ad-5411-9887-e5712ccc08af
+2026/03/13 00:08:25 target inserted       | id=1ea7da40-dbf6-5057-90e5-c9cf22dbd3ca
+2026/03/13 00:08:25 geodata inserted      | id=32b63960-9e49-534e-892a-1e332d824155 target_id=1ea7da40-dbf6-5057-90e5-c9cf22dbd3ca
+2026/03/13 00:08:25 OK | key=869aea6a-b7e5-4399-8afa-d70d88615904 partition=0 offset=2297
+2026/03/13 00:08:25 age inserted          | id=2859c053-6aa5-546d-86f3-eddcda1025e8
+2026/03/13 00:08:25 gender inserted       | id=ebc25a79-7ba2-519c-9bcb-588188f1cb35
+2026/03/13 00:08:25 social_class inserted | id=075b5c46-f46c-5307-a635-77c40a54cccf
+2026/03/13 00:08:25 target inserted       | id=3b6d3847-edcd-57f4-8305-25aa859325ef
+2026/03/13 00:08:25 geodata inserted      | id=9f46b2c2-96ad-5a67-8e70-cd345f8ef517 target_id=3b6d3847-edcd-57f4-8305-25aa859325ef
+2026/03/13 00:08:25 OK | key=14efa8de-1f31-4dfa-982e-9e782b354d79 partition=0 offset=2298
+2026/03/13 00:08:25 age inserted          | id=7970844a-bf61-5850-8a82-3e5e2bc04a20
+2026/03/13 00:08:25 gender inserted       | id=7d4bb2f0-7c35-5a4c-ab21-29343ead025c
+2026/03/13 00:08:25 social_class inserted | id=a923f6e7-b08e-592d-a08f-4e4886d6ced8
+2026/03/13 00:08:25 target inserted       | id=67bb71d0-a803-55f5-811e-400a979de3a0
+2026/03/13 00:08:25 geodata inserted      | id=54105b51-6f3c-5f92-9b0f-0102fe865100 target_id=67bb71d0-a803-55f5-811e-400a979de3a0
+2026/03/13 00:08:25 OK | key=8c67b4fe-638f-4e13-aac4-ac94345fd6b8 partition=0 offset=2299
+2026/03/13 00:08:25 age inserted          | id=c6c1d9aa-cc41-578e-8a46-25f4d2773483
+2026/03/13 00:08:25 gender inserted       | id=2ccb2b2d-2b8f-59fd-9157-aa1984860111
+2026/03/13 00:08:25 social_class inserted | id=4d1bd706-48a7-5137-8940-e922813c822f
+2026/03/13 00:08:25 target inserted       | id=1e75e4c2-871d-5f8d-a100-320bea0fca5a
+2026/03/13 00:08:25 geodata inserted      | id=8ff3ff59-8338-5df9-a80a-abffb0d2723a target_id=1e75e4c2-871d-5f8d-a100-320bea0fca5a
+2026/03/13 00:08:25 OK | key=05ad6f6a-c6d7-4c26-9ba0-2a91a8095562 partition=0 offset=2300
+2026/03/13 00:08:25 age inserted          | id=cbaeb677-1f19-5a2c-a4a9-d10e331be6ee
+2026/03/13 00:08:25 gender inserted       | id=14d386cf-8983-505b-8c5c-4219da3a84ec
+2026/03/13 00:08:25 social_class inserted | id=7ac5a6fb-a489-59a7-94d8-619608aa2630
+2026/03/13 00:08:25 target inserted       | id=ca083ebb-0ce2-5172-8d05-fb911ca99f8b
+2026/03/13 00:08:25 geodata inserted      | id=60b9c246-9b88-55f6-bbb0-1b1e783900ba target_id=ca083ebb-0ce2-5172-8d05-fb911ca99f8b
+2026/03/13 00:08:25 OK | key=9c9bf246-49ed-49f3-a60e-0e0d9942f71d partition=0 offset=2301
+2026/03/13 00:08:25 age inserted          | id=4c4ba699-2c56-5bff-89fb-157b5517a0d0
+2026/03/13 00:08:25 gender inserted       | id=98ff7640-c69e-53b1-bef9-d02ffd81510e
+2026/03/13 00:08:25 social_class inserted | id=892734f6-7178-51b7-b3ff-871e87a19b2f
+2026/03/13 00:08:25 target inserted       | id=51f00ab9-cdc6-53b5-bcae-acaa517c6f0b
+2026/03/13 00:08:25 geodata inserted      | id=8f35d41d-78be-5abf-9c85-8053ce049aa6 target_id=51f00ab9-cdc6-53b5-bcae-acaa517c6f0b
+2026/03/13 00:08:25 OK | key=2aa3a94b-abf1-4b80-9cbb-90980a092833 partition=0 offset=2302
+2026/03/13 00:08:25 age inserted          | id=c85c3328-3f62-5a06-b4c7-962c76882664
+2026/03/13 00:08:25 gender inserted       | id=bc7af262-57c9-5a9c-a967-2db408779e6f
+2026/03/13 00:08:25 social_class inserted | id=3c59d12b-683b-5f9d-9188-40dd0702d464
+2026/03/13 00:08:25 target inserted       | id=5e853047-2b4a-59ac-9641-b707497e334d
+2026/03/13 00:08:25 geodata inserted      | id=269454fc-aee0-5ae1-945b-71c628d64ada target_id=5e853047-2b4a-59ac-9641-b707497e334d
+2026/03/13 00:08:25 OK | key=339d36fd-dff1-4a39-9097-581f66a38bd4 partition=0 offset=2303
+2026/03/13 00:08:26 age inserted          | id=36632e8f-e921-5382-8eb3-0a48005d13db
+2026/03/13 00:08:26 gender inserted       | id=13e8fa46-f19d-51d3-84a5-8f116362cc14
+2026/03/13 00:08:26 social_class inserted | id=6ffa9ead-816e-58fe-a191-9fc49751a933
+2026/03/13 00:08:26 target inserted       | id=de9b3307-ec5b-5b61-b658-6c85e0b2f213
+2026/03/13 00:08:26 geodata inserted      | id=397a61f5-60c8-5fca-a16e-d9a4d9254a5e target_id=de9b3307-ec5b-5b61-b658-6c85e0b2f213
+2026/03/13 00:08:26 OK | key=566bacb1-fa18-4b50-b7be-49cd59130942 partition=0 offset=2304
+2026/03/13 00:08:26 age inserted          | id=69090971-ea44-5793-97f6-aa9f2a1a1ce7
+2026/03/13 00:08:26 gender inserted       | id=7b059dcd-0172-5c31-ae6c-be2973436f21
+2026/03/13 00:08:26 social_class inserted | id=08b5f1a8-4e22-5a77-b112-51e1006ae15d
+2026/03/13 00:08:26 target inserted       | id=c9320dcf-8305-5a1c-aeda-61ea577c9e70
+2026/03/13 00:08:26 geodata inserted      | id=285b3c1e-887f-56b6-aa76-d18d67cc2a52 target_id=c9320dcf-8305-5a1c-aeda-61ea577c9e70
+2026/03/13 00:08:26 OK | key=56aecbf5-6668-495e-94a1-379227cfd5e1 partition=0 offset=2305
+2026/03/13 00:08:26 age inserted          | id=1a55857c-0a70-572a-beee-e5ac7295005f
+2026/03/13 00:08:26 gender inserted       | id=b9576bdd-d2f4-5be4-80ff-833048caa7fb
+2026/03/13 00:08:26 social_class inserted | id=6650a263-7840-5aaa-a6a7-759b51e44cfc
+2026/03/13 00:08:26 target inserted       | id=8047dc8f-51d6-5f5e-9174-bc6bda259089
+2026/03/13 00:08:26 geodata inserted      | id=735673a6-2a7e-5e13-9cf1-45263c10d59f target_id=8047dc8f-51d6-5f5e-9174-bc6bda259089
+2026/03/13 00:08:26 OK | key=93958695-cbfd-4e44-ae95-95cc58e2cf09 partition=0 offset=2306
+2026/03/13 00:08:26 age inserted          | id=09a1bfc9-c485-5495-b3b5-5135cc4916aa
+2026/03/13 00:08:26 gender inserted       | id=b76d0a39-ea44-5992-9321-c85407686a67
+2026/03/13 00:08:26 social_class inserted | id=7ae15bd8-0e02-560a-bbb1-e7694d5b7a01
+2026/03/13 00:08:26 target inserted       | id=e871a730-28af-5246-baf7-34a2f850026b
+2026/03/13 00:08:26 geodata inserted      | id=00291c09-140a-5d2e-bbe2-f7a0bbd659ba target_id=e871a730-28af-5246-baf7-34a2f850026b
+2026/03/13 00:08:26 OK | key=c1920611-160e-4dd3-9cad-2ce9ec45969d partition=0 offset=2307
+2026/03/13 00:08:26 age inserted          | id=1af2bef0-48e2-5f7f-b234-92f1ddce576f
+2026/03/13 00:08:26 gender inserted       | id=f4861a17-2a95-5776-b460-cf17c37a9125
+2026/03/13 00:08:26 social_class inserted | id=d72b7dec-55c0-5505-97af-c8997cac3ff9
+2026/03/13 00:08:26 target inserted       | id=b558595a-8d5a-54ef-9e75-7b7d5515fd86
+2026/03/13 00:08:26 geodata inserted      | id=c3c53c0d-f07c-5e81-9353-83468ccce74b target_id=b558595a-8d5a-54ef-9e75-7b7d5515fd86
+2026/03/13 00:08:26 OK | key=a990294f-e215-4d4c-99af-9fb105ce0d80 partition=0 offset=2308
+2026/03/13 00:08:26 age inserted          | id=fd2b84ac-b587-56d1-8c23-cf882d42249d
+2026/03/13 00:08:26 gender inserted       | id=50bff5d3-e17d-5bd9-9770-e12874488d99
+2026/03/13 00:08:26 social_class inserted | id=720d430a-3f5c-5377-a6bc-12976f218201
+2026/03/13 00:08:26 target inserted       | id=645c11e0-1b81-5f66-b9f9-e56ee8c25775
+2026/03/13 00:08:26 geodata inserted      | id=3a4f0073-1b49-5c43-94a8-5a5f343054a9 target_id=645c11e0-1b81-5f66-b9f9-e56ee8c25775
+2026/03/13 00:08:26 OK | key=e6b8865a-4c2e-4341-8842-62a0a73e12a5 partition=0 offset=2309
+2026/03/13 00:08:26 age inserted          | id=91773bd1-fd93-5e09-b447-dd74bfaea316
+2026/03/13 00:08:26 gender inserted       | id=e092bcf8-48dc-580c-87ea-a97c820e9926
+2026/03/13 00:08:26 social_class inserted | id=ded09ded-eb94-53f0-85fd-9ecdfa17742c
+2026/03/13 00:08:26 target inserted       | id=5c531ea1-271d-5a76-86cb-f4b33ff6fe76
+2026/03/13 00:08:26 geodata inserted      | id=b7010428-9b70-59fd-9a55-0d76a0dcf4f4 target_id=5c531ea1-271d-5a76-86cb-f4b33ff6fe76
+2026/03/13 00:08:26 OK | key=f5018b35-1690-4d79-8eb4-21727398e9c3 partition=0 offset=2310
+2026/03/13 00:08:26 age inserted          | id=77e602ed-a855-519f-b598-b6144a55df48
+2026/03/13 00:08:26 gender inserted       | id=f0b755a8-7a50-5ad2-9751-189da88cba77
+2026/03/13 00:08:26 social_class inserted | id=5d603510-4826-595e-81e8-98f4f9e4cb71
+2026/03/13 00:08:26 target inserted       | id=7f2a5893-0fa2-5778-8ed8-8f447ed87c10
+2026/03/13 00:08:26 geodata inserted      | id=532e1e5a-4268-5a57-8cb1-6e5afefa1aaf target_id=7f2a5893-0fa2-5778-8ed8-8f447ed87c10
+2026/03/13 00:08:26 OK | key=704f0924-d705-4f27-8b4c-8e3b31e477e0 partition=0 offset=2311
+2026/03/13 00:08:26 age inserted          | id=0915bb4f-e000-53c7-b349-d4d96a0720ce
+2026/03/13 00:08:26 gender inserted       | id=aee9e181-383d-5ea4-8838-47b5a04e5676
+2026/03/13 00:08:26 social_class inserted | id=d3448c23-06e2-5e18-aa83-a5b2f76fe3f8
+2026/03/13 00:08:26 target inserted       | id=9614c5a2-7477-5e84-ad2f-003f1d4c1dba
+2026/03/13 00:08:26 geodata inserted      | id=4e950a20-0460-519d-acb9-1d13df3ae8cc target_id=9614c5a2-7477-5e84-ad2f-003f1d4c1dba
+2026/03/13 00:08:26 OK | key=0474bf91-4815-402f-ab50-470d7991d4c2 partition=0 offset=2312
+2026/03/13 00:08:26 age inserted          | id=fd8d250d-9f3c-52cb-988c-be0c80883f33
+2026/03/13 00:08:26 gender inserted       | id=2806a8c8-8436-5436-8f60-2b10ac6a9311
+2026/03/13 00:08:26 social_class inserted | id=6377c030-db7a-5653-b9a7-1ce3e50e0b54
+2026/03/13 00:08:26 target inserted       | id=a3e3eef0-e435-5ff3-9017-73354f420bb1
+2026/03/13 00:08:26 geodata inserted      | id=de422755-b55f-5dc7-8a8d-e79863fd8108 target_id=a3e3eef0-e435-5ff3-9017-73354f420bb1
+2026/03/13 00:08:26 OK | key=000add0d-d660-4059-b6e3-40cc0b5f82fb partition=0 offset=2313
+2026/03/13 00:08:26 age inserted          | id=b368464d-53b0-5438-bfd5-173b5847462d
+2026/03/13 00:08:26 gender inserted       | id=aaae3ef7-5dbf-5af1-a18f-1355b5d63820
+2026/03/13 00:08:26 social_class inserted | id=24e52082-baca-5620-87ea-df1d79c90c0e
+2026/03/13 00:08:26 target inserted       | id=36134e4f-afec-5699-bcf5-ee2a2f7812ef
+2026/03/13 00:08:26 geodata inserted      | id=f671cc12-91bc-56e7-9a94-b75d53d5b60b target_id=36134e4f-afec-5699-bcf5-ee2a2f7812ef
+2026/03/13 00:08:26 OK | key=18199f67-350c-4318-81c1-1e4bd348d60d partition=0 offset=2314
+2026/03/13 00:08:27 age inserted          | id=5b538c3b-81b8-50cd-8883-8aa8fcb473f4
+2026/03/13 00:08:27 gender inserted       | id=85660c35-eeca-55aa-9785-5ed60fffa90e
+2026/03/13 00:08:27 social_class inserted | id=b50cc1a8-7d69-5121-98e7-3df343838f67
+2026/03/13 00:08:27 target inserted       | id=84470469-435e-52ac-b7e5-6f095759da23
+2026/03/13 00:08:27 geodata inserted      | id=334b36b6-94ce-5452-9b6b-280a54c51041 target_id=84470469-435e-52ac-b7e5-6f095759da23
+2026/03/13 00:08:27 OK | key=20d5d4c9-95d4-4849-ad48-27fa76aef5c9 partition=0 offset=2315
+2026/03/13 00:08:27 age inserted          | id=8ed89b8b-b8e2-54a3-b45c-bbac591a6333
+2026/03/13 00:08:27 gender inserted       | id=14f879b4-5a5a-5ac6-8768-f4ee80ce4dae
+2026/03/13 00:08:27 social_class inserted | id=c6425f48-b0e7-5e3d-85f1-07de2712ddec
+2026/03/13 00:08:27 target inserted       | id=0bbd61d8-c33c-5af1-b969-8decdb2c6787
+2026/03/13 00:08:27 geodata inserted      | id=93b37deb-ba03-5264-a53b-2e2f65d0b37f target_id=0bbd61d8-c33c-5af1-b969-8decdb2c6787
+2026/03/13 00:08:27 OK | key=cb33183d-f5d5-4be5-a2cc-a4d5cd62c929 partition=0 offset=2316
+2026/03/13 00:08:27 age inserted          | id=9ed71417-daeb-5d37-9c6b-6e3f3b10fa33
+2026/03/13 00:08:27 gender inserted       | id=50681f8c-8fa1-56ea-9b40-e3de1dcec30a
+2026/03/13 00:08:27 social_class inserted | id=02a6eb1c-6ef7-5e95-b6ab-494abce2bf4a
+2026/03/13 00:08:27 target inserted       | id=8acb595c-18b0-5a63-8eb2-755e159a31e9
+2026/03/13 00:08:27 geodata inserted      | id=ed42aaef-71bc-5e03-8942-b65ee659e048 target_id=8acb595c-18b0-5a63-8eb2-755e159a31e9
+2026/03/13 00:08:27 OK | key=f1288df9-6da6-40ba-9f64-b190789fe415 partition=0 offset=2317
+2026/03/13 00:08:27 age inserted          | id=17a4b388-a874-5910-bd0a-570513580119
+2026/03/13 00:08:27 gender inserted       | id=0731910d-fe12-5440-b5c2-ae89e23525b1
+2026/03/13 00:08:27 social_class inserted | id=2b4b8081-1a57-595e-b85b-5c1d013a8f21
+2026/03/13 00:08:27 target inserted       | id=89a50b03-af42-569f-8637-27d8791981e5
+2026/03/13 00:08:27 geodata inserted      | id=4f5b725c-c5fb-517e-a4f0-3dc8b7ae29f3 target_id=89a50b03-af42-569f-8637-27d8791981e5
+2026/03/13 00:08:27 OK | key=a95678a5-77b8-4bbe-89a5-48105ec31f7c partition=0 offset=2318
+2026/03/13 00:08:27 age inserted          | id=994d19f1-9d54-505e-bf13-05a57e55b514
+2026/03/13 00:08:27 gender inserted       | id=39347044-ecbc-54f2-b160-5e45b0820171
+2026/03/13 00:08:27 social_class inserted | id=03f1cb64-da9b-589a-8714-e98114df7335
+2026/03/13 00:08:27 target inserted       | id=f71dea1f-186a-5481-bb0e-9bcf010d48b2
+2026/03/13 00:08:27 geodata inserted      | id=f849b1de-8571-5d28-b47f-6160c83530b8 target_id=f71dea1f-186a-5481-bb0e-9bcf010d48b2
+2026/03/13 00:08:27 OK | key=1e5b55b0-0db8-42e5-99cf-826fcdddeced partition=0 offset=2319
+2026/03/13 00:08:27 age inserted          | id=58d267cb-f30a-53ca-95fb-b8e7bfab6422
+2026/03/13 00:08:27 gender inserted       | id=019dc088-96f6-5d80-a690-5e15c8a4ee9e
+2026/03/13 00:08:27 social_class inserted | id=5202026b-0f7b-59e8-8f92-903787258f84
+2026/03/13 00:08:27 target inserted       | id=693f5b09-0860-52cf-aebe-1036ef55e972
+2026/03/13 00:08:27 geodata inserted      | id=637055c4-1dc9-51ee-bf5a-89f486e393b5 target_id=693f5b09-0860-52cf-aebe-1036ef55e972
+2026/03/13 00:08:27 OK | key=b89640ac-a800-413f-bef8-bdcfd95d53e6 partition=0 offset=2320
+2026/03/13 00:08:27 age inserted          | id=5a75ae65-540d-56d7-81bf-e23f77a9d4e2
+2026/03/13 00:08:27 gender inserted       | id=f9a213f0-113f-5496-9195-e16dee149a9e
+2026/03/13 00:08:27 social_class inserted | id=26dd706d-f3a2-5a7c-a879-b67aecd40109
+2026/03/13 00:08:27 target inserted       | id=8816e7f1-1188-5289-a97c-acea414e0e86
+2026/03/13 00:08:27 geodata inserted      | id=625c8bb8-05df-50c5-9a62-4de3e76cccb7 target_id=8816e7f1-1188-5289-a97c-acea414e0e86
+2026/03/13 00:08:27 OK | key=60dccb1c-101f-4eb5-ae76-8617e51bc9bb partition=0 offset=2321
+2026/03/13 00:08:27 age inserted          | id=93f634a1-8c2a-5f91-ad48-c167c6c6f094
+2026/03/13 00:08:27 gender inserted       | id=eef1b762-143a-5878-a062-a0ef7e78d0a8
+2026/03/13 00:08:27 social_class inserted | id=0121034b-c645-5beb-b4a6-16e735d3ceb4
+2026/03/13 00:08:27 target inserted       | id=09d51247-edd0-5879-b339-a74b6f476932
+2026/03/13 00:08:27 geodata inserted      | id=0900dc67-b5e0-5c6f-8ae5-0bae63489fcc target_id=09d51247-edd0-5879-b339-a74b6f476932
+2026/03/13 00:08:27 OK | key=2a601ebf-43dc-4a7f-8ba2-1ffc3380445b partition=0 offset=2322
+2026/03/13 00:08:27 age inserted          | id=1bfde3dc-1965-564d-9b58-32cbd92bd15e
+2026/03/13 00:08:27 gender inserted       | id=cae02143-7189-5d8f-b2bd-6f6000f3bc79
+2026/03/13 00:08:27 social_class inserted | id=237e4b54-b3af-5a76-87b7-218201a15dc9
+2026/03/13 00:08:27 target inserted       | id=28fa2ebe-8c78-57e2-9918-0e58f0e016b4
+2026/03/13 00:08:27 geodata inserted      | id=3f82db0a-c499-5375-aaab-01eca8b6a694 target_id=28fa2ebe-8c78-57e2-9918-0e58f0e016b4
+2026/03/13 00:08:27 OK | key=a916d077-99d9-4b97-bd76-dfffccb6d163 partition=0 offset=2323
+2026/03/13 00:08:27 age inserted          | id=e8363065-8ecc-5935-a0bc-8421c47fc34a
+2026/03/13 00:08:27 gender inserted       | id=06e6ecfc-f169-5f7e-b4b9-dcef60a92185
+2026/03/13 00:08:27 social_class inserted | id=741a0420-8d3f-5e26-abff-7d290043daa1
+2026/03/13 00:08:27 target inserted       | id=e47c1dd5-90fa-5080-86ac-eb0669e6bdbc
+2026/03/13 00:08:27 geodata inserted      | id=323a3826-bb17-57dd-abb0-629a3125fd27 target_id=e47c1dd5-90fa-5080-86ac-eb0669e6bdbc
+2026/03/13 00:08:27 OK | key=fb0f94ea-fe4c-4b7d-ba08-c4e629c39c51 partition=0 offset=2324
+2026/03/13 00:08:27 age inserted          | id=67efb451-e2b9-59ef-a3f8-88eae4b07f31
+2026/03/13 00:08:27 gender inserted       | id=71dc8f55-f1ec-5f4e-97db-65f890ab946e
+2026/03/13 00:08:27 social_class inserted | id=73615fe5-3826-566d-b394-d9e5ffddc0ee
+2026/03/13 00:08:27 target inserted       | id=a9624558-6f42-5f99-9660-e4bcd8366054
+2026/03/13 00:08:27 geodata inserted      | id=0961963a-dd10-5fe3-bb51-41f83c861636 target_id=a9624558-6f42-5f99-9660-e4bcd8366054
+2026/03/13 00:08:27 OK | key=71f77581-e0fe-42c6-ae26-6568e64d8a75 partition=0 offset=2325
+2026/03/13 00:08:27 age inserted          | id=c42cc6ce-fec7-5db1-a087-2144abc885b1
+2026/03/13 00:08:28 gender inserted       | id=4b8d6ac9-e33f-5f61-9536-c83165fdb124
+2026/03/13 00:08:28 social_class inserted | id=cfaf11d8-5d91-5303-aa38-7eff054a81e7
+2026/03/13 00:08:28 target inserted       | id=d5ef4808-6ca1-527f-a71e-1108df4558a1
+2026/03/13 00:08:28 geodata inserted      | id=e200359d-7143-504b-8e8f-a79bb3c35665 target_id=d5ef4808-6ca1-527f-a71e-1108df4558a1
+2026/03/13 00:08:28 OK | key=153d8cc8-5f6f-4405-9e38-e2f79b07275a partition=0 offset=2326
+2026/03/13 00:08:28 age inserted          | id=8253f5bd-8307-5a67-9725-2a11610198c1
+2026/03/13 00:08:28 gender inserted       | id=e9506fcf-368a-5df3-adb6-aee414613194
+2026/03/13 00:08:28 social_class inserted | id=45cf9151-e2ce-5ede-a681-424f217a283b
+2026/03/13 00:08:28 target inserted       | id=a1ba22f7-5418-567d-849b-a4cfaa5f9d21
+2026/03/13 00:08:28 geodata inserted      | id=02a85d6d-3b81-51a9-a56c-02fd0cf3336b target_id=a1ba22f7-5418-567d-849b-a4cfaa5f9d21
+2026/03/13 00:08:28 OK | key=f167ae1d-e29b-4a12-930e-4c4d3a8d4917 partition=0 offset=2327
+2026/03/13 00:08:28 age inserted          | id=e660205e-ad6b-5186-913f-bd56aeb0a1f7
+2026/03/13 00:08:28 gender inserted       | id=bd636e33-d7e1-5b20-bbaa-c44367756e1e
+2026/03/13 00:08:28 social_class inserted | id=eba18425-cc85-5c26-8237-d154b3017a26
+2026/03/13 00:08:28 target inserted       | id=dfafe5c4-54a3-5b7f-a0a7-289f23c8600a
+2026/03/13 00:08:28 geodata inserted      | id=61570522-e263-53f0-9d1d-cae7e1d7b0e5 target_id=dfafe5c4-54a3-5b7f-a0a7-289f23c8600a
+2026/03/13 00:08:28 OK | key=f108c732-87f3-4f94-a9c8-4d3b8bb9b749 partition=0 offset=2328
+2026/03/13 00:08:28 age inserted          | id=0ac14a8f-d329-5b0f-a148-d7b2e0fb8326
+2026/03/13 00:08:28 gender inserted       | id=20e7d27d-edd1-5c98-bd01-7a29c08dd119
+2026/03/13 00:08:28 social_class inserted | id=55e0f5ba-8cf7-5391-8206-67610cedae5c
+2026/03/13 00:08:28 target inserted       | id=1351f56f-9e52-54db-a1bc-5501c25ad0fd
+2026/03/13 00:08:28 geodata inserted      | id=7665c9f7-cb16-5959-affe-97f4f894a8cd target_id=1351f56f-9e52-54db-a1bc-5501c25ad0fd
+2026/03/13 00:08:28 OK | key=1b51b83c-cb3c-45dc-8e12-6f74a8b89912 partition=0 offset=2329
+2026/03/13 00:08:28 age inserted          | id=b4163c8f-9307-563a-895a-8d96ed00eab1
+2026/03/13 00:08:28 gender inserted       | id=794faad0-2051-5502-af7e-23943477cd6b
+2026/03/13 00:08:28 social_class inserted | id=38d30b6d-2b77-558f-88be-87b87f7d2eff
+2026/03/13 00:08:28 target inserted       | id=53cce3c5-58d5-522d-9dfa-507c7fae20c2
+2026/03/13 00:08:28 geodata inserted      | id=5d2191bb-bcd9-5a42-b313-683e989056a2 target_id=53cce3c5-58d5-522d-9dfa-507c7fae20c2
+2026/03/13 00:08:28 OK | key=51df5507-7ead-4aad-93e5-aa66ef21637c partition=0 offset=2330
+2026/03/13 00:08:28 age inserted          | id=f1a08133-582b-5dca-9812-ae8ec2e90b68
+2026/03/13 00:08:28 gender inserted       | id=8dad2758-710f-586d-999c-551543bbc6a9
+2026/03/13 00:08:28 social_class inserted | id=9f886fa9-02a0-5e6e-b9a0-c36410a0a41d
+2026/03/13 00:08:28 target inserted       | id=3537f4cd-68b8-5ca3-a299-65ff0df89ebe
+2026/03/13 00:08:28 geodata inserted      | id=894b7bf7-dfeb-5fc3-83cb-f93f20484cb9 target_id=3537f4cd-68b8-5ca3-a299-65ff0df89ebe
+2026/03/13 00:08:28 OK | key=f8d3be7e-9da8-4054-9715-7053b81707f9 partition=0 offset=2331
+2026/03/13 00:08:28 age inserted          | id=b1e604d0-2df5-50b9-8f91-80f1d9422deb
+2026/03/13 00:08:28 gender inserted       | id=95c5fd42-b2c5-5e70-b387-70ae6d0692b9
+2026/03/13 00:08:28 social_class inserted | id=4f9b153d-1941-5317-811f-5655a54862b3
+2026/03/13 00:08:28 target inserted       | id=d2b9d839-8ed4-5809-bc32-f79700d38fb4
+2026/03/13 00:08:28 geodata inserted      | id=843af829-0318-5880-a1a9-9d933c2463b9 target_id=d2b9d839-8ed4-5809-bc32-f79700d38fb4
+2026/03/13 00:08:28 OK | key=8494393b-ab8f-4dd7-9807-3b50fc86dfb2 partition=0 offset=2332
+2026/03/13 00:08:28 age inserted          | id=b9f953d7-fe6c-596c-84e4-7d44530b0d92
+2026/03/13 00:08:28 gender inserted       | id=69b067cb-456f-5303-91f4-e63751b351b6
+2026/03/13 00:08:28 social_class inserted | id=1b875999-4607-595b-9a00-d8516424e92b
+2026/03/13 00:08:28 target inserted       | id=f10d5cbc-f7f2-5ef5-8909-f55c2ded84ff
+2026/03/13 00:08:28 geodata inserted      | id=55b989ac-048b-52e2-8de6-2b9db50e645f target_id=f10d5cbc-f7f2-5ef5-8909-f55c2ded84ff
+2026/03/13 00:08:28 OK | key=71aaa76b-72b7-42ba-a0a0-a232dc755f0e partition=0 offset=2333
+2026/03/13 00:08:28 age inserted          | id=2ba1ce7c-e6da-5bf6-8b83-e2d3c00413a5
+2026/03/13 00:08:28 gender inserted       | id=5a044f6e-92d8-5bd2-88bf-916278efab0b
+2026/03/13 00:08:28 social_class inserted | id=8294b573-3b8f-5485-95a1-ccc91a435ff4
+2026/03/13 00:08:28 target inserted       | id=842cc07e-3a39-538a-bcfa-4d4ee7f521f6
+2026/03/13 00:08:28 geodata inserted      | id=95efd0d2-80a5-5848-a345-1103c415ce56 target_id=842cc07e-3a39-538a-bcfa-4d4ee7f521f6
+2026/03/13 00:08:28 OK | key=59ea3f9b-16d5-4bf2-b897-2f8263f4c9f3 partition=0 offset=2334
+2026/03/13 00:08:28 age inserted          | id=da8220c8-7a01-54d2-8009-bb5b5a1c303d
+2026/03/13 00:08:28 gender inserted       | id=f69628b0-bcaf-587f-a768-d30a830eda9f
+2026/03/13 00:08:28 social_class inserted | id=5a55a7ad-8267-5a45-8d49-b7427e43903e
+2026/03/13 00:08:28 target inserted       | id=0386ede4-80ce-5fb2-adde-cbd5bf01b3f7
+2026/03/13 00:08:28 geodata inserted      | id=b3093b17-b680-56dd-8396-4453c3d996d4 target_id=0386ede4-80ce-5fb2-adde-cbd5bf01b3f7
+2026/03/13 00:08:28 OK | key=3d954e89-624e-4de1-8cf8-557a45e1fcee partition=0 offset=2335
+2026/03/13 00:08:28 age inserted          | id=52b9e298-58de-5cb1-b181-dac292b32ff1
+2026/03/13 00:08:28 gender inserted       | id=2e5c2762-d6fc-56a2-b3a1-a191bb92e9bb
+2026/03/13 00:08:28 social_class inserted | id=46f188a7-de8d-5073-a61b-2be079cbee63
+2026/03/13 00:08:28 target inserted       | id=8f2d1bbd-3bfe-565f-9414-e1a02d5e3b86
+2026/03/13 00:08:28 geodata inserted      | id=c6bff90e-4e7e-54f3-a123-64723322e323 target_id=8f2d1bbd-3bfe-565f-9414-e1a02d5e3b86
+2026/03/13 00:08:28 OK | key=b2ee7bfd-b5d3-403d-a965-4ddb4820761d partition=0 offset=2336
+2026/03/13 00:08:28 age inserted          | id=18a100a4-4a32-5e82-a53c-60acd94083ee
+2026/03/13 00:08:28 gender inserted       | id=5d5665f1-e2ad-5b08-ab85-1aa6fc7f7d28
+2026/03/13 00:08:28 social_class inserted | id=d1b4d9ca-35a7-526a-bad4-f4348433e7d8
+2026/03/13 00:08:28 target inserted       | id=f4bd7be6-9912-52e8-beb9-95a0fccad213
+2026/03/13 00:08:28 geodata inserted      | id=67491278-9084-5909-a94a-4a6be608bd08 target_id=f4bd7be6-9912-52e8-beb9-95a0fccad213
+2026/03/13 00:08:28 OK | key=1fde8e94-2963-48d6-abde-8ee139506f86 partition=0 offset=2337
+2026/03/13 00:08:28 age inserted          | id=9374a5d8-7c69-53a7-b135-4d4cd53b597c
+2026/03/13 00:08:29 gender inserted       | id=f72d3298-cfba-5e9d-b6b4-7519ae17d340
+2026/03/13 00:08:29 social_class inserted | id=db20b378-80ab-549d-93c7-06f3eb11e788
+2026/03/13 00:08:29 target inserted       | id=b8f8a431-3471-54c9-896a-faf974bdaca1
+2026/03/13 00:08:29 geodata inserted      | id=3353091d-f6d5-57e6-8430-6c0378ddbb6c target_id=b8f8a431-3471-54c9-896a-faf974bdaca1
+2026/03/13 00:08:29 OK | key=78b28b2d-5c0d-4287-bbba-1f6231e79686 partition=0 offset=2338
+2026/03/13 00:08:29 age inserted          | id=38cd0248-7028-5763-8c6c-90561adf9205
+2026/03/13 00:08:29 gender inserted       | id=3c26a7df-0e2e-56de-b87d-1601860cb917
+2026/03/13 00:08:29 social_class inserted | id=a3268533-d84e-546c-b101-c568d7d01903
+2026/03/13 00:08:29 target inserted       | id=5e5ce1e9-e6d5-588b-a859-ae35b4b64662
+2026/03/13 00:08:29 geodata inserted      | id=2c599ef1-121b-55ef-abb6-8cf994330a71 target_id=5e5ce1e9-e6d5-588b-a859-ae35b4b64662
+2026/03/13 00:08:29 OK | key=73ca74bb-1a71-4e87-8985-2bd46f5933b6 partition=0 offset=2339
+2026/03/13 00:08:29 age inserted          | id=8af8de7b-4bd4-5395-9143-65d48115283d
+2026/03/13 00:08:29 gender inserted       | id=d37199a3-e859-54ca-a3a3-7a9908b2c134
+2026/03/13 00:08:29 social_class inserted | id=4b37b650-ccec-5235-a8dd-bbf4ee1a06c0
+2026/03/13 00:08:29 target inserted       | id=dcd425be-dd7b-5019-8b70-a6ccefe85bbd
+2026/03/13 00:08:29 geodata inserted      | id=1afe2791-05ab-5c16-ac63-ce8a2d8e92af target_id=dcd425be-dd7b-5019-8b70-a6ccefe85bbd
+2026/03/13 00:08:29 OK | key=6fa9e378-dade-4c3c-8bcb-bcb5f4cebd6e partition=0 offset=2340
+2026/03/13 00:08:29 age inserted          | id=501d9fa9-914e-5838-beb4-0347b44bb0a4
+2026/03/13 00:08:29 gender inserted       | id=9f0d4222-2ae9-53dc-ad41-53a247534561
+2026/03/13 00:08:29 social_class inserted | id=5520c06c-9187-53f1-a9ec-6830ad9ad173
+2026/03/13 00:08:29 target inserted       | id=de910227-40b5-5ca8-9fcc-49592861bf20
+2026/03/13 00:08:29 geodata inserted      | id=ac55505b-ce09-54ca-b30a-156f3f6d1ccc target_id=de910227-40b5-5ca8-9fcc-49592861bf20
+2026/03/13 00:08:29 OK | key=5b8aae9e-4cfc-4e09-94dc-7bfec10fb30e partition=0 offset=2341
+2026/03/13 00:08:29 age inserted          | id=67775e50-0144-51a3-adfe-4fa18d753ee6
+2026/03/13 00:08:29 gender inserted       | id=3a6358cb-62dd-5c83-810a-b068328f98e6
+2026/03/13 00:08:29 social_class inserted | id=9e7b0b69-1bff-5d59-ac15-7bd95524cb6c
+2026/03/13 00:08:29 target inserted       | id=cd6c2b0d-af6c-5b5d-b1d3-8b8a1286174f
+2026/03/13 00:08:29 geodata inserted      | id=8bd5e9b1-2181-5b9b-bb6a-9d9115006e5f target_id=cd6c2b0d-af6c-5b5d-b1d3-8b8a1286174f
+2026/03/13 00:08:29 OK | key=8c3537c1-40be-43bd-86e1-2b6f93f97804 partition=0 offset=2342
+2026/03/13 00:08:29 age inserted          | id=8149d852-d918-5c34-a2f5-d43ea554514f
+2026/03/13 00:08:29 gender inserted       | id=c73f60ac-f09e-5ad1-b563-f6dfbeda66b7
+2026/03/13 00:08:29 social_class inserted | id=2d564ba1-5933-5625-bc93-cc094d434dc9
+2026/03/13 00:08:29 target inserted       | id=e0477857-60f8-53a9-9c1f-c68e42dff8ac
+2026/03/13 00:08:29 geodata inserted      | id=6e976971-7afd-563c-b71c-e2755438b6cb target_id=e0477857-60f8-53a9-9c1f-c68e42dff8ac
+2026/03/13 00:08:29 OK | key=b7918a5d-b4b8-4d04-b4c5-fc9d281101d4 partition=0 offset=2343
+2026/03/13 00:08:29 age inserted          | id=837b6772-7f22-50fe-9bf7-0245525a4e3e
+2026/03/13 00:08:29 gender inserted       | id=e50b997f-dc1e-5bbb-a88a-4f3711dae710
+2026/03/13 00:08:29 social_class inserted | id=61d737ae-5210-5bfe-ba66-7be7eb948089
+2026/03/13 00:08:29 target inserted       | id=38b9fda1-9581-568e-8a7a-633f8e773142
+2026/03/13 00:08:29 geodata inserted      | id=70ccc4f1-ab13-5273-aeef-e6f20b85a0d8 target_id=38b9fda1-9581-568e-8a7a-633f8e773142
+2026/03/13 00:08:29 OK | key=b7df9581-1c05-4424-9698-b0063c92a5c3 partition=0 offset=2344
+2026/03/13 00:08:29 age inserted          | id=009c993e-c508-5f33-8122-d9ce7496c036
+2026/03/13 00:08:29 gender inserted       | id=fe819adb-ddaa-5ed0-88e9-e47537ff91e0
+2026/03/13 00:08:29 social_class inserted | id=9cffce37-eecf-50c1-bdb4-8e20be2af325
+2026/03/13 00:08:29 target inserted       | id=56b69f4c-7b89-58d6-b3e3-f88bb2bc9f26
+2026/03/13 00:08:29 geodata inserted      | id=a6855933-96b6-5ca1-ab54-44975388f81a target_id=56b69f4c-7b89-58d6-b3e3-f88bb2bc9f26
+2026/03/13 00:08:29 OK | key=d9947654-179d-4df0-92d1-47a97fa7789a partition=0 offset=2345
+2026/03/13 00:08:29 age inserted          | id=a19edd75-cf2f-572c-80df-2d22babdc266
+2026/03/13 00:08:29 gender inserted       | id=0ad4007e-c8e8-5365-9f9a-eff047509a8e
+2026/03/13 00:08:29 social_class inserted | id=4374dd37-7616-5fc4-b122-389aa768a80d
+2026/03/13 00:08:29 target inserted       | id=d42f1108-9898-5e79-8146-a7b46fee03a1
+2026/03/13 00:08:29 geodata inserted      | id=96a71e71-6796-53d9-b7f1-a20411aacd3b target_id=d42f1108-9898-5e79-8146-a7b46fee03a1
+2026/03/13 00:08:29 OK | key=2b4bf271-8986-4c3b-89d5-10664c238520 partition=0 offset=2346
+2026/03/13 00:08:29 age inserted          | id=242ef934-0de7-5c2b-9cbe-5e045d2ceb34
+2026/03/13 00:08:29 gender inserted       | id=0369fa81-e2e9-5c00-9142-44bfeb89b8df
+2026/03/13 00:08:29 social_class inserted | id=8d16abee-201d-51a6-9160-6e3c626a8ed1
+2026/03/13 00:08:29 target inserted       | id=a5f93d0e-dbda-5e3f-8660-af21cefcca3e
+2026/03/13 00:08:29 geodata inserted      | id=7acb9376-f673-5d16-8999-13278e87aabd target_id=a5f93d0e-dbda-5e3f-8660-af21cefcca3e
+2026/03/13 00:08:29 OK | key=9091e59e-c8f6-4ea1-b6de-69e688746808 partition=0 offset=2347
+2026/03/13 00:08:29 age inserted          | id=fc2cfb74-d652-5e39-b429-4fa49ffea0b1
+2026/03/13 00:08:29 gender inserted       | id=c6bbeba8-36bb-5756-ba2d-de5d612da3a6
+2026/03/13 00:08:29 social_class inserted | id=a71b045b-f84a-5d4a-9298-ec0a35440ecf
+2026/03/13 00:08:29 target inserted       | id=935d00f7-0706-59d0-beaa-f55c27560d82
+2026/03/13 00:08:29 geodata inserted      | id=db3e6585-ed31-5786-bcb3-4b856d2c2b85 target_id=935d00f7-0706-59d0-beaa-f55c27560d82
+2026/03/13 00:08:29 OK | key=8b93e92d-d74c-4def-9de4-696e75882cd8 partition=0 offset=2348
+2026/03/13 00:08:29 age inserted          | id=e1d1c2d2-48fa-56bc-bacc-c10f17073a57
+2026/03/13 00:08:29 gender inserted       | id=6233ae6c-688c-5210-bd28-499a5571b6b5
+2026/03/13 00:08:29 social_class inserted | id=a26f3807-aac8-50ff-9a24-e84c5764c36f
+2026/03/13 00:08:29 target inserted       | id=c5b270a4-e849-550d-b8a2-929ba243be95
+2026/03/13 00:08:30 geodata inserted      | id=27be03d0-facb-549a-91cd-ab45d064b53d target_id=c5b270a4-e849-550d-b8a2-929ba243be95
+2026/03/13 00:08:30 OK | key=8d29f927-e233-4a30-8381-2783aee6b80e partition=0 offset=2349
+2026/03/13 00:08:30 age inserted          | id=b0e31e52-5f85-5642-bd50-f9769cf9fdca
+2026/03/13 00:08:30 gender inserted       | id=38f83cb1-907a-52d7-a8ef-bb29ab3029dd
+2026/03/13 00:08:30 social_class inserted | id=e833b72f-8f1f-515c-8826-d6198d4bb274
+2026/03/13 00:08:30 target inserted       | id=023b2470-019a-5360-ad9f-7c9d82d012a8
+2026/03/13 00:08:30 geodata inserted      | id=7e1df2de-fe23-5e8c-a889-8101efd36204 target_id=023b2470-019a-5360-ad9f-7c9d82d012a8
+2026/03/13 00:08:30 OK | key=d53c6494-8c45-40be-8938-d89ae60d8c93 partition=0 offset=2350
+2026/03/13 00:08:30 age inserted          | id=aea02f14-d91a-5bb5-8588-7bdf0be32e43
+2026/03/13 00:08:30 gender inserted       | id=048e7b4c-2c64-5f7d-8c34-399db033637a
+2026/03/13 00:08:30 social_class inserted | id=a9b54cd8-c664-5f5d-a02a-0b4fc60744c1
+2026/03/13 00:08:30 target inserted       | id=66f43d06-6be0-5443-bab2-43f391ddf2f1
+2026/03/13 00:08:30 geodata inserted      | id=19876e1e-167d-54e1-b76d-40520229c788 target_id=66f43d06-6be0-5443-bab2-43f391ddf2f1
+2026/03/13 00:08:30 OK | key=1326ad8b-7492-4d48-9a5e-2640cb71f8d8 partition=0 offset=2351
+2026/03/13 00:08:30 age inserted          | id=2ccc372a-028b-5103-92f2-ee405294063c
+2026/03/13 00:08:30 gender inserted       | id=ad58460a-ceff-513c-b770-be4703196a92
+2026/03/13 00:08:30 social_class inserted | id=2bfc29f7-30b4-5ff6-a554-ee2a65dc67ed
+2026/03/13 00:08:30 target inserted       | id=3c26031f-a609-5fec-bb93-de36e43ed780
+2026/03/13 00:08:30 geodata inserted      | id=7a5fc90c-7c58-5ce8-a363-994db2566a51 target_id=3c26031f-a609-5fec-bb93-de36e43ed780
+2026/03/13 00:08:30 OK | key=9413d79c-7861-470a-8fcc-45220042161f partition=0 offset=2352
+2026/03/13 00:08:30 age inserted          | id=76ea28be-2e5a-5f87-a18b-7c03554067f3
+2026/03/13 00:08:30 gender inserted       | id=04dfedfc-ce36-5f1e-b2ef-1f0900a97a03
+2026/03/13 00:08:30 social_class inserted | id=2e2055ac-bfab-57e6-b6ac-23b5a4e5b0e9
+2026/03/13 00:08:30 target inserted       | id=3855e427-6df8-523f-8a25-1d9eea1ef704
+2026/03/13 00:08:30 geodata inserted      | id=56d9c83d-fd6c-526b-810c-afe3af5bc28e target_id=3855e427-6df8-523f-8a25-1d9eea1ef704
+2026/03/13 00:08:30 OK | key=74fa0b9e-8ee6-4414-be6a-8113147269a8 partition=0 offset=2353
+2026/03/13 00:08:30 age inserted          | id=1c47c213-92ff-516f-bbcc-b03d419f8c84
+2026/03/13 00:08:30 gender inserted       | id=e678f709-3eb5-59d3-a57b-95a8978293e6
+2026/03/13 00:08:30 social_class inserted | id=d0a6f306-5d21-5247-9132-7a5b169f8ceb
+2026/03/13 00:08:30 target inserted       | id=87ffacbf-0268-5e0a-b89b-f2d0571649dd
+2026/03/13 00:08:30 geodata inserted      | id=647e2ef5-cae7-50ee-830c-73a1e827815a target_id=87ffacbf-0268-5e0a-b89b-f2d0571649dd
+2026/03/13 00:08:30 OK | key=9c56e484-b022-4c70-b4b9-dcf010a9362b partition=0 offset=2354
+2026/03/13 00:08:30 age inserted          | id=4bad04db-6cb2-56f3-a01d-32ece82cbf1b
+2026/03/13 00:08:30 gender inserted       | id=7058cf94-e657-5407-9029-8545694f74dd
+2026/03/13 00:08:30 social_class inserted | id=807d6fb4-85d1-5633-b2e6-13047461ad20
+2026/03/13 00:08:30 target inserted       | id=288a82ee-b33d-522c-8e34-9a22840cdeb1
+2026/03/13 00:08:30 geodata inserted      | id=6ea9c4f5-7367-5e8e-a772-4a629b791677 target_id=288a82ee-b33d-522c-8e34-9a22840cdeb1
+2026/03/13 00:08:30 OK | key=c1a65b53-f082-434a-b700-e04799bd3d24 partition=0 offset=2355
+2026/03/13 00:08:30 age inserted          | id=85f62535-bab1-51c7-8f03-0f41bed94f44
+2026/03/13 00:08:30 gender inserted       | id=57b779af-fbb5-5990-972d-8d060c6d3334
+2026/03/13 00:08:30 social_class inserted | id=c1003dbe-8460-52c4-834b-4ef4490236d7
+2026/03/13 00:08:30 target inserted       | id=5c8aefb2-1ea2-5a80-a4b1-b034dfb1d08c
+2026/03/13 00:08:30 geodata inserted      | id=31786660-6def-5f7c-9942-3c8d3665df16 target_id=5c8aefb2-1ea2-5a80-a4b1-b034dfb1d08c
+2026/03/13 00:08:30 OK | key=4532df82-4433-482d-874b-9d6cf8790342 partition=0 offset=2356
+2026/03/13 00:08:30 age inserted          | id=80f68188-0ad5-5fbe-bf52-0730c8c5e4de
+2026/03/13 00:08:30 gender inserted       | id=2eb5e755-5227-5847-9349-718314277cb7
+2026/03/13 00:08:30 social_class inserted | id=ac1bc8a7-eaf2-5cb7-bddc-defd05f88f67
+2026/03/13 00:08:30 target inserted       | id=19dcbe31-6480-5a0a-ba2c-511560d462ee
+2026/03/13 00:08:30 geodata inserted      | id=0fcd8e7a-cfa4-5510-a361-f486d1ddf598 target_id=19dcbe31-6480-5a0a-ba2c-511560d462ee
+2026/03/13 00:08:30 OK | key=0fd12129-b9fc-4199-8aa4-5cd7b11934ca partition=0 offset=2357
+2026/03/13 00:08:30 age inserted          | id=00c1589f-c3ce-526b-b92c-6abaa20cdf7d
+2026/03/13 00:08:30 gender inserted       | id=ca1acfc6-0d14-5bd3-b454-9c228b37c54b
+2026/03/13 00:08:30 social_class inserted | id=4e309b6a-b75d-55c8-b81b-b0a04fc1b15b
+2026/03/13 00:08:30 target inserted       | id=38543ca0-9292-5882-baa4-f4cf63eee439
+2026/03/13 00:08:30 geodata inserted      | id=7a4f6165-487e-506f-8ed1-3b095a28ea87 target_id=38543ca0-9292-5882-baa4-f4cf63eee439
+2026/03/13 00:08:30 OK | key=68f5271a-7a71-4244-a2bf-93f8e7d8b645 partition=0 offset=2358
+2026/03/13 00:08:30 age inserted          | id=7820ce6c-8631-5864-8205-54b38831d897
+2026/03/13 00:08:30 gender inserted       | id=1c2868c0-45da-5f9a-956e-e79f48259352
+2026/03/13 00:08:30 social_class inserted | id=8cbe96e9-a2c4-5c15-8721-006c92a05768
+2026/03/13 00:08:30 target inserted       | id=c113eaa5-78e9-50f9-86fa-292b10cf308e
+2026/03/13 00:08:30 geodata inserted      | id=417456b0-a97b-5bc9-ad52-6df05a70cdac target_id=c113eaa5-78e9-50f9-86fa-292b10cf308e
+2026/03/13 00:08:30 OK | key=7e9fcec3-9721-441a-9cb0-1bd0768061a1 partition=0 offset=2359
+2026/03/13 00:08:30 age inserted          | id=3a693cee-57fe-5fed-9c74-39c95481f019
+2026/03/13 00:08:30 gender inserted       | id=4950bfb4-3ac8-5b8f-96f5-1dd7c3a5b305
+2026/03/13 00:08:30 social_class inserted | id=39102bd8-41e0-52d4-a3f1-2a240b4ae511
+2026/03/13 00:08:30 target inserted       | id=423e4db7-d02f-538a-84f5-7f415f59ee28
+2026/03/13 00:08:30 geodata inserted      | id=64ea93b1-9dfe-5dd7-9c7e-5ebecc48c6fe target_id=423e4db7-d02f-538a-84f5-7f415f59ee28
+2026/03/13 00:08:30 OK | key=18df4585-b79e-4f0e-865d-dc37ccbf4bb9 partition=0 offset=2360
+2026/03/13 00:08:30 age inserted          | id=e4a8d7c1-2ed4-5dcd-af89-2099a97c8282
+2026/03/13 00:08:30 gender inserted       | id=951a9784-885d-5e15-8b83-f26a0c972784
+2026/03/13 00:08:31 social_class inserted | id=580ed027-b0d0-5201-8b9b-1d50f431f01b
+2026/03/13 00:08:31 target inserted       | id=8112b313-660d-5dfb-a96e-6ea2eb21fb38
+2026/03/13 00:08:31 geodata inserted      | id=a4a46bcc-e2e9-5c3e-8201-29abc2781a4f target_id=8112b313-660d-5dfb-a96e-6ea2eb21fb38
+2026/03/13 00:08:31 OK | key=35b66ddd-fdb3-45e6-a748-5b11add110a9 partition=0 offset=2361
+2026/03/13 00:08:31 age inserted          | id=8a2d2bbb-248f-5d31-a781-2a53e887cb67
+2026/03/13 00:08:31 gender inserted       | id=042488b2-86de-59c8-b5fb-80d957a4c9bf
+2026/03/13 00:08:31 social_class inserted | id=8be69e4f-cf53-5de3-885d-e49293e382cc
+2026/03/13 00:08:31 target inserted       | id=4183dc87-dcbf-5fdc-bbdc-3389330844b2
+2026/03/13 00:08:31 geodata inserted      | id=9308f06e-0c82-564f-8690-e12d61011ae4 target_id=4183dc87-dcbf-5fdc-bbdc-3389330844b2
+2026/03/13 00:08:31 OK | key=882cb26b-05a5-470c-9996-bd7577379ea2 partition=0 offset=2362
+2026/03/13 00:08:31 age inserted          | id=3b77038f-011a-53c1-bcf8-277a0c756cfb
+2026/03/13 00:08:31 gender inserted       | id=8d338801-644a-53e3-9644-9fca2434fe90
+2026/03/13 00:08:31 social_class inserted | id=9859d46c-ca08-50a0-8d4f-440557c83655
+2026/03/13 00:08:31 target inserted       | id=65bacc2e-c518-570b-a93a-4423b20c0884
+2026/03/13 00:08:31 geodata inserted      | id=bc4cb2c4-1849-5c2f-9eb2-e68c984f8ae3 target_id=65bacc2e-c518-570b-a93a-4423b20c0884
+2026/03/13 00:08:31 OK | key=1551b810-ce48-4986-99d5-a54204cc4191 partition=0 offset=2363
+2026/03/13 00:08:31 age inserted          | id=c1cdc0eb-cfda-5126-8435-68d210b42c4d
+2026/03/13 00:08:31 gender inserted       | id=f9f5e4c8-506a-5f70-8d87-66ef0e1a3236
+2026/03/13 00:08:31 social_class inserted | id=3774cd28-7183-5f43-a6c2-eb77ac7af303
+2026/03/13 00:08:31 target inserted       | id=31d610b1-146d-534e-8261-de124b8fa18a
+2026/03/13 00:08:31 geodata inserted      | id=42c88f8b-3d20-50e0-932a-1d682f296e9a target_id=31d610b1-146d-534e-8261-de124b8fa18a
+2026/03/13 00:08:31 OK | key=e954c9c8-67c3-41f0-a8aa-acb657027978 partition=0 offset=2364
+2026/03/13 00:08:31 age inserted          | id=9a1fbc6a-a8ce-5a3f-9150-f165bf8f19ce
+2026/03/13 00:08:31 gender inserted       | id=1dd4696c-47e4-572d-a32b-27bdfbe3058c
+2026/03/13 00:08:31 social_class inserted | id=360b1b49-1d5d-50ed-8939-67a5e9e24890
+2026/03/13 00:08:31 target inserted       | id=0c613855-b150-58ac-95cf-67837d9fb9c1
+2026/03/13 00:08:31 geodata inserted      | id=489561d6-82b4-5fe7-a66b-6e432f710087 target_id=0c613855-b150-58ac-95cf-67837d9fb9c1
+2026/03/13 00:08:31 OK | key=d864a746-2803-4265-9752-254a0a7954fe partition=0 offset=2365
+2026/03/13 00:08:31 age inserted          | id=39ff6a8f-c4db-53d3-b87d-9b99443211aa
+2026/03/13 00:08:31 gender inserted       | id=1fad4035-32cf-5ff4-a2f0-43d501d23a5c
+2026/03/13 00:08:31 social_class inserted | id=b926cddc-9fc1-5397-a1ae-2c1b53e2d88c
+2026/03/13 00:08:31 target inserted       | id=067dc758-e4b2-5440-bb0b-2100927142d5
+2026/03/13 00:08:31 geodata inserted      | id=c6d2ca20-5586-5683-9608-1d6aafef8308 target_id=067dc758-e4b2-5440-bb0b-2100927142d5
+2026/03/13 00:08:31 OK | key=3c9aa231-db45-491c-a2c9-f72fc629b09d partition=0 offset=2366
+2026/03/13 00:08:31 age inserted          | id=b6fd5203-f9d6-5691-8390-62c20d4e6c4a
+2026/03/13 00:08:31 gender inserted       | id=3dd1b77f-8391-5a53-866e-eb724717b07d
+2026/03/13 00:08:31 social_class inserted | id=701ca6ca-9d98-5b2b-9d3a-f8225b6aa1f4
+2026/03/13 00:08:31 target inserted       | id=39ccceb5-6fdf-5911-b3af-294d4caea853
+2026/03/13 00:08:31 geodata inserted      | id=ef9ede50-e747-560a-8003-b9cb71731bc2 target_id=39ccceb5-6fdf-5911-b3af-294d4caea853
+2026/03/13 00:08:31 OK | key=d05c54df-774a-4846-aeb5-b84fa1e966a3 partition=0 offset=2367
+2026/03/13 00:08:31 age inserted          | id=27e2ff90-3dbc-51d7-8a90-9f4529397157
+2026/03/13 00:08:31 gender inserted       | id=ab873f68-1241-5c42-aaf2-80319834ad44
+2026/03/13 00:08:31 social_class inserted | id=3e0aa2dc-525f-577c-bab6-1f0133d2e8c0
+2026/03/13 00:08:31 target inserted       | id=a8bde1a8-79c7-5c60-94a4-d24f332f6c7f
+2026/03/13 00:08:31 geodata inserted      | id=dbd75357-c538-56ec-89ed-b23ff31d5e05 target_id=a8bde1a8-79c7-5c60-94a4-d24f332f6c7f
+2026/03/13 00:08:31 OK | key=f56dcd37-d173-49d2-a250-956bb8916691 partition=0 offset=2368
+2026/03/13 00:08:31 age inserted          | id=15cdb2a9-a659-5a9e-b341-d7e0c7c93f21
+2026/03/13 00:08:31 gender inserted       | id=52ac61e8-53ab-52b1-a188-a1e45989d464
+2026/03/13 00:08:31 social_class inserted | id=4182258b-6d32-5743-9cd2-26c136515548
+2026/03/13 00:08:31 target inserted       | id=3a2c0f0a-2742-5eb6-9efe-46f78f281da8
+2026/03/13 00:08:31 geodata inserted      | id=926c64d2-ee08-5cae-ba1f-d45eaae6ec62 target_id=3a2c0f0a-2742-5eb6-9efe-46f78f281da8
+2026/03/13 00:08:31 OK | key=1a64de46-2577-4a68-b83b-8b54290c2a2d partition=0 offset=2369

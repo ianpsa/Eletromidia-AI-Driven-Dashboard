@@ -5,4 +5,4 @@ curl -X POST http://192.168.49.2:32073/csv \
 
   curl -X POST http://192.168.49.2:32073/csv \
   -H "Content-Type: application/json" \
-  -d '{"mensagens_por_segundo": 1, "tempo_envio_segundos": 5, "log_mensagens": true}'
+  -d '{"mensagens_por_segundo": 10000, "tempo_envio_segundos": 2, "log_mensagens": true}'
