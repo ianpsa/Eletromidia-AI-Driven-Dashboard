@@ -3,14 +3,15 @@ import { Login } from "./components/Login";
 import { LookerDashboardPage } from "./components/LookerDashboardPage";
 import { useBucketFolder } from "./hooks/useBucketFolder";
 import { computeSortedItems } from "./utils/sort";
-import { Sidebar } from "./components/Sidebar";
+import Sidebar from "./components/Sidebar";
+import AgentFullPage from "./pages/AgentFullPage";
 import { TopBar } from "./components/TopBar";
 import { Breadcrumb } from "./components/Breadcrumb";
 import { SummaryCards } from "./components/SummaryCards";
 import { StatusMessage } from "./components/StatusMessage";
 import { FilesTable } from "./components/FilesTable";
 
-type Page = "dashboard" | "cloud";
+type Page = "dashboard" | "cloud" | "agent";
 
 function CloudPage({ onNavigate }: { onNavigate: (page: Page) => void }) {
   const bucket = useBucketFolder();
@@ -95,6 +96,13 @@ function AppShell() {
         <>
           <Sidebar activePage="dashboard" onNavigate={setPage} />
           <LookerDashboardPage />
+        </>
+      ) : page === "agent" ? (
+        <>
+          <Sidebar activePage="agent" onNavigate={setPage} />
+          <main className="content">
+            <AgentFullPage />
+          </main>
         </>
       ) : (
         <CloudPage onNavigate={setPage} />

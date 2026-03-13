@@ -10,8 +10,13 @@ export default defineConfig(({ mode }) => {
       host: "0.0.0.0",
       port: 5173,
       proxy: {
-        "/api": {
-          target: env.VITE_DEV_PROXY_TARGET || "http://localhost:8080",
+        "/api/analyze": {
+          target: env.VITE_AGENT_PROXY_TARGET || "http://localhost:8000",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, "")
+        },
+        "/api/bucket": {
+          target: env.VITE_BFF_PROXY_TARGET || "http://localhost:8080",
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, "")
         }

@@ -1,4 +1,4 @@
-type Page = "dashboard" | "cloud";
+type Page = "dashboard" | "cloud" | "agent";
 
 interface SidebarProps {
   activePage: Page;
@@ -30,7 +30,17 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
         >
           Cloud
         </button>
+
+        <button
+          type="button"
+          className={`nav-item ${activePage === "agent" ? "nav-item-active" : ""}`}
+          onClick={() => onNavigate("agent")}
+        >
+          Agente IA
+        </button>
       </nav>
     </aside>
   );
 }
+
+export default Sidebar;
