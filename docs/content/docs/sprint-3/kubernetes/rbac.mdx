@@ -1,0 +1,280 @@
+---
+title: Role Based Acess Control
+description: Descrição das configurações Role Based Acess Control
+---
+
+## 1. Introdução
+
+Este documento descreve a estratégia de controle de acesso implementada durante a sprint, abrangendo dois níveis distintos:
+
+- **RBAC no Kubernetes** — controle de acesso dos desenvolvedores ao cluster, via `Role` e `RoleBinding` no namespace `dev`
+- **IAM no GCP** — controle de acesso dos serviços e usuários aos recursos de Cloud Storage e BigQuery, provisionados via Terraform
+
+A separação entre os ambientes **Dev** e **Prod** foi uma decisão deliberada de segurança: desenvolvedores têm acesso operacional ao namespace `dev` do cluster, mas **não possuem acesso direto aos recursos de produção** (buckets, datasets e secrets).
+
+---
+
+## 2. RBAC no Kubernetes
+
+### 2.1 O que é RBAC?
+
+**RBAC** (_Role-Based Access Control_) é o mecanismo do Kubernetes para controlar o que cada usuário ou serviço pode fazer dentro do cluster. Ele funciona com três conceitos centrais:
+
+- **Role**: define um conjunto de permissões dentro de um namespace específico
+- **RoleBinding**: vincula uma Role a um ou mais usuários/grupos
+- **Subject**: o usuário, grupo ou ServiceAccount que recebe as permissões
+
+### 2.2 A Role `developer`
+
+A Role foi criada no namespace `dev` com permissões cuidadosamente escolhidas seguindo o **Princípio do Menor Privilégio** — cada desenvolvedor tem acesso apenas ao que precisa para trabalhar, sem permissões que possam comprometer o ambiente de produção ou dados sensíveis.
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: dev
+  name: developer
+rules:
+
+- apiGroups: [""]
+  resources:
+    - pods
+    - pods/log
+    - pods/exec
+    - pods/portforward
+    - services
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+- apiGroups: ["apps"]
+  resources:
+    - deployments
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+```
+
+### 2.3 Recursos e Permissões
+
+| Recurso | API Group | Verbos | Finalidade |
+|---|---|---|---|
+| `pods` | core (`""`) | CRUD + watch | Gerenciar pods no ambiente dev |
+| `pods/log` | core (`""`) | get, list, watch | Ler logs dos containers para debug |
+| `pods/exec` | core (`""`) | get, list, watch, create | Executar comandos dentro dos containers |
+| `pods/portforward` | core (`""`) | get, list, watch, create | Redirecionar portas para acesso local |
+| `services` | core (`""`) | CRUD + watch | Gerenciar serviços de rede |
+| `deployments` | `apps` | CRUD + watch | Gerenciar deployments |
+
+### 2.4 O que foi deliberadamente excluído
+
+As permissões abaixo **não foram concedidas** aos desenvolvedores, e essa exclusão é intencional:
+
+| Recurso excluído | Motivo |
+|---|---|
+| `secrets` | Impede acesso a credenciais de produção (chaves GCP, senhas, tokens) |
+| `configmaps` | Evita leitura/modificação de configurações sensíveis |
+| `namespaces` | Desenvolvedores não podem criar nem acessar outros namespaces (como `prod`) |
+| `persistentvolumes` | Sem acesso a volumes de dados persistentes |
+| `serviceaccounts` | Impede criação de contas com privilégios elevados |
+| Recursos de `networking.k8s.io` | Sem controle sobre políticas de rede |
+
+### 2.5 RoleBinding
+
+A `RoleBinding` vincula a Role `developer` a usuários individuais no namespace `dev`. Devido à ausência de uma organização Google Workspace verificada, os vínculos são feitos usuário a usuário:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: dev
+  name: developer-binding
+subjects:
+- kind: User
+  name: ian.simao@sou.inteli.edu.br
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: developer
+  apiGroup: rbac.authorization.k8s.io
+```
+
+> **Nota:** Com uma organização Google Workspace verificada, seria possível criar um `Group` e vincular todos os desenvolvedores de uma vez — eliminando a necessidade de um `RoleBinding` por usuário.
+
+### 2.6 Escopo: Por que somente o namespace `dev`?
+
+A `Role` (ao contrário de um `ClusterRole`) tem escopo restrito ao namespace em que é criada. Isso significa que:
+
+- Um desenvolvedor com essa Role **não enxerga nem acessa** o namespace `prod`
+- Secrets, ConfigMaps e recursos de produção permanecem completamente isolados
+- O blast radius de um erro humano ou comprometimento de conta é limitado ao ambiente dev
+
+---
+
+## 3. Infraestrutura GCP — Terraform
+
+### 3.1 Visão Geral dos Módulos
+
+A infraestrutura foi provisionada via Terraform e organizada em módulos independentes por responsabilidade:
+
+```
+terraform/
+├── main.tf                  # Orquestração dos módulos
+├── variables.tf             # Variáveis globais
+├── modules/
+│   ├── bigquery/            # Dataset e tabelas de produção
+│   ├── bigquery_dev/        # Dataset e tabelas de desenvolvimento
+│   ├── cloud_storage/       # Bucket de produção
+│   ├── cloud_storage_dev/   # Bucket de desenvolvimento
+│   ├── iam/                 # IAM de produção
+│   └── iam_dev/             # IAM de desenvolvimento
+```
+
+### 3.2 Separação de Ambientes
+
+Assim como no Kubernetes, os recursos GCP foram duplicados entre Dev e Prod com **Service Accounts e permissões independentes**:
+
+| Recurso | Produção | Desenvolvimento |
+|---|---|---|
+| BigQuery Dataset | `var.dataset_id` | `var.dataset_id_dev` |
+| Cloud Storage Bucket | `var.cs_name` | `var.cs_dev_name` |
+| SA BigQuery | `bq-data-editor` | `bq-dev-data-editor` |
+| SA Cloud Storage | `cs-kafka-consumer` | `cs-dev-kafka-consumer` |
+
+Isso garante que as credenciais usadas pelos serviços em desenvolvimento **nunca têm acesso aos dados de produção**.
+
+### 3.3 BigQuery — Produção
+
+O módulo `bigquery` cria o dataset de produção, as tabelas com seus schemas, e uma Service Account dedicada:
+
+```hcl
+resource "google_bigquery_dataset" "eletromidia_bq" {
+  project    = var.project_id
+  dataset_id = var.dataset_id
+  location   = var.location
+}
+
+resource "google_bigquery_table" "tables" {
+  for_each   = var.tables
+  project    = var.project_id
+  dataset_id = google_bigquery_dataset.eletromidia_bq.dataset_id
+  table_id   = each.value.table_id
+  schema     = file("${path.module}/${each.value.schema}")
+  deletion_protection = false
+}
+
+resource "google_service_account" "bq_sa" {
+  project      = var.project_id
+  account_id   = "bq-data-editor"
+  display_name = "BigQuery Data Editor Service Account"
+}
+```
+
+As tabelas provisionadas são: `geodata`, `target`, `age`, `gender` e `social_class`.
+
+### 3.4 Cloud Storage — Produção
+
+O bucket de produção foi configurado com regras de ciclo de vida para otimização de custos:
+
+```hcl
+resource "google_storage_bucket" "kafka_backup" {
+  name                        = var.cs_name
+  location                    = var.location
+  force_destroy               = true
+  uniform_bucket_level_access = true
+
+  lifecycle_rule {
+    condition { age = 30 }
+    action {
+      type          = "SetStorageClass"
+      storage_class = "NEARLINE"  # reduz custo após 30 dias
+    }
+  }
+
+  lifecycle_rule {
+    condition { age = 360 }
+    action { type = "Delete" }  # remove após 1 ano
+  }
+}
+```
+
+- **`uniform_bucket_level_access: true`** — desativa ACLs por objeto; o controle de acesso é feito exclusivamente via IAM, simplificando auditorias
+- **Lifecycle NEARLINE após 30 dias** — dados não acessados frequentemente migram para uma classe de armazenamento mais barata
+- **Deleção após 360 dias** — evita acumulação indefinida de backups do Kafka
+
+### 3.5 IAM — Produção
+
+O módulo `iam` define três identidades de acesso ao BigQuery de produção:
+
+```hcl
+# Admin humano — acesso total ao BigQuery
+resource "google_project_iam_member" "bq_admin" {
+  role   = "roles/bigquery.admin"
+  member = "user:${var.admin_email}"
+}
+
+# Service Account dos serviços — apenas escrita de dados
+resource "google_project_iam_member" "bq_data_editor" {
+  role   = "roles/bigquery.dataEditor"
+  member = "serviceAccount:${var.service_account_email}"
+}
+
+# Service Account do Looker Studio — apenas leitura
+resource "google_service_account" "bq_looker_reader" {
+  account_id   = "bq-looker-reader"
+  display_name = "BigQuery Looker Studio Reader SA"
+}
+
+resource "google_project_iam_member" "bq_looker_reader" {
+  role   = "roles/bigquery.dataViewer"
+  member = "serviceAccount:${google_service_account.bq_looker_reader.email}"
+}
+```
+
+| Identidade | Role GCP | Nível de Acesso |
+|---|---|---|
+| Admin (usuário humano) | `roles/bigquery.admin` | Administração completa do BigQuery |
+| SA dos serviços (`bq-data-editor`) | `roles/bigquery.dataEditor` | Leitura e escrita de dados nas tabelas |
+| SA Looker Studio (`bq-looker-reader`) | `roles/bigquery.dataViewer` | Somente leitura — para dashboards |
+
+### 3.6 IAM — Desenvolvimento
+
+O módulo `iam_dev` replica a lógica de menor privilégio para o ambiente dev. As Service Accounts de dev recebem acesso **apenas ao bucket e dataset de dev**:
+
+```hcl
+# SA do BigQuery-Dev: apenas dataEditor no escopo dev
+resource "google_project_iam_member" "bq_dev_data_editor" {
+  role   = "roles/bigquery.dataEditor"
+  member = "serviceAccount:${var.service_account_bq_dev_email}"
+}
+
+# SA do Cloud Storage-Dev: escrita de objetos apenas no bucket dev
+resource "google_storage_bucket_iam_member" "cs_dev_sa" {
+  bucket = var.cs_dev_name
+  role   = "roles/storage.objectUser"
+  member = "serviceAccount:${var.service_account_cs_dev_email}"
+}
+
+# Leitura de metadados do bucket (necessária para listar objetos)
+resource "google_storage_bucket_iam_member" "cs_dev_sa_bucket_reader" {
+  bucket = var.cs_dev_name
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${var.service_account_cs_dev_email}"
+}
+```
+
+> A permissão `roles/storage.objectUser` permite criar, ler e deletar objetos dentro do bucket, sem conceder controle sobre o bucket em si. Combinada com `roles/storage.legacyBucketReader`, permite listar objetos — o mínimo necessário para a operação dos serviços.
+
+---
+
+## 4. Princípio do Menor Privilégio — Visão Geral
+
+Todo o design de controle de acesso — tanto no Kubernetes quanto no GCP — foi guiado pelo **Princípio do Menor Privilégio** (_Principle of Least Privilege_): cada identidade (usuário, Service Account, ou serviço) recebe apenas as permissões estritamente necessárias para executar sua função.
+
+| Identidade | Escopo | Permissões |
+|---|---|---|
+| Desenvolvedor (K8s) | Namespace `dev` | Pods, Deployments, Services — sem Secrets |
+| SA `bq-data-editor` (Prod) | BigQuery Prod | Escrita de dados (`dataEditor`) |
+| SA `bq-dev-data-editor` (Dev) | BigQuery Dev | Escrita de dados (`dataEditor`) |
+| SA `cs-kafka-consumer` (Prod) | Bucket Prod | Leitura/escrita de objetos |
+| SA `cs-dev-kafka-consumer` (Dev) | Bucket Dev | Leitura/escrita de objetos |
+| SA `bq-looker-reader` | BigQuery Prod | Somente leitura para o Looker (`dataViewer`) |
+| Admin (usuário humano) | BigQuery Prod | Administração completa (`admin`) |
+
+A separação de ambientes garante que **nenhuma credencial de desenvolvimento tem acesso a dados de produção**, e que **nenhum desenvolvedor consegue acessar Secrets do cluster** — seja via Kubernetes RBAC ou via permissões GCP.
