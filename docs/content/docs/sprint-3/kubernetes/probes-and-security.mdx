@@ -67,29 +67,29 @@ Verifica a conexão com dois sistemas externos: **Apache Kafka** (broker de mens
 
 ```go
 func (ha *healthAssistant) healthCheck(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+    if r.Method != http.MethodGet {
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        return
+    }
 
-	ctx, cancel := context.WithTimeout(ha.ctx, 5*time.Second)
-	defer cancel()
+    ctx, cancel := context.WithTimeout(ha.ctx, 5*time.Second)
+    defer cancel()
 
-	if err := ha.writer.HealthCheck(ctx); err != nil {
-		// falha na conexão com BigQuery
-		log.Printf("health check failed (bigquery): %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+    if err := ha.writer.HealthCheck(ctx); err != nil {
+        // falha na conexão com BigQuery
+        log.Printf("health check failed (bigquery): %v", err)
+        w.WriteHeader(http.StatusInternalServerError)
+        return
+    }
 
-	if err := consumer.KafkaReadinessProbe(ha.consumer.Cfg.KafkaBrokers[0], 5*time.Second); err != nil {
-		// falha na conexão com Kafka
-		log.Printf("health check failed (kafka): %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+    if err := consumer.KafkaReadinessProbe(ha.consumer.Cfg.KafkaBrokers[0], 5*time.Second); err != nil {
+        // falha na conexão com Kafka
+        log.Printf("health check failed (kafka): %v", err)
+        w.WriteHeader(http.StatusInternalServerError)
+        return
+    }
 
-	w.WriteHeader(http.StatusOK)
+    w.WriteHeader(http.StatusOK)
 }
 ```
 
@@ -173,3 +173,7 @@ Com `automountServiceAccountToken: false`, o token simplesmente não é montado 
 | `automountServiceAccountToken: false` | Remove token desnecessário, reduz superfície de ataque na API K8s |
 | Volumes com `readOnly: true` | Chaves de serviço GCP acessíveis somente para leitura |
 | Liveness + Readiness Probes | Alta disponibilidade e remoção automática de instâncias degradadas |
+
+As configurações de Liveness e Readiness Probes, combinadas com as práticas de Security Context aplicadas nesta sprint, estabelecem uma base sólida de resiliência e segurança para os serviços bff-storage, bigquery-writer e bucket-consumer.
+As probes garantem que o Kubernetes tome decisões autônomas e corretas sobre o ciclo de vida dos containers — reiniciando serviços travados e removendo do tráfego instâncias que ainda não estejam prontas para atender requisições. O Security Context, por sua vez, assegura que mesmo em um cenário de comprometimento, o raio de impacto seja o menor possível: sem root, sem escalonamento de privilégio, sem filesystem mutável e sem tokens desnecessários expostos.
+Em conjunto, essas práticas refletem o mesmo princípio que guiou toda a sprint: sistemas seguros não dependem de uma única barreira, mas de múltiplas camadas que se reforçam mutuamente.
