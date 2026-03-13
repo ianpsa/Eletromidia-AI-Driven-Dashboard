@@ -171,11 +171,8 @@ func (a *api) listItemsByFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	folder := normalizeFolderPrefix(r.URL.Query().Get("folder"))
-	if folder == "" {
-		writeError(w, http.StatusBadRequest, "query param 'folder' is required")
-		return
-	}
+	raw := r.URL.Query().Get("folder")
+	folder := normalizeFolderPrefix(raw)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
@@ -190,6 +187,7 @@ func (a *api) listItemsByFolder(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"bucket":  a.bucketName,
 		"folder":  folder,
+		"folders": listing.Folders,
 		"count":   len(listing.Items),
 		"items":   listing.Items,
 	})
