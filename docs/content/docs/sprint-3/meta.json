@@ -1,3 +1,6 @@
 {
-  "title": "Sprint 3"
+  "title": "Sprint 3",
+  "pages": [
+    "frontend-bff"
+  ]
 }
