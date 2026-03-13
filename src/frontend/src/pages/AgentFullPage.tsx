@@ -1,33 +1,26 @@
 import { useState, useRef, useEffect } from "react";
-import { TopBar } from "../components/TopBar";
 import { buildApiUrl } from "../utils/url";
+
+type RankingItem = {
+  point: string;
+  affinity: number;
+  total_target: number;
+  total_flow: number;
+};
 
 type Message = {
   id: number;
   sender: "user" | "agent";
   text: string;
-  details?: {
-    ranking?: Array<{
-      point: string;
-      affinity: number;
-      total_target: number;
-      total_flow: number;
-    }>;
-  };
+  ranking?: RankingItem[];
 };
 
 export default function AgentFullPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 0,
-      sender: "agent",
-      text: "Descreva sua campanha e eu trarei recomendações estratégicas com base em dados.",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -37,12 +30,7 @@ export default function AgentFullPage() {
     if (!input.trim() || loading) return;
 
     const prompt = input.trim();
-
-    setMessages((m) => [
-      ...m,
-      { id: Date.now(), sender: "user", text: prompt },
-    ]);
-
+    setMessages((m) => [...m, { id: Date.now(), sender: "user", text: prompt }]);
     setInput("");
     setLoading(true);
 
@@ -52,7 +40,6 @@ export default function AgentFullPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt, limit: 5 }),
       });
-
       const data = await res.json();
 
       setMessages((m) => [
@@ -60,23 +47,14 @@ export default function AgentFullPage() {
         {
           id: Date.now() + 1,
           sender: "agent",
-          text:
-            data.analysis ||
-            data.message ||
-            "Não foi possível gerar análise.",
-          details: data.top_points
-            ? { ranking: data.top_points }
-            : undefined,
+          text: data.analysis || data.message || "Análise concluída.",
+          ranking: data.top_points,
         },
       ]);
     } catch {
       setMessages((m) => [
         ...m,
-        {
-          id: Date.now() + 2,
-          sender: "agent",
-          text: "Erro ao processar solicitação.",
-        },
+        { id: Date.now() + 2, sender: "agent", text: "Erro ao processar solicitação." },
       ]);
     } finally {
       setLoading(false);
@@ -85,77 +63,90 @@ export default function AgentFullPage() {
 
   return (
     <>
-      <TopBar
-        bucketName="Agente IA"
-        query=""
-        onQueryChange={() => {}}
-        onRefresh={() => {}}
-      />
-
-      <section className="agent-section">
-        <header className="agent-section-header">
-          <h2>Análise estratégica de mídia OOH</h2>
-          <p>
-            Utilize linguagem natural para descrever seu público e receba
-            recomendações baseadas em dados reais.
-          </p>
-        </header>
-
-        <div className="agent-card">
-          <div className="agent-messages">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`agent-row ${msg.sender}`}
-              >
-                <div className="agent-bubble">
-                  {msg.text}
-
-                  {msg.details?.ranking && (
-                    <div className="agent-ranking">
-                      {msg.details.ranking.map((p, i) => (
-                        <div key={i}>
-                          <strong>{p.point}</strong>
-                          <span>
-                            Afinidade: {p.affinity}% • Público:{" "}
-                            {p.total_target} • Fluxo: {p.total_flow}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {loading && (
-              <div className="agent-row agent">
-                <div className="agent-bubble typing">
-                  Analisando...
-                </div>
-              </div>
-            )}
-
-            <div ref={bottomRef} />
-          </div>
-
-          <div className="agent-input">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ex: Mulheres 25-34, classe A, São Paulo"
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              disabled={loading}
-            />
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || loading}
-            >
-              Enviar
-            </button>
-          </div>
+      <header className="topbar">
+        <div>
+          <h1>Agente IA</h1>
+          <p>Análise estratégica de mídia OOH</p>
         </div>
-      </section>
+      </header>
+
+      <div className="agent-messages">
+        {messages.length === 0 && (
+          <div className="agent-empty">
+            <span className="brand-dot agent-empty-dot" />
+            <strong>Como posso ajudar?</strong>
+            <p>
+              Descreva sua campanha e receba recomendações baseadas em dados
+              reais.
+            </p>
+            <p className="agent-empty-hint">
+              Ex: Mulheres 25–34, classe A, São Paulo
+            </p>
+          </div>
+        )}
+
+        {messages.map((msg) => (
+          <div key={msg.id} className={`agent-msg agent-msg-${msg.sender}`}>
+            <div className="agent-msg-bubble">
+              <p>{msg.text}</p>
+
+              {msg.ranking && msg.ranking.length > 0 && (
+                <div className="files-table-wrap" style={{ marginTop: 12 }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Ponto</th>
+                        <th>Afinidade</th>
+                        <th>Público</th>
+                        <th>Fluxo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {msg.ranking.map((r, i) => (
+                        <tr key={i}>
+                          <td>{r.point}</td>
+                          <td>{r.affinity}%</td>
+                          <td>{r.total_target}</td>
+                          <td>{r.total_flow}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {loading && (
+          <div className="agent-msg agent-msg-agent">
+            <div className="agent-msg-bubble">
+              <div className="agent-typing">
+                <span />
+                <span />
+                <span />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div ref={bottomRef} />
+      </div>
+
+      <div className="agent-input-bar">
+        <input
+          ref={inputRef}
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          placeholder="Descreva sua campanha..."
+          disabled={loading}
+        />
+        <button onClick={handleSend} disabled={!input.trim() || loading}>
+          Enviar
+        </button>
+      </div>
     </>
   );
 }

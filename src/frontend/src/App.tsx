@@ -46,39 +46,37 @@ function Dashboard() {
 
   return (
     <>
-      <main className="content">
-        <TopBar
-          bucketName={bucket.bucketName}
-          query={query}
-          onQueryChange={setQuery}
-          onRefresh={bucket.refresh}
-        />
-        <Breadcrumb
+      <TopBar
+        bucketName={bucket.bucketName}
+        query={query}
+        onQueryChange={setQuery}
+        onRefresh={bucket.refresh}
+      />
+      <Breadcrumb
+        currentFolder={bucket.currentFolder}
+        breadcrumbs={bucket.breadcrumbs}
+        onNavigate={navigateTo}
+      />
+      <SummaryCards folders={bucket.folders} files={bucket.files} />
+      <StatusMessage
+        loading={bucket.loading}
+        error={bucket.error}
+        empty={isEmpty}
+        downloadError={bucket.downloadError}
+      />
+      {!bucket.loading && !bucket.error && sortedItems.length > 0 && (
+        <FilesTable
+          items={sortedItems}
           currentFolder={bucket.currentFolder}
-          breadcrumbs={bucket.breadcrumbs}
+          sortField={sortField}
+          sortAsc={sortAsc}
+          downloadingId={bucket.downloadingId}
+          onSort={handleSort}
           onNavigate={navigateTo}
+          onNavigateUp={bucket.navigateUp}
+          onDownload={bucket.handleDownload}
         />
-        <SummaryCards folders={bucket.folders} files={bucket.files} />
-        <StatusMessage
-          loading={bucket.loading}
-          error={bucket.error}
-          empty={isEmpty}
-          downloadError={bucket.downloadError}
-        />
-        { !bucket.loading && !bucket.error && sortedItems.length > 0 && (
-          <FilesTable
-            items={sortedItems}
-            currentFolder={bucket.currentFolder}
-            sortField={sortField}
-            sortAsc={sortAsc}
-            downloadingId={bucket.downloadingId}
-            onSort={handleSort}
-            onNavigate={navigateTo}
-            onNavigateUp={bucket.navigateUp}
-            onDownload={bucket.handleDownload}
-          />
-        )}
-      </main>
+      )}
     </>
   );
 }
