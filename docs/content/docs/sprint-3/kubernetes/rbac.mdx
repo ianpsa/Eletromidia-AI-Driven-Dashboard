@@ -1,6 +1,6 @@
 ---
-title: Role Based Acess Control
-description: Descrição das configurações Role Based Acess Control
+title: Role Based Access Control
+description: Descrição das configurações Role Based Access Control
 ---
 
 ## 1. Introdução
@@ -35,45 +35,44 @@ metadata:
   namespace: dev
   name: developer
 rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/log
+      - pods/exec
+      - pods/portforward
+      - services
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
-- apiGroups: [""]
-  resources:
-    - pods
-    - pods/log
-    - pods/exec
-    - pods/portforward
-    - services
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
-- apiGroups: ["apps"]
-  resources:
-    - deployments
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ```
 
 ### 2.3 Recursos e Permissões
 
-| Recurso | API Group | Verbos | Finalidade |
-|---|---|---|---|
-| `pods` | core (`""`) | CRUD + watch | Gerenciar pods no ambiente dev |
-| `pods/log` | core (`""`) | get, list, watch | Ler logs dos containers para debug |
-| `pods/exec` | core (`""`) | get, list, watch, create | Executar comandos dentro dos containers |
-| `pods/portforward` | core (`""`) | get, list, watch, create | Redirecionar portas para acesso local |
-| `services` | core (`""`) | CRUD + watch | Gerenciar serviços de rede |
-| `deployments` | `apps` | CRUD + watch | Gerenciar deployments |
+| Recurso            | API Group   | Verbos       | Finalidade                              |
+| ------------------ | ----------- | ------------ | --------------------------------------- |
+| `pods`             | core (`""`) | CRUD + watch | Gerenciar pods no ambiente dev          |
+| `pods/log`         | core (`""`) | CRUD + watch | Ler logs dos containers para debug      |
+| `pods/exec`        | core (`""`) | CRUD + watch | Executar comandos dentro dos containers |
+| `pods/portforward` | core (`""`) | CRUD + watch | Redirecionar portas para acesso local   |
+| `services`         | core (`""`) | CRUD + watch | Gerenciar serviços de rede              |
+| `deployments`      | `apps`      | CRUD + watch | Gerenciar deployments                   |
 
 ### 2.4 O que foi deliberadamente excluído
 
 As permissões abaixo **não foram concedidas** aos desenvolvedores, e essa exclusão é intencional:
 
-| Recurso excluído | Motivo |
-|---|---|
-| `secrets` | Impede acesso a credenciais de produção (chaves GCP, senhas, tokens) |
-| `configmaps` | Evita leitura/modificação de configurações sensíveis |
-| `namespaces` | Desenvolvedores não podem criar nem acessar outros namespaces (como `prod`) |
-| `persistentvolumes` | Sem acesso a volumes de dados persistentes |
-| `serviceaccounts` | Impede criação de contas com privilégios elevados |
-| Recursos de `networking.k8s.io` | Sem controle sobre políticas de rede |
+| Recurso excluído                | Motivo                                                                      |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| `secrets`                       | Impede acesso a credenciais de produção (chaves GCP, senhas, tokens)        |
+| `configmaps`                    | Evita leitura/modificação de configurações sensíveis                        |
+| `namespaces`                    | Desenvolvedores não podem criar nem acessar outros namespaces (como `prod`) |
+| `persistentvolumes`             | Sem acesso a volumes de dados persistentes                                  |
+| `serviceaccounts`               | Impede criação de contas com privilégios elevados                           |
+| Recursos de `networking.k8s.io` | Sem controle sobre políticas de rede                                        |
 
 ### 2.5 RoleBinding
 
@@ -86,9 +85,9 @@ metadata:
   namespace: dev
   name: developer-binding
 subjects:
-- kind: User
-  name: ian.simao@sou.inteli.edu.br
-  apiGroup: rbac.authorization.k8s.io
+  - kind: User
+    name: ian.simao@sou.inteli.edu.br
+    apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: Role
   name: developer
@@ -130,12 +129,12 @@ terraform/
 
 Assim como no Kubernetes, os recursos GCP foram duplicados entre Dev e Prod com **Service Accounts e permissões independentes**:
 
-| Recurso | Produção | Desenvolvimento |
-|---|---|---|
-| BigQuery Dataset | `var.dataset_id` | `var.dataset_id_dev` |
-| Cloud Storage Bucket | `var.cs_name` | `var.cs_dev_name` |
-| SA BigQuery | `bq-data-editor` | `bq-dev-data-editor` |
-| SA Cloud Storage | `cs-kafka-consumer` | `cs-dev-kafka-consumer` |
+| Recurso              | Produção            | Desenvolvimento         |
+| -------------------- | ------------------- | ----------------------- |
+| BigQuery Dataset     | `var.dataset_id`    | `var.dataset_id_dev`    |
+| Cloud Storage Bucket | `var.cs_name`       | `var.cs_dev_name`       |
+| SA BigQuery          | `bq-data-editor`    | `bq-dev-data-editor`    |
+| SA Cloud Storage     | `cs-kafka-consumer` | `cs-dev-kafka-consumer` |
 
 Isso garante que as credenciais usadas pelos serviços em desenvolvimento **nunca têm acesso aos dados de produção**.
 
@@ -189,7 +188,7 @@ resource "google_storage_bucket" "kafka_backup" {
 
   lifecycle_rule {
     condition { age = 360 }
-    action { type = "Delete" }  # remove após 1 ano
+    action { type = "Delete" }  # remove após 360 dias
   }
 }
 ```
@@ -227,11 +226,11 @@ resource "google_project_iam_member" "bq_looker_reader" {
 }
 ```
 
-| Identidade | Role GCP | Nível de Acesso |
-|---|---|---|
-| Admin (usuário humano) | `roles/bigquery.admin` | Administração completa do BigQuery |
-| SA dos serviços (`bq-data-editor`) | `roles/bigquery.dataEditor` | Leitura e escrita de dados nas tabelas |
-| SA Looker Studio (`bq-looker-reader`) | `roles/bigquery.dataViewer` | Somente leitura — para dashboards |
+| Identidade                            | Role GCP                    | Nível de Acesso                        |
+| ------------------------------------- | --------------------------- | -------------------------------------- |
+| Admin (usuário humano)                | `roles/bigquery.admin`      | Administração completa do BigQuery     |
+| SA dos serviços (`bq-data-editor`)    | `roles/bigquery.dataEditor` | Leitura e escrita de dados nas tabelas |
+| SA Looker Studio (`bq-looker-reader`) | `roles/bigquery.dataViewer` | Somente leitura — para dashboards      |
 
 ### 3.6 IAM — Desenvolvimento
 
@@ -267,14 +266,14 @@ resource "google_storage_bucket_iam_member" "cs_dev_sa_bucket_reader" {
 
 Todo o design de controle de acesso — tanto no Kubernetes quanto no GCP — foi guiado pelo **Princípio do Menor Privilégio** (_Principle of Least Privilege_): cada identidade (usuário, Service Account, ou serviço) recebe apenas as permissões estritamente necessárias para executar sua função.
 
-| Identidade | Escopo | Permissões |
-|---|---|---|
-| Desenvolvedor (K8s) | Namespace `dev` | Pods, Deployments, Services — sem Secrets |
-| SA `bq-data-editor` (Prod) | BigQuery Prod | Escrita de dados (`dataEditor`) |
-| SA `bq-dev-data-editor` (Dev) | BigQuery Dev | Escrita de dados (`dataEditor`) |
-| SA `cs-kafka-consumer` (Prod) | Bucket Prod | Leitura/escrita de objetos |
-| SA `cs-dev-kafka-consumer` (Dev) | Bucket Dev | Leitura/escrita de objetos |
-| SA `bq-looker-reader` | BigQuery Prod | Somente leitura para o Looker (`dataViewer`) |
-| Admin (usuário humano) | BigQuery Prod | Administração completa (`admin`) |
+| Identidade                       | Escopo          | Permissões                                   |
+| -------------------------------- | --------------- | -------------------------------------------- |
+| Desenvolvedor (K8s)              | Namespace `dev` | Pods, Deployments, Services — sem Secrets    |
+| SA `bq-data-editor` (Prod)       | BigQuery Prod   | Escrita de dados (`dataEditor`)              |
+| SA `bq-dev-data-editor` (Dev)    | BigQuery Dev    | Escrita de dados (`dataEditor`)              |
+| SA `cs-kafka-consumer` (Prod)    | Bucket Prod     | Leitura/escrita de objetos                   |
+| SA `cs-dev-kafka-consumer` (Dev) | Bucket Dev      | Leitura/escrita de objetos                   |
+| SA `bq-looker-reader`            | BigQuery Prod   | Somente leitura para o Looker (`dataViewer`) |
+| Admin (usuário humano)           | BigQuery Prod   | Administração completa (`admin`)             |
 
 A separação de ambientes garante que **nenhuma credencial de desenvolvimento tem acesso a dados de produção**, e que **nenhum desenvolvedor consegue acessar Secrets do cluster** — seja via Kubernetes RBAC ou via permissões GCP.

@@ -3,7 +3,6 @@ title: Probes & Security Contexts
 description: Descrição das configurações de saúde e segurança nos Pods
 ---
 
-
 ## 1. Introdução
 
 Este documento descreve as decisões técnicas tomadas durante a sprint relacionadas à configuração de saúde (**Liveness** e **Readiness Probes**) e contextos de segurança (**Security Context**) nos deployments Kubernetes dos serviços: `bff-storage`, `bigquery-writer` e `bucket-consumer`.
@@ -20,11 +19,11 @@ Se a aplicação travar em um deadlock ou entrar em um estado inconsistente do q
 
 ### 2.1 Configuração nos Deployments
 
-| Serviço | Endpoint | Porta | Delay Inicial | Período | Threshold de Falha |
-|---|---|---|---|---|---|
-| `bff-storage` | `/probe/healthz` | 8080 | 10s | 3s | 5 |
-| `bigquery-writer` | `/healthz` | 8080 | 5s | 3s | 5 |
-| `bucket-consumer` | `/healthz` | 8080 | 5s | 3s | 5 |
+| Serviço           | Endpoint         | Porta | Delay Inicial | Período | Threshold de Falha |
+| ----------------- | ---------------- | ----- | ------------- | ------- | ------------------ |
+| `bff-storage`     | `/probe/healthz` | 8080  | 10s           | 3s      | 5                  |
+| `bigquery-writer` | `/healthz`       | 8080  | 5s            | 3s      | 5                  |
+| `bucket-consumer` | `/healthz`       | 8080  | 5s            | 3s      | 5                  |
 
 ### 2.2 Explicação dos Parâmetros
 
@@ -44,11 +43,11 @@ Isso é especialmente importante durante a inicialização do serviço ou em sit
 
 ### 3.1 Configuração nos Deployments
 
-| Serviço | Endpoint | Porta | Delay Inicial | Período | Threshold de Falha |
-|---|---|---|---|---|---|
-| `bff-storage` | `/probe/healthz` | 8080 | 5s | 10s | 2 |
-| `bigquery-writer` | `/healthz` | 8080 | 5s | 3s | 2 |
-| `bucket-consumer` | `/healthz` | 8080 | 5s | 3s | 2 |
+| Serviço           | Endpoint         | Porta | Delay Inicial | Período | Threshold de Falha |
+| ----------------- | ---------------- | ----- | ------------- | ------- | ------------------ |
+| `bff-storage`     | `/probe/healthz` | 8080  | 5s            | 10s     | 2                  |
+| `bigquery-writer` | `/healthz`       | 8080  | 5s            | 3s      | 2                  |
+| `bucket-consumer` | `/healthz`       | 8080  | 5s            | 3s      | 2                  |
 
 ### 3.2 Diferenças em Relação à Liveness
 
@@ -59,7 +58,10 @@ Isso é especialmente importante durante a inicialização do serviço ou em sit
 
 #### bff-storage
 
-Verifica se o serviço está conectado ao **Google Cloud Storage** e respondendo corretamente às requisições HTTP. O endpoint `/probe/healthz` retorna `HTTP 200` quando ambas as condições são satisfeitas, ou `HTTP 500` em caso de falha de conectividade.
+O serviço expõe dois endpoints de saúde com responsabilidades distintas:
+
+- **`/healthz`** — utilizado pelas probes do Kubernetes. Retorna `HTTP 200` com `{"status": "ok"}` sempre que o servidor está em execução, sem verificar dependências externas.
+- **`/probe/startup`** — verifica a conectividade com o **Google Cloud Storage** via `bucket.Attrs()`. Retorna `HTTP 500` se o bucket não estiver acessível, ou `HTTP 200` caso a conexão esteja estabelecida.
 
 #### bigquery-writer
 
@@ -107,12 +109,12 @@ O **Security Context** é uma configuração do Kubernetes que define privilégi
 
 ### 4.1 Configurações Aplicadas
 
-| Parâmetro | Nível | Valor | Efeito |
-|---|---|---|---|
-| `runAsUser` | Pod | `1010` | Executa o processo como usuário não-root com UID 1010 |
-| `runAsNonRoot` | Pod | `true` | Kubernetes rejeita o container se a imagem tentar rodar como root |
-| `allowPrivilegeEscalation` | Container | `false` | Impede que o processo obtenha privilégios além dos definidos |
-| `readOnlyRootFilesystem` | Container | `true` | Sistema de arquivos raiz somente leitura |
+| Parâmetro                  | Nível     | Valor   | Efeito                                                            |
+| -------------------------- | --------- | ------- | ----------------------------------------------------------------- |
+| `runAsUser`                | Pod       | `1010`  | Executa o processo como usuário não-root com UID 1010             |
+| `runAsNonRoot`             | Pod       | `true`  | Kubernetes rejeita o container se a imagem tentar rodar como root |
+| `allowPrivilegeEscalation` | Container | `false` | Impede que o processo obtenha privilégios além dos definidos      |
+| `readOnlyRootFilesystem`   | Container | `true`  | Sistema de arquivos raiz somente leitura                          |
 
 ### 4.2 Vantagens do Security Context
 
@@ -165,14 +167,14 @@ Com `automountServiceAccountToken: false`, o token simplesmente não é montado 
 
 ## 6. Resumo das Decisões de Segurança
 
-| Prática | Benefício Principal |
-|---|---|
-| `runAsNonRoot` + `runAsUser: 1010` | Elimina riscos de execução como root no host |
-| `allowPrivilegeEscalation: false` | Bloqueia escalada de privilégio via setuid/capabilities |
-| `readOnlyRootFilesystem: true` | Imutabilidade do filesystem, impedindo instalação de malware |
-| `automountServiceAccountToken: false` | Remove token desnecessário, reduz superfície de ataque na API K8s |
-| Volumes com `readOnly: true` | Chaves de serviço GCP acessíveis somente para leitura |
-| Liveness + Readiness Probes | Alta disponibilidade e remoção automática de instâncias degradadas |
+| Prática                               | Benefício Principal                                                |
+| ------------------------------------- | ------------------------------------------------------------------ |
+| `runAsNonRoot` + `runAsUser: 1010`    | Elimina riscos de execução como root no host                       |
+| `allowPrivilegeEscalation: false`     | Bloqueia escalada de privilégio via setuid/capabilities            |
+| `readOnlyRootFilesystem: true`        | Imutabilidade do filesystem, impedindo instalação de malware       |
+| `automountServiceAccountToken: false` | Remove token desnecessário, reduz superfície de ataque na API K8s  |
+| Volumes com `readOnly: true`          | Chaves de serviço GCP acessíveis somente para leitura              |
+| Liveness + Readiness Probes           | Alta disponibilidade e remoção automática de instâncias degradadas |
 
 As configurações de Liveness e Readiness Probes, combinadas com as práticas de Security Context aplicadas nesta sprint, estabelecem uma base sólida de resiliência e segurança para os serviços bff-storage, bigquery-writer e bucket-consumer.
 As probes garantem que o Kubernetes tome decisões autônomas e corretas sobre o ciclo de vida dos containers — reiniciando serviços travados e removendo do tráfego instâncias que ainda não estejam prontas para atender requisições. O Security Context, por sua vez, assegura que mesmo em um cenário de comprometimento, o raio de impacto seja o menor possível: sem root, sem escalonamento de privilégio, sem filesystem mutável e sem tokens desnecessários expostos.
