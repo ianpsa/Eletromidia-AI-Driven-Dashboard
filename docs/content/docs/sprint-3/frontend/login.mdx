@@ -1,0 +1,32 @@
+---
+title: Login
+description: Documentação da tela de login do frontend da Sprint 3
+---
+
+## Papel da tela
+
+A tela de login é a porta de entrada da aplicação. Ela existe para iniciar a navegação no frontend, mas a implementação atual ainda não faz autenticação contra backend.
+
+Ao submeter o formulário, o componente apenas chama `onLogin()` e altera o estado local `loggedIn` para `true`. Se a página for recarregada, o usuário volta para o login.
+
+![Tela de login do frontend](/sprint-3/frontend/login.png)
+
+## Estrutura visual
+
+O layout é dividido em duas colunas:
+
+- À esquerda, fundo laranja com logo e card do formulário
+- À direita, carrossel de imagens institucionais da Eletromidia
+
+O formulário tem dois campos, `Seu e-mail` e `Senha`, além do botão para mostrar ou ocultar a senha.
+
+## Comportamento
+
+- O botão `Entrar` fica desabilitado enquanto e-mail e senha estiverem vazios
+- O envio do formulário não chama API de autenticação
+- O carrossel troca a imagem ativa a cada 4 segundos
+- O estado da senha pode alternar entre texto visível e oculto
+
+## Responsividade
+
+Em telas menores, a coluna do carrossel é ocultada. O foco da interface passa a ser o formulário, preservando a legibilidade e reduzindo ruído visual no mobile.
