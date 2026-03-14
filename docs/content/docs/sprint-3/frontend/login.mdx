@@ -1,32 +1,36 @@
 ---
 title: Login
-description: Documentação da tela de login do frontend da Sprint 3
+description: Tela de entrada da aplicação — layout e comportamento
 ---
 
 ## Papel da tela
 
-A tela de login é a porta de entrada da aplicação. Ela existe para iniciar a navegação no frontend, mas a implementação atual ainda não faz autenticação contra backend.
-
-Ao submeter o formulário, o componente apenas chama `onLogin()` e altera o estado local `loggedIn` para `true`. Se a página for recarregada, o usuário volta para o login.
+Ponto de entrada da aplicação. Ao submeter o formulário, o componente chama `onLogin()` e altera o estado local `loggedIn` para `true`. Não há autenticação real contra backend nem persistência de sessão.
 
 ![Tela de login do frontend](/sprint-3/frontend/login.png)
 
 ## Estrutura visual
 
-O layout é dividido em duas colunas:
+Layout em duas colunas:
 
-- À esquerda, fundo laranja com logo e card do formulário
-- À direita, carrossel de imagens institucionais da Eletromidia
+| Coluna   | Conteúdo                                            |
+| -------- | --------------------------------------------------- |
+| Esquerda | Fundo laranja, logo e card com formulário de acesso |
+| Direita  | Carrossel de imagens institucionais da Eletromidia  |
 
-O formulário tem dois campos, `Seu e-mail` e `Senha`, além do botão para mostrar ou ocultar a senha.
+Campos do formulário: `Seu e-mail` e `Senha`, com botão para alternar visibilidade da senha.
 
 ## Comportamento
 
-- O botão `Entrar` fica desabilitado enquanto e-mail e senha estiverem vazios
-- O envio do formulário não chama API de autenticação
-- O carrossel troca a imagem ativa a cada 4 segundos
-- O estado da senha pode alternar entre texto visível e oculto
+- Botão `Entrar` permanece desabilitado enquanto e-mail ou senha estiverem vazios
+- Submissão não chama API — apenas avança para o `Dashboard`
+- Carrossel troca a imagem ativa a cada 4 segundos
 
 ## Responsividade
 
-Em telas menores, a coluna do carrossel é ocultada. O foco da interface passa a ser o formulário, preservando a legibilidade e reduzindo ruído visual no mobile.
+Em telas menores a coluna do carrossel é ocultada, mantendo o foco no formulário.
+
+## Ver também
+
+- [Dashboard](/docs/sprint-3/frontend/dashboard) — tela inicial após o login
+- [Frontend](/docs/sprint-3/frontend/frontend-bff) — visão geral e como executar

@@ -1,0 +1,63 @@
+---
+title: Frontend
+description: Visão geral do frontend da Sprint 3 — stack, páginas, navegação e como executar
+---
+
+## Visão geral
+
+O frontend em `src/frontend` é uma SPA em React + TypeScript, construída com Vite e CSS puro. Após o login, o usuário navega entre três áreas principais pelo menu lateral.
+
+## Stack
+
+| Camada    | Tecnologia               |
+| --------- | ------------------------ |
+| Framework | React 18 + TypeScript 5  |
+| Build     | Vite 5                   |
+| Estilos   | CSS puro (sem lib de UI) |
+| Tipagem   | TypeScript strict        |
+
+Sem bibliotecas de roteamento nem gerenciamento de estado externo. A navegação é feita em memória via `App.tsx`.
+
+## Páginas
+
+| Página                                         | Descrição                                  | Detalhes                               |
+| ---------------------------------------------- | ------------------------------------------ | -------------------------------------- |
+| [Login](/docs/sprint-3/frontend/login)         | Entrada da aplicação, formulário de acesso | [→](/docs/sprint-3/frontend/login)     |
+| [Dashboard](/docs/sprint-3/frontend/dashboard) | Analytics via embed do Looker Studio       | [→](/docs/sprint-3/frontend/dashboard) |
+| [Cloud](/docs/sprint-3/frontend/cloud)         | Navegação e download de arquivos do bucket | [→](/docs/sprint-3/frontend/cloud)     |
+
+## Fluxo da aplicação
+
+```text
+Login
+  │
+  ▼
+Dashboard  ←──┐
+Cloud      ←──┤ menu lateral
+```
+
+Após o login, a tela inicial é `Dashboard`. A troca entre telas não recarrega a página — o estado é mantido em memória.
+
+## Como executar
+
+```bash
+cd src/frontend
+npm install
+npm run dev        # dev server em http://localhost:5173
+npm run build      # build de produção em dist/
+npm run typecheck  # verifica tipos sem emitir arquivos
+```
+
+## Variáveis de ambiente
+
+| Variável                  | Default                 | Finalidade                                    |
+| ------------------------- | ----------------------- | --------------------------------------------- |
+| `VITE_BFF_PROXY_TARGET`   | `http://localhost:8080` | Destino do proxy para chamadas ao BFF Storage |
+| `VITE_AGENT_PROXY_TARGET` | `http://localhost:8000` | Destino do proxy para o endpoint `/analyze`   |
+
+Em produção, configure `VITE_BFF_PROXY_TARGET` e `VITE_AGENT_PROXY_TARGET` antes do build.
+
+## Serviços relacionados
+
+- [BFF Storage](/docs/sprint-2/backend/services/bff-storage)
+- [Dashboard Analítico](/docs/sprint-2/dashboard-analitico)
