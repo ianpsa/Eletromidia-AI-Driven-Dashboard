@@ -1,34 +1,37 @@
 ---
 title: Dashboard
-description: Documentação da tela Dashboard do frontend da Sprint 3
+description: Primeira tela após o login — embed do Looker Studio para visualização analítica
 ---
 
 ## Papel da tela
 
-O `Dashboard` é a primeira tela exibida após o login. Ele funciona como ponto de entrada para a visualização analítica e mantém a navegação lateral disponível para acesso às outras áreas do sistema.
+Primeira tela exibida após o login. Centraliza a visualização analítica via embed do Looker Studio, sem lógica de filtros ou estado de gráficos no React.
 
 ![Tela Dashboard do frontend](/sprint-3/frontend/dashboard.png)
 
-## Estrutura da página
+## Estrutura visual
 
-A implementação da tela é enxuta:
+| Elemento       | Descrição                                     |
+| -------------- | --------------------------------------------- |
+| Cabeçalho      | Título `Dashboard` e subtítulo de indicadores |
+| Área principal | `iframe` ocupando todo o espaço disponível    |
 
-- cabeçalho com título `Dashboard`
-- subtítulo `Visão geral de indicadores`
-- contêiner com um `iframe` ocupando a área principal
-
-O conteúdo analítico em si não é renderizado pelo React. Ele vem do embed do Looker Studio configurado na URL:
-
-`https://lookerstudio.google.com/embed/reporting/1776f716-b7de-4268-99ef-8107f950868d`
+O conteúdo analítico é renderizado inteiramente pelo Looker Studio dentro do `iframe`.
 
 ## Comportamento
 
-- O menu lateral controla a navegação entre `Dashboard`, `Cloud` e `Agente IA`
-- Os filtros, gráficos e interações analíticas pertencem ao próprio Looker Studio
-- O frontend só hospeda o embed; não replica lógica de filtro nem estado dos gráficos
+- Navegação entre `Dashboard`, `Cloud` é feita pelo menu lateral
+- Filtros, gráficos e interações pertencem ao Looker Studio
+- O frontend não replica nem intercepta estado do relatório
 
-## Dependências e limites
+## Integração
 
-Como a tela depende de um serviço externo, a experiência final depende da disponibilidade do relatório embutido. Se o Looker Studio não carregar, a moldura da página continua disponível, mas o conteúdo do `iframe` não será exibido corretamente.
+| Recurso   | Valor                                                                                  |
+| --------- | -------------------------------------------------------------------------------------- |
+| Embed URL | `https://lookerstudio.google.com/embed/reporting/1776f716-b7de-4268-99ef-8107f950868d` |
+| Tipo      | `iframe` — sem chamadas de API próprias                                                |
 
-Para a documentação detalhada dos indicadores e da modelagem analítica, consulte [Dashboard Analítico](/docs/sprint-2/dashboard-analitico).
+## Ver também
+
+- [Dashboard Analítico](/docs/sprint-2/dashboard-analitico) — indicadores, modelagem e fonte dos dados
+- [Cloud](/docs/sprint-3/frontend/cloud) — próxima tela, navegação de arquivos do bucket

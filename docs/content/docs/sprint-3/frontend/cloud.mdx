@@ -1,0 +1,40 @@
+---
+title: Cloud
+description: Navegação hierárquica e download de arquivos do bucket via BFF Storage
+---
+
+## Papel da tela
+
+Interface de navegação e download de arquivos armazenados no bucket. Integra diretamente com o BFF Storage para carregar pastas, arquivos e realizar downloads.
+
+![Tela Cloud do frontend](/sprint-3/frontend/cloud.png)
+
+## Estrutura visual
+
+| Elemento      | Descrição                                                     |
+| ------------- | ------------------------------------------------------------- |
+| TopBar        | Nome do bucket, campo de busca e botão de atualização         |
+| Breadcrumb    | Caminho atual partindo de `Raiz`, derivado de `currentFolder` |
+| Summary Cards | Contagem de pastas, arquivos e tamanho total do nível atual   |
+| FilesTable    | Listagem de pastas e arquivos com ordenação e download        |
+
+## Comportamento
+
+- Pastas são sempre listadas antes dos arquivos
+- Busca filtra apenas os itens já carregados no nível atual (sem nova requisição)
+- Ordenação disponível por `nome` e `tamanho`
+- Download cria um `blob` no navegador e resolve o nome final via `Content-Disposition`
+
+## Integração com o BFF Storage
+
+| Ação                | Endpoint                                  | Descrição                                            |
+| ------------------- | ----------------------------------------- | ---------------------------------------------------- |
+| Carregar nível      | `GET /api/bucket/items/by-folder?folder=` | Retorna `bucket`, `folders` e `items` do nível atual |
+| Download de arquivo | `GET /api/bucket/items/file?id=`          | Retorna o arquivo com header `Content-Disposition`   |
+
+As URLs são construídas pelo utilitário `src/utils/url.ts` usando o prefixo configurado em `VITE_BFF_PROXY_TARGET`.
+
+## Ver também
+
+- [BFF Storage](/docs/sprint-2/backend/services/bff-storage) — contratos de API e lógica do backend
+- [Dashboard](/docs/sprint-3/frontend/dashboard) — tela anterior no fluxo de navegação
