@@ -5,12 +5,10 @@ use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use std::env;
 use mods::csv::CsvManager;
 use mods::test::{run_auto_test, run_load_test, LoadTestConfig, LoadTestResult};
-use prometheus_client::registry::Registry;
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::{DefaultProducerContext, ThreadedProducer};
 use serde::Serialize;
 use std::sync::Arc;
-use std::sync::RwLock;
 
 #[derive(Debug, Serialize)]
 struct HealthResponse {
@@ -21,7 +19,6 @@ struct HealthResponse {
 struct AppState {
     producer: Arc<ThreadedProducer<DefaultProducerContext>>,
     csv_manager: Arc<CsvManager>,
-    metrics_registry: Arc<RwLock<Registry>>,
 }
 
 impl Clone for AppState {
@@ -29,13 +26,8 @@ impl Clone for AppState {
         Self {
             producer: self.producer.clone(),
             csv_manager: self.csv_manager.clone(),
-            metrics_registry: self.metrics_registry.clone(),
         }
     }
-}
-
-fn create_metrics_registry() -> Registry {
-    Registry::default()
 }
 
 fn create_producer() -> ThreadedProducer<DefaultProducerContext> {
@@ -62,17 +54,10 @@ fn create_producer() -> ThreadedProducer<DefaultProducerContext> {
 }
 
 #[get("/metrics")]
-async fn metrics(state: web::Data<AppState>) -> impl Responder {
-    let registry = state.metrics_registry.read().unwrap();
-    let mut buf = Vec::new();
-    let encoder = prometheus_client::encoding::text::TextEncoder::new();
-    if encoder.encode(registry.iter(), &mut buf).is_ok() {
-        HttpResponse::Ok()
-            .content_type("application/openmetrics-text; version=1.0.0; charset=utf-8")
-            .body(String::from_utf8(buf).unwrap_or_default())
-    } else {
-        HttpResponse::InternalServerError().body("Failed to encode metrics")
-    }
+async fn metrics() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("text/plain; version=0.0.4")
+        .body("# HELP csv_kafka_producer_up Prometheus exporter for csv-kafka-producer\n# TYPE csv_kafka_producer_up gauge\ncsv_kafka_producer_up 1\n")
 }
 
 #[get("/healthz")]
@@ -156,12 +141,9 @@ async fn main() -> std::io::Result<()> {
 
     let producer = Arc::new(create_producer());
 
-    let metrics_registry = Arc::new(RwLock::new(create_metrics_registry()));
-
     let app_state = AppState {
         producer,
         csv_manager,
-        metrics_registry,
     };
 
     let http_host = env::var("HTTP_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());

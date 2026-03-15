@@ -6,14 +6,6 @@ use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::Semaphore;
 use tokio::task;
-use uuid::Uuid;
-
-fn load_test_batch_size() -> usize {
-    env::var("LOAD_TEST_BATCH_SIZE")
-        .ok()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(500)
-}
 
 fn kafka_topic() -> String {
     env::var("KAFKA_TOPIC").unwrap_or_else(|_| "csv-topic".to_string())
