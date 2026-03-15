@@ -31,7 +31,7 @@ def analyze_campaign(request: CampaignRequest):
 
         df = pd.read_csv(DATA_PATH)
 
-        rows = build_report(df, filters)
+        rows, used_range = build_report(df, filters)
 
         city_fallback = False
 
@@ -54,6 +54,7 @@ def analyze_campaign(request: CampaignRequest):
             ranking=top_points,
             api_key=token,
             city_fallback=city_fallback,
+            used_age_range=used_range
         )
 
         return {"success": True, "analysis": final_answer, "top_points": top_points}

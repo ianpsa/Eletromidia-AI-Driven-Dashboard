@@ -32,15 +32,36 @@ def build_report(df, filters):
 
     if "city" in filters:
         mask &= df["cidade"].str.lower() == filters["city"].lower()
-
+    
     if "age_min" in filters or "age_max" in filters:
         age_min = filters.get("age_min", 0)
         age_max = filters.get("age_max", 200)
 
         ages = df["age_label"].apply(parse_age_range)
 
+        valid_ranges = ages[
+            ages.apply(
+                lambda x: (
+                    x[0] is not None
+                    and x[0] <= age_max
+                    and x[1] >= age_min
+                )
+            )
+        ]
+
+        if not valid_ranges.empty:
+            used_min = valid_ranges.apply(lambda x: x[0]).min()
+            used_max = valid_ranges.apply(lambda x: x[1]).max()
+        else:
+            used_min = None
+            used_max = None
+
         mask &= ages.apply(
-            lambda x: x[0] is not None and x[0] >= age_min and x[1] <= age_max
+            lambda x: (
+                x[0] is not None
+                and x[0] <= age_max
+                and x[1] >= age_min
+            )
         )
 
     filtered = df[mask].copy()
@@ -58,7 +79,7 @@ def build_report(df, filters):
 
     agg = agg.sort_values("affinity", ascending=False)
 
-    return [
+    rows = [
         {
             "point": f"{r.endereco}, {r.numero}",
             "total_target": round(r.joint_count, 2),
@@ -67,6 +88,8 @@ def build_report(df, filters):
         }
         for r in agg.itertuples()
     ]
+
+    return rows, (used_min, used_max)
 
 
 def print_table(rows, limit):
