@@ -5,10 +5,20 @@ use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use std::env;
 use mods::csv::CsvManager;
 use mods::test::{run_auto_test, run_load_test, LoadTestConfig, LoadTestResult};
+use prometheus_client::encoding::EncodeLabelSet;
+use prometheus_client::metrics::counter::Counter;
+use prometheus_client::metrics::gauge::Gauge;
+use prometheus_client::registry::Registry;
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::{DefaultProducerContext, ThreadedProducer};
 use serde::Serialize;
 use std::sync::Arc;
+use parking_lot::RwLock;
+
+#[derive(Debug, Clone, EncodeLabelSet)]
+struct Labels {
+    service: String,
+}
 
 #[derive(Debug, Serialize)]
 struct HealthResponse {
@@ -19,6 +29,7 @@ struct HealthResponse {
 struct AppState {
     producer: Arc<ThreadedProducer<DefaultProducerContext>>,
     csv_manager: Arc<CsvManager>,
+    metrics_registry: Arc<RwLock<Registry>>,
 }
 
 impl Clone for AppState {
@@ -26,8 +37,14 @@ impl Clone for AppState {
         Self {
             producer: self.producer.clone(),
             csv_manager: self.csv_manager.clone(),
+            metrics_registry: self.metrics_registry.clone(),
         }
     }
+}
+
+fn create_metrics_registry() -> Registry {
+    let registry = Registry::default();
+    registry
 }
 
 fn create_producer() -> ThreadedProducer<DefaultProducerContext> {
@@ -51,6 +68,25 @@ fn create_producer() -> ThreadedProducer<DefaultProducerContext> {
         .set("request.timeout.ms", &request_timeout_ms)
         .create()
         .expect("Falha ao criar producer")
+}
+
+#[get("/metrics")]
+async fn metrics(state: web::Data<AppState>) -> impl Responder {
+    let registry = state.metrics_registry.read();
+    let mut buf = Vec::new();
+    let encoder = prometheus_client::encoding::TextEncoder::new();
+    if encoder.encode(&registry.collect(), &mut buf).is_ok() {
+        HttpResponse::Ok()
+            .content_type("application/openmetrics-text; version=1.0.0; charset=utf-8")
+            .body(String::from_utf8(buf).unwrap_or_default())
+    } else {
+        HttpResponse::InternalServerError().body("Failed to encode metrics")
+    }
+}
+
+#[get("/healthz")]
+async fn healthz() -> impl Responder {
+    HttpResponse::Ok().body("ok")
 }
 
 #[get("/health")]
@@ -129,9 +165,12 @@ async fn main() -> std::io::Result<()> {
 
     let producer = Arc::new(create_producer());
 
+    let metrics_registry = Arc::new(RwLock::new(create_metrics_registry()));
+
     let app_state = AppState {
         producer,
         csv_manager,
+        metrics_registry,
     };
 
     let http_host = env::var("HTTP_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
@@ -143,6 +182,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(app_state.clone()))
+            .service(metrics)
+            .service(healthz)
             .service(health)
             .service(csv_post)
     })

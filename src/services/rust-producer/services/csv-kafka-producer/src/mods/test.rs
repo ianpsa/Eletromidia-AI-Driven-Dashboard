@@ -4,7 +4,9 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::sync::Arc;
 use std::time::Instant;
+use tokio::sync::Semaphore;
 use tokio::task;
+use uuid::Uuid;
 
 fn load_test_batch_size() -> usize {
     env::var("LOAD_TEST_BATCH_SIZE")
@@ -109,51 +111,54 @@ pub async fn run_load_test(
     producer: Arc<ThreadedProducer<DefaultProducerContext>>,
     log_mensagens: bool,
 ) -> LoadTestResult {
-    let batch_size = load_test_batch_size();
     let topic = kafka_topic();
 
     let start = Instant::now();
     let mut mensagens_enviadas = 0;
     let mut mensagens_com_erro = 0;
 
-    let target_interval_us = if target_rate > 0 {
+    let max_concurrent = target_rate.min(1000).max(10);
+    let semaphore = Arc::new(Semaphore::new(max_concurrent));
+
+    let interval_per_message_us = if target_rate > 0 {
         1_000_000 / target_rate as u64
     } else {
         0
     };
-    let batch_interval_us = target_interval_us * batch_size as u64;
 
     while start.elapsed().as_secs() < duration_secs as u64 {
         let batch_start = Instant::now();
+        let messages_this_second = target_rate.min(1000);
+        let mut handles = Vec::new();
 
-        let handles: Vec<_> = (0..batch_size)
-            .map(|_| {
-                let data = csv_data.clone();
-                let producer = producer.clone();
-                let topic = topic.clone();
-                async move {
-                    let index = rand::random::<usize>() % data.len();
-                    let row = &data[index];
+        for _ in 0..messages_this_second {
+            let permit = semaphore.clone().acquire_owned().await.unwrap();
+            let data = csv_data.clone();
+            let producer = producer.clone();
+            let topic = topic.clone();
 
-                    let payload = match serde_json::to_string(row) {
-                        Ok(p) => {
-                            if log_mensagens {
-                                println!("Enviando: {}", p);
-                            }
-                            p
+            handles.push(task::spawn(async move {
+                let _permit = permit;
+                let index = rand::random::<usize>() % data.len();
+                let row = &data[index];
+
+                let payload = match serde_json::to_string(row) {
+                    Ok(p) => {
+                        if log_mensagens {
+                            println!("Enviando: {}", p);
                         }
-                        Err(_) => return false,
-                    };
-                    let key = uuid::Uuid::new_v4().to_string();
-                    let record = BaseRecord::to(&topic).payload(&payload).key(&key);
-                    match producer.send(record) {
-                        Ok(_) => true,
-                        Err(_) => false,
+                        p
                     }
+                    Err(_) => return false,
+                };
+                let key = uuid::Uuid::new_v4().to_string();
+                let record = BaseRecord::to(&topic).payload(&payload).key(&key);
+                match producer.send(record) {
+                    Ok(_) => true,
+                    Err(_) => false,
                 }
-            })
-            .map(|fut| task::spawn(fut))
-            .collect();
+            }));
+        }
 
         for result in futures::future::join_all(handles).await {
             match result {
@@ -163,9 +168,10 @@ pub async fn run_load_test(
             }
         }
 
-        let elapsed_us = batch_start.elapsed().as_micros() as u64;
-        if elapsed_us < batch_interval_us {
-            tokio::time::sleep(std::time::Duration::from_micros(batch_interval_us - elapsed_us))
+        let elapsed_batch = batch_start.elapsed().as_micros() as u64;
+        let expected_batch_duration = messages_this_second as u64 * interval_per_message_us;
+        if elapsed_batch < expected_batch_duration {
+            tokio::time::sleep(std::time::Duration::from_micros(expected_batch_duration - elapsed_batch))
                 .await;
         }
     }
