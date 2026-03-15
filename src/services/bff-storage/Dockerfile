@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o bff-storage ./main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o bff-storage ./cmd/server
 
 # Stage 2 — Runtime
 FROM alpine:3.19

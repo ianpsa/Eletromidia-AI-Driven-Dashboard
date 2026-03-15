@@ -1,25 +1,18 @@
 import json
+
 from langchain_groq import ChatGroq
 
 
-def generate_final_answer(
-    user_prompt,
-    filters,
-    ranking,
-    api_key,
-    city_fallback=False
-):
+def generate_final_answer(user_prompt, filters, ranking, api_key, city_fallback=False):
     llm = ChatGroq(
-        api_key=api_key,
-        model_name="llama-3.3-70b-versatile",
-        temperature=0.3
+        api_key=api_key, model_name="llama-3.3-70b-versatile", temperature=0.3
     )
 
     context = {
         "pergunta_usuario": user_prompt,
         "filtros_aplicados": filters,
         "cidade_nao_encontrada": city_fallback,
-        "top_pontos": ranking[:5]
+        "top_pontos": ranking[:5],
     }
 
     instruction = (
