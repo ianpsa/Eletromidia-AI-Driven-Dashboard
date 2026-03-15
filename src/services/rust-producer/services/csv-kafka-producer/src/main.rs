@@ -5,20 +5,12 @@ use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use std::env;
 use mods::csv::CsvManager;
 use mods::test::{run_auto_test, run_load_test, LoadTestConfig, LoadTestResult};
-use prometheus_client::encoding::EncodeLabelSet;
-use prometheus_client::metrics::counter::Counter;
-use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::registry::Registry;
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::{DefaultProducerContext, ThreadedProducer};
 use serde::Serialize;
 use std::sync::Arc;
-use parking_lot::RwLock;
-
-#[derive(Debug, Clone, EncodeLabelSet)]
-struct Labels {
-    service: String,
-}
+use std::sync::RwLock;
 
 #[derive(Debug, Serialize)]
 struct HealthResponse {
@@ -43,8 +35,7 @@ impl Clone for AppState {
 }
 
 fn create_metrics_registry() -> Registry {
-    let registry = Registry::default();
-    registry
+    Registry::default()
 }
 
 fn create_producer() -> ThreadedProducer<DefaultProducerContext> {
@@ -72,10 +63,10 @@ fn create_producer() -> ThreadedProducer<DefaultProducerContext> {
 
 #[get("/metrics")]
 async fn metrics(state: web::Data<AppState>) -> impl Responder {
-    let registry = state.metrics_registry.read();
+    let registry = state.metrics_registry.read().unwrap();
     let mut buf = Vec::new();
-    let encoder = prometheus_client::encoding::TextEncoder::new();
-    if encoder.encode(&registry.collect(), &mut buf).is_ok() {
+    let encoder = prometheus_client::encoding::text::TextEncoder::new();
+    if encoder.encode(registry.iter(), &mut buf).is_ok() {
         HttpResponse::Ok()
             .content_type("application/openmetrics-text; version=1.0.0; charset=utf-8")
             .body(String::from_utf8(buf).unwrap_or_default())
