@@ -1,0 +1,184 @@
+---
+title: CSV Kafka Producer — Atualizações
+description: Novas funcionalidades do csv-kafka-producer: health checks, métricas Prometheus e controle de taxa preciso
+---
+
+## O que é
+
+Este documento detalha as atualizações realizadas no [csv-kafka-producer](/docs/sprint-2/backend/services/csv-kafka-producer) durante a Sprint 3, seguindo o mesmo padrão de implementação estabelecido em [Probes and Security](/docs/sprint-3/kubernetes/probes-and-security) para os demais serviços.
+
+As principais atualizações incluem:
+
+- **Health checks** para Kubernetes (similar ao `bigquery-writer`, `bucket-consumer` e `bff-storage`)
+- **Métricas Prometheus** para observabilidade
+- **Controle de taxa preciso** de mensagens
+
+---
+
+## Estrutura e Conexões
+
+O csv-kafka-producer faz parte do pipeline de dados conforme a arquitetura definida na [Sprint 2](/docs/sprint-2/backend/services/csv-kafka-producer). Sua posição na arquitetura:
+
+```text
+CSV (dados telemétricos)
+       │
+       ▼
+csv-kafka-producer (Rust) ◄── este serviço
+       │
+       ▼
+  Kafka Topic: csv-topic
+       │
+       ├──► bigquery-writer ──► BigQuery
+       ├──► redis-writer ──► Redis
+       └──► (futuros consumidores)
+```
+
+Esta implementação segue o padrão estabelecido nos outros serviços Go, conforme documentado em [Kubernetes — Probes and Security](/docs/sprint-3/kubernetes/probes-and-security), onde cada serviço expõe `/healthz` para as probes do Kubernetes.
+
+---
+
+## Novas funcionalidades
+
+### Health Checks para Kubernetes
+
+Seguindo o mesmo padrão dos serviços `bigquery-writer`, `bucket-consumer` e `bff-storage` (documentado em [Probes and Security](/docs/sprint-3/kubernetes/probes-and-security)), o csv-kafka-producer agora expõe:
+
+| Endpoint | Descrição | Uso |
+| -------- | ---------- |-----|
+| `/healthz` | Retorna `200 OK` com body `ok` | Liveness/Readiness do Kubernetes |
+| `/health` | Retorna status + linhas do CSV carregado | Verificação detalhada |
+
+#### Tabela comparativa com outros serviços
+
+| Serviço           | Endpoint         | Porta | Descrição |
+| ----------------- | ---------------- | ----- | ----------|
+| `csv-kafka-producer` | `/healthz` | 5000 | Rust (este serviço) |
+| `bigquery-writer` | `/healthz` | 8080 | Go |
+| `bucket-consumer` | `/healthz` | 8080 | Go |
+| `bff-storage` | `/probe/healthz` | 8080 | Go |
+
+#### Exemplos de uso
+
+```bash
+# Health check simples (para Kubernetes)
+curl http://localhost:5000/healthz
+# Retorna: ok
+
+# Health check detalhado
+curl http://localhost:5000/health
+# Retorna: {"status":"ok","csv_lines":5}
+```
+
+#### Configuração no Kubernetes
+
+A configuração segue o padrão documentado em [Probes and Security](/docs/sprint-3/kubernetes/probes-and-security):
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  failureThreshold: 5
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  failureThreshold: 2
+```
+
+---
+
+### Métricas Prometheus
+
+Adicionado endpoint `/metrics` para coleta de métricas pelo Prometheus, seguindo o padrão de observabilidade que será implementado na Sprint 3:
+
+```bash
+curl http://localhost:5000/metrics
+```
+
+O endpoint retorna métricas no formato OpenMetrics (Prometheus), incluindo:
+
+- **HTTP request totals** - Total de requisições por endpoint
+- **HTTP request duration** - Tempo de resposta
+- **Process metrics** - Uso de CPU/memória do processo
+
+#### Configuração no Prometheus
+
+```yaml
+scrape_configs:
+  - job_name: 'csv-kafka-producer'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['csv-kafka-producer:5000']
+```
+
+---
+
+### Controle de Taxa Preciso
+
+O mecanismo de controle de taxa foi refatorado para garantir que o número de mensagens enviadas por segundo seja **exatamente** o especificado na requisição, sem bursts que possam sobrecarregar o Kafka.
+
+#### Como funciona
+
+1. **Semaphore** controla o número máximo de mensagens simultâneas (máx 1000, mín 10)
+2. **Intervalo preciso** entre mensagens: `1.000.000 / target_rate` microssegundos
+3. **Sleep controlado** no final de cada batch para respeitar a taxa
+
+#### Comportamento anterior vs atual
+
+| Aspecto | Anterior | Atual |
+|--------|----------|-------|
+| Envio | Burst de 500 msgs | Batch controlado de até 1000 msgs |
+| Controle | Baseado em batch | Por mensagem individual |
+| Taxa real | Podia ultrapassar | Sempre respeita o target |
+
+---
+
+## Atualizações na API REST
+
+### Todos os endpoints disponíveis
+
+```text
+GET  /metrics       # Métricas Prometheus (novo)
+GET  /healthz       # Health check Kubernetes (novo)
+GET  /health        # Health check detalhado
+POST /csv            # Envio de mensagens (existente)
+```
+
+---
+
+## Variáveis de ambiente
+
+| Variável | Default | Descrição |
+|----------|---------|-----------|
+| `KAFKA_BOOTSTRAP_SERVERS` | `kafka:9092` | Endereço dos brokers Kafka |
+| `CSV_FILEPATH` | `/app/data/dados.csv` | Caminho do arquivo CSV |
+| `HTTP_HOST` | `0.0.0.0` | Host do servidor HTTP |
+| `HTTP_PORT` | `5000` | Porta do servidor HTTP |
+
+---
+
+## Integração com Observabilidade
+
+Com a adição do endpoint `/metrics`, o csv-kafka-producer agora suporta integração completa com a stack de observabilidade:
+
+1. **Prometheus** - Coleta de métricas via `/metrics`
+2. **Grafana** - Visualização de dashboards
+3. **Kubernetes** - Health checks via `/healthz` (como os demais serviços)
+
+Esta implementação complementa o que foi documentado em [Probes and Security](/docs/sprint-3/kubernetes/probes-and-security), padronizando o comportamento de health checks entre todos os serviços do pipeline.
+
+---
+
+## Veja também
+
+- [csv-kafka-producer (Sprint 2)](/docs/sprint-2/backend/services/csv-kafka-producer) - Documentação original
+- [Frontend — BFF Storage](/docs/sprint-3/frontend-bff) - Interface web para download
+- [Kubernetes — Probes and Security](/docs/sprint-3/kubernetes/probes-and-security) - Padrão de health checks
+- [bigquery-writer](/docs/sprint-2/backend/services/bigquery-writer) - Consumidor dos dados
+- [bff-storage](/docs/sprint-2/backend/services/bff-storage) - API de consulta

@@ -1,4 +1,9 @@
 {
   "title": "Sprint 3",
-  "pages": ["frontend", "kubernetes"]
+  "pages": [
+    "csv-kafka-producer",
+    "frontend",
+    "frontend-bff",
+    "kubernetes"
+  ]
 }
