@@ -248,10 +248,6 @@ body {
   background: #fff1eb;
 }
 
-.looker-content {
-  grid-template-rows: auto 1fr;
-}
-
 .looker-header {
   margin-bottom: 4px;
 }
@@ -622,7 +618,9 @@ tbody tr:hover {
 }
 
 @keyframes agent-dot {
-  0%, 60%, 100% {
+  0%,
+  60%,
+  100% {
     opacity: 0.3;
     transform: scale(0.8);
   }
