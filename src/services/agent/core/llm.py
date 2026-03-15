@@ -1,12 +1,11 @@
 import json
+
 from langchain_groq import ChatGroq
 
 
 def parse_prompt(prompt: str, api_key: str) -> dict:
     llm = ChatGroq(
-        api_key=api_key,
-        model_name="llama-3.3-70b-versatile",
-        temperature=0.0
+        api_key=api_key, model_name="llama-3.3-70b-versatile", temperature=0.0
     )
 
     instruction = (
@@ -24,10 +23,7 @@ def parse_prompt(prompt: str, api_key: str) -> dict:
         f"Campanha: {prompt}"
     )
 
-    response = llm.invoke(
-        instruction,
-        response_format={"type": "json_object"}
-    )
+    response = llm.invoke(instruction, response_format={"type": "json_object"})
 
     content = response.content
 

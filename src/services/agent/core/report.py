@@ -49,12 +49,8 @@ def build_report(df, filters):
         return []
 
     agg = (
-        filtered
-        .groupby(["endereco", "numero"])
-        .agg({
-            "joint_count": "sum",
-            "uniques": "max"
-        })
+        filtered.groupby(["endereco", "numero"])
+        .agg({"joint_count": "sum", "uniques": "max"})
         .reset_index()
     )
 
@@ -67,7 +63,7 @@ def build_report(df, filters):
             "point": f"{r.endereco}, {r.numero}",
             "total_target": round(r.joint_count, 2),
             "total_flow": round(r.uniques, 2),
-            "affinity": round(r.affinity, 2)
+            "affinity": round(r.affinity, 2),
         }
         for r in agg.itertuples()
     ]
@@ -84,8 +80,5 @@ def print_table(rows, limit):
     print("------------------------------------------------")
     for r in rows:
         print(
-            f"{r['point']} | "
-            f"{r['total_target']} | "
-            f"{r['total_flow']} | "
-            f"{r['affinity']}"
+            f"{r['point']} | {r['total_target']} | {r['total_flow']} | {r['affinity']}"
         )

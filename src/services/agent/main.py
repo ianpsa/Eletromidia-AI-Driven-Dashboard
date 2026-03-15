@@ -1,13 +1,12 @@
+import argparse
 import os
 import sys
-import argparse
-import pandas as pd
-from dotenv import load_dotenv
 
+import pandas as pd
+from core.answer import generate_final_answer
 from core.llm import parse_prompt
 from core.report import build_report
-from core.answer import generate_final_answer
-
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -45,9 +44,9 @@ def main():
     final_answer = generate_final_answer(
         user_prompt=user_prompt,
         filters=filters,
-        ranking=rows[:args.limit],
+        ranking=rows[: args.limit],
         api_key=token,
-        city_fallback=city_fallback
+        city_fallback=city_fallback,
     )
 
     print("\nResposta Estratégica:\n")

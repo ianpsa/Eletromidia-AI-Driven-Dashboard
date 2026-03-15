@@ -1,13 +1,12 @@
 import os
+
 import pandas as pd
+from core.answer import generate_final_answer
+from core.llm import parse_prompt
+from core.report import build_report
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-
-from core.llm import parse_prompt
-from core.report import build_report
-from core.answer import generate_final_answer
-
 
 load_dotenv()
 
@@ -44,24 +43,20 @@ def analyze_campaign(request: CampaignRequest):
         if not rows:
             return {
                 "success": False,
-                "message": "Nenhum dado encontrado para os critérios informados."
+                "message": "Nenhum dado encontrado para os critérios informados.",
             }
 
-        top_points = rows[:request.limit]
+        top_points = rows[: request.limit]
 
         final_answer = generate_final_answer(
             user_prompt=request.prompt,
             filters=filters,
             ranking=top_points,
             api_key=token,
-            city_fallback=city_fallback
+            city_fallback=city_fallback,
         )
 
-        return {
-            "success": True,
-            "analysis": final_answer,
-            "top_points": top_points
-        }
+        return {"success": True, "analysis": final_answer, "top_points": top_points}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
