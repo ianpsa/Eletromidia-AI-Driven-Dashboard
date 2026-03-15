@@ -139,6 +139,27 @@ O mecanismo de controle de taxa foi refatorado para garantir que o número de me
 
 ---
 
+## Testes Realizados
+
+Os testes foram executados localmente em um PC com processador **Intel Core i5 de 13ª geração**.
+
+### Resultados
+
+| # | Endpoint | Input | Output |
+|---|----------|-------|--------|
+| 1 | `GET /healthz` | - | `ok` |
+| 2 | `GET /health` | - | `{"status":"ok","csv_lines":5}` |
+| 3 | `GET /metrics` | - | `csv_kafka_producer_up 1` |
+| 4 | `POST /csv` | `mensagens_por_segundo: 100` (3s) | 300 msgs → **99,87 msg/s** |
+| 5 | `POST /csv` | `mensagens_por_segundo: 50` (2s) | 100 msgs → **49,94 msg/s** |
+| 6 | `POST /csv` | `mensagens_por_segundo: 1000000000` (5s) | 2.723.000 msgs → **544.535 msg/s** |
+
+### Capacidade máxima
+
+O serviço suporta aproximadamente **544 mil mensagens por segundo** (quinhentas e quarenta e quatro mil mensagens por segundo) no hardware testado (Intel i5 13th Gen).
+
+---
+
 ## Atualizações na API REST
 
 ### Todos os endpoints disponíveis
