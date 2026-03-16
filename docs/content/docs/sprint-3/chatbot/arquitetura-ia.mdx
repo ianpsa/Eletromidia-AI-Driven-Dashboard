@@ -1,0 +1,229 @@
+---
+title: Arquitetura de IA
+description: Arquitetura do serviço de IA para geração de planos de divulgação com integração BigQuery e Looker Studio.
+---
+
+## Visão Geral
+
+O serviço de IA permite que o usuário descreva em linguagem natural o tipo de divulgação que deseja (público-alvo, região, perfil demográfico) e receba como resposta um dashboard no Looker Studio com os melhores pontos de mídia já filtrados. O fluxo é orquestrado pelo **LangGraph** e dividido em dois domínios: o domínio de IA (interpretação de intenção) e o domínio de backend (consulta aos dados e cálculo de métricas).
+
+A IA não consome do Kafka nem de nenhum outro componente do pipeline de ingestão. Ela lê exclusivamente do **BigQuery**, onde os dados já estão processados e normalizados.
+
+---
+
+## Diagrama de Arquitetura
+
+<Mermaid chart={`
+flowchart TD
+    prompt([Prompt do usuário])
+
+    prompt --> orquestrador
+
+    subgraph orquestrador [Orquestrador de IA's]
+        direction TB
+
+        ia_rag[IA RAG\nInterpreta quais dados precisa\n- faixa etária, gênero -\n- bairro/cidade → bounding box -]
+        ia_metricas[IA Métricas\nInterpreta quais filtros aplicar\n- ranges de idade, ruas -\n- classes sociais, gêneros -]
+    end
+
+    subgraph backend [Backend]
+        direction TB
+
+        service_interp[Service Interpretador\nRecebe JSON da IA RAG\nFaz GETs nas endpoints]
+        service_calc[Serviço de Cálculo\n• Probabilidade de melhores pontos\n• Seleciona filtros do Looker]
+        api[(API\nBigQuery Client)]
+
+        service_interp <--> api
+        service_calc <--> api
+    end
+
+    orquestrador -- JSON estruturado --> service_interp
+    service_interp -- pontos no bounding box --> orquestrador
+
+    orquestrador -- critérios de ranking e seleção de filtros com base nos dados --> service_calc
+    service_calc -- URL com filtros --> orquestrador
+
+    subgraph dados [BigQuery]
+        bq[(geodata / target\nage / gender / social_class)]
+    end
+
+    api <--> bq
+
+    orquestrador --> front([Frontend\nLooker Studio com filtros aplicados])
+`} />
+
+---
+
+## Fluxo Detalhado
+
+O fluxo acontece em quatro etapas, alternando entre o domínio do orquestrador de IA's (IA) e o domínio do backend (dados).
+
+### Etapa 1 - IA RAG (orquestrador de IA's)
+
+O usuário envia um prompt em linguagem natural, por exemplo:
+
+> "Quero divulgar para mulheres de 20 a 29 anos na região da Avenida Paulista"
+
+A **IA RAG** interpreta a intenção e extrai as informações necessárias:
+
+- **Faixa etária**: 20-29
+- **Gênero**: feminino
+- **Região**: Avenida Paulista → converte para bounding box de coordenadas (lat/lon mín e máx)
+
+A conversão de nomes de ruas, bairros e cidades para coordenadas é feita via RAG com uma base de conhecimento geográfico armazenada em **ChromaDB** (vector store). Essa base contém embeddings dos endereços presentes no BigQuery mapeados para suas coordenadas limites.
+
+**Output**: JSON estruturado com os filtros extraídos.
+
+<pre>
+&#123;
+    "age_range": "20-29",
+    "gender": "feminine",
+    "bounding_box": &#123;
+        "lat_min": -23.565,
+        "lat_max": -23.555,
+        "lon_min": -46.662,
+        "lon_max": -46.652
+    &#125;
+&#125;
+</pre>
+
+---
+
+### Etapa 2 - Service Interpretador (Backend)
+
+O fluxo sai do orquestrador de IA's e entra no backend. O **Service Interpretador** recebe o JSON da IA RAG e faz chamadas à **API**, que consulta o BigQuery para retornar os pontos de mídia dentro do bounding box definido.
+
+**Input**: JSON com filtros da IA RAG.
+
+**Output**: Lista de pontos (location_id, endereço, uniques, coordenadas) que se encontram dentro das coordenadas delimitadas.
+
+O fluxo retorna ao orquestrador de IA's com os pontos filtrados.
+
+---
+
+### Etapa 3 - IA Métricas (orquestrador de IA's)
+
+De volta ao orquestrador de IA's, a **IA Métricas** recebe os pontos retornados e analisa quais filtros estão disponíveis nos dados para aquele conjunto de resultados:
+
+- Quais ranges de idade existem nos pontos
+- Quais ruas e endereços aparecem
+- Distribuição por classe social e gênero
+
+A partir disso, a IA define os critérios de ranking: quais combinações de filtros maximizam a probabilidade de atingir o público que o usuário pediu no prompt.
+
+**Output**: Critérios de ranking e filtros priorizados.
+
+---
+
+### Etapa 4 - Serviço de Cálculo de Métricas (Backend)
+
+O fluxo sai novamente do orquestrador de IA's para o backend. O **Serviço de Cálculo** recebe os critérios da IA Métricas e:
+
+1. Executa queries no BigQuery para calcular a probabilidade dos melhores pontos para divulgação com base no cruzamento demográfico (`joint_count = uniques × P(classe) × P(gênero) × P(idade)`)
+2. Seleciona os filtros correspondentes no Looker Studio
+3. Monta a URL do dashboard com os filtros aplicados
+
+**Output**: URL do Looker Studio com os filtros pré-aplicados, pronta para o usuário visualizar o plano de divulgação.
+
+---
+
+## Considerações
+
+Antes da análise de custo, três premissas que delimitam o escopo atual da IA:
+
+1. **Prompts citam apenas cidades** — o usuário informa a cidade no prompt. A conversão para coordenadas (bounding box) é feita pela IA RAG a partir da base geográfica do BigQuery.
+
+2. **Sem memory store por enquanto** — não há persistência de prompts anteriores nem cache de resultados. Cada requisição executa o fluxo completo. A inclusão de um memory store depende de validação com o parceiro sobre a necessidade de histórico e as implicações de segurança de armazenar dados de estratégia de campanha.
+
+3. **Cálculo de melhores pontos por média ponderada** — o Serviço de Cálculo ranqueia os pontos de mídia usando a média ponderada de número de pessoas (`uniques`) e distância, considerando um raio de 5 km a partir do centro da cidade informada.
+
+---
+
+## Análise de Custo e Escolha de Stack
+
+A arquitetura é agnóstica: o diagrama não depende de nenhum provedor específico. A mesma estrutura (Orquestrador → Backend → BigQuery → Looker) pode ser implementada com serviços gerenciados do Google ou com ferramentas open-source. Abaixo estão as duas abordagens, com seus pontos fortes, pontos fracos e custos estimados.
+
+### Managed by Google
+
+Toda a camada de IA usa serviços gerenciados do Google Cloud. Sem pods de IA no cluster — tudo é chamada de API.
+
+| Componente | Serviço Google |
+| --- | --- |
+| Orquestrador | Vertex AI Agent Builder |
+| LLM | Gemini via Vertex AI |
+| Embeddings | Vertex AI Embeddings |
+| Vector Search | Vertex AI Vector Search |
+| Backend | Cloud Run |
+| Dados | BigQuery (já existe) |
+| Visualização | Looker Studio (já existe) |
+
+**Pontos fortes:**
+
+- Integração nativa entre Vertex AI, BigQuery e Looker — autenticação via IAM, sem configuração extra
+- Escalabilidade automática no número de requisições — sem redimensionar pods
+- Zero infra de IA: sem pods, sem ChromaDB, apenas APIs. Mais fácil de operar
+
+**Pontos fracos:**
+
+- Migrar pra outra cloud exigiria reformular a orquestração inteira
+- Maior custo em escala, especialmente com Gemini Pro
+- Menos controle em fine-tuning e troca de modelos
+
+**Custo estimado** (500 requisições/dia, 15.000/mês):
+
+| Componente | Gemini Flash | Gemini Pro |
+| --- | --- | --- |
+| Vertex AI (LLM + Embeddings + Vector Search) | ~$20 | ~$213 |
+| Cloud Run (Backend) | ~$12 | ~$12 |
+| BigQuery (queries incrementais) | ~$3 | ~$3 |
+| Looker Studio | $0 | $0 |
+| **Total** | **~$35/mês** | **~$230/mês** |
+
+---
+
+### Open Source
+
+A camada de IA usa ferramentas open-source rodando como pods no GKE Autopilot. Para o LLM, em vez de hospedar um modelo localmente (Ollama + GPU), a opção mais econômica é usar o [OpenRouter](https://openrouter.ai) — uma API unificada que dá acesso a modelos open-source (Llama, DeepSeek, Mixtral) com cobrança por token, sem custo fixo de pod.
+
+| Componente | Tecnologia |
+| --- | --- |
+| Orquestrador | LangGraph (Python) |
+| LLM | Modelos open-source via OpenRouter (Llama, DeepSeek) |
+| Embeddings | sentence-transformers (HuggingFace) |
+| Vector Store | ChromaDB |
+| Backend | FastAPI |
+| Dados | BigQuery (já existe) |
+| Visualização | Looker Studio (já existe) |
+
+**Pontos fortes:**
+
+- Maior facilidade em migrar de cloud - tudo roda em qualquer Kubernetes
+- Mais observabilidade e controle: fine-tuning, trocar modelos, inspecionar cada passo do LangGraph
+- Nenhum prompt vai pra API do Google. Relevante se os dados de campanha forem sensíveis
+
+**Pontos fracos:**
+
+- Infra mais complexa pra operar — 2 a 3 pods extras no cluster (LangGraph, ChromaDB, FastAPI)
+- Depende do desempenho dos modelos open-source, que pode ser inferior ao do Gemini em raciocínio sobre dados numéricos e pt-BR
+- Custo fixo dos pods existe mesmo com pouco uso
+
+**Custo estimado** (500 requisições/dia, 15.000/mês):
+
+Cada requisição consome ~5.000 tokens de input e ~1.500 de output (duas chamadas de LLM). Com OpenRouter:
+
+| Modelo (OpenRouter) | Input/1M tokens | Output/1M tokens | Custo LLM/mês |
+| --- | --- | --- | --- |
+| **Modelos free** (Nemotron, Step 3.5 Flash) | $0 | $0 | $0 |
+| **Llama 3.3 70B Instruct** | $0,10 | $0,32 | ~$15 |
+| **DeepSeek Chat** | $0,32 | $0,89 | ~$44 |
+
+| Componente | Free tier | Llama 70B (OpenRouter) |
+| --- | --- | --- |
+| LangGraph + FastAPI (pod GKE) | ~$20 | ~$20 |
+| ChromaDB + sentence-transformers (pod GKE) | ~$10 | ~$10 |
+| LLM (OpenRouter) | $0 | ~$15 |
+| BigQuery (queries incrementais) | ~$3 | ~$3 |
+| Looker Studio | $0 | $0 |
+| **Total** | **~$33/mês** | **~$48/mês** |
+
+O free tier serve para desenvolvimento e testes (sem SLA, com rate limits). Para produção, o Llama 3.3 70B via OpenRouter a ~$48/mês é a opção com melhor relação custo-qualidade no open-source.
