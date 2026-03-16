@@ -1,0 +1,47 @@
+---
+title: Agente IA
+description: Interface de interação com o agente de IA para análise de campanhas
+---
+
+## Papel da tela
+
+Tela responsável pela interação com o **agente de IA**, permitindo que o usuário descreva uma campanha em linguagem natural e receba recomendações estratégicas baseadas em dados.
+
+A interface funciona como um chat simples, onde o usuário envia uma descrição da campanha e o sistema retorna uma análise junto com os principais pontos recomendados.
+
+![Tela inicial do agente IA](/sprint-3/frontend/agent-start.png)
+![Tela de resposta do agente IA](/sprint-3/frontend/agent-response.png)
+
+## Estrutura visual
+
+| Elemento          | Descrição                                                     |
+| ----------------- | ------------------------------------------------------------- |
+| TopBar            | Título da página e descrição da funcionalidade do agente      |
+| Área de mensagens | Histórico de interação entre usuário e agente                 |
+| Tabela de pontos  | Lista estruturada dos principais pontos recomendados          |
+| Input de campanha | Campo de texto para descrição da campanha                     |
+
+## Comportamento
+
+- A tela funciona no formato de **chat**, exibindo mensagens do usuário e respostas do agente
+- O campo de texto aceita descrições livres de campanha
+- As respostas do agente podem incluir uma **tabela com os principais pontos recomendados**
+- A tabela apresenta:
+  - ponto
+  - afinidade
+  - público estimado
+  - fluxo total
+
+## Integração com o backend do agente
+
+| Ação              | Endpoint  | Descrição                                                          |
+| ----------------- | --------- | ------------------------------------------------------------------ |
+| Analisar campanha | `POST /analyze` | Envia a descrição da campanha e retorna a análise estratégica e ranking de pontos |
+
+### Payload enviado
+
+```json
+{
+  "prompt": "Descrição da campanha",
+  "limit": 5
+}
