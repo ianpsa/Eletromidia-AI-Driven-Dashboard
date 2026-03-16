@@ -1,4 +1,4 @@
 {
   "title": "Frontend",
-  "pages": ["frontend-bff", "login", "dashboard", "cloud"]
+  "pages": ["frontend", "agent", "login", "dashboard", "cloud"]
 }

@@ -27,14 +27,13 @@ def main():
 
     df = pd.read_csv("../../../data/claro.csv")
 
-    rows = build_report(df, filters)
+    rows, used_range = build_report(df, filters)
 
     city_fallback = False
 
     if not rows and "city" in filters:
-        original_city = filters["city"]
         del filters["city"]
-        rows = build_report(df, filters)
+        rows, used_range = build_report(df, filters)
         city_fallback = True
 
     if not rows:
@@ -47,6 +46,7 @@ def main():
         ranking=rows[: args.limit],
         api_key=token,
         city_fallback=city_fallback,
+        used_age_range=used_range
     )
 
     print("\nResposta Estratégica:\n")
