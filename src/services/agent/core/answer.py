@@ -1,9 +1,12 @@
 import json
+
 import numpy as np
 from langchain_groq import ChatGroq
 
 
-def generate_final_answer(user_prompt, filters, ranking, api_key, city_fallback=False, used_age_range=False):
+def generate_final_answer(
+    user_prompt, filters, ranking, api_key, city_fallback=False, used_age_range=False
+):
     llm = ChatGroq(
         api_key=api_key, model_name="llama-3.3-70b-versatile", temperature=0.3
     )

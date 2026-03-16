@@ -1,12 +1,14 @@
 import os
+
 import numpy as np
 import pandas as pd
-from core.answer import generate_final_answer
-from core.llm import parse_prompt
-from core.report import build_report
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
+from core.answer import generate_final_answer
+from core.llm import parse_prompt
+from core.report import build_report
 
 load_dotenv()
 
@@ -65,15 +67,10 @@ def analyze_campaign(request: CampaignRequest):
             ranking=top_points,
             api_key=token,
             city_fallback=city_fallback,
-            used_age_range=used_range
+            used_age_range=used_range,
         )
 
-        return {
-            "success": True,
-            "analysis": final_answer,
-            "top_points": top_points
-        }
+        return {"success": True, "analysis": final_answer, "top_points": top_points}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    

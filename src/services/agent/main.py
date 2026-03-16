@@ -3,10 +3,11 @@ import os
 import sys
 
 import pandas as pd
+from dotenv import load_dotenv
+
 from core.answer import generate_final_answer
 from core.llm import parse_prompt
 from core.report import build_report
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -46,7 +47,7 @@ def main():
         ranking=rows[: args.limit],
         api_key=token,
         city_fallback=city_fallback,
-        used_age_range=used_range
+        used_age_range=used_range,
     )
 
     print("\nResposta Estratégica:\n")

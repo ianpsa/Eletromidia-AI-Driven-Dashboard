@@ -44,11 +44,7 @@ def build_report(df, filters):
 
         valid_ranges = ages[
             ages.apply(
-                lambda x: (
-                    x[0] is not None
-                    and x[0] <= age_max
-                    and x[1] >= age_min
-                )
+                lambda x: x[0] is not None and x[0] <= age_max and x[1] >= age_min
             )
         ]
 
@@ -57,11 +53,7 @@ def build_report(df, filters):
             used_max = valid_ranges.apply(lambda x: x[1]).max()
 
         mask &= ages.apply(
-            lambda x: (
-                x[0] is not None
-                and x[0] <= age_max
-                and x[1] >= age_min
-            )
+            lambda x: x[0] is not None and x[0] <= age_max and x[1] >= age_min
         )
 
     filtered = df[mask].copy()
@@ -89,6 +81,7 @@ def build_report(df, filters):
     ]
 
     return rows, (used_min, used_max)
+
 
 def print_table(rows, limit):
     if not rows:
