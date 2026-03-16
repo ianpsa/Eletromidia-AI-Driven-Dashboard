@@ -1,0 +1,10 @@
+agent:lint:
+  stage: test
+  image: python:3.9-alpine
+  extends:
+    - .actions-rules:agent
+  script:
+    - pip install ruff
+    - cd src/services/agent
+    - ruff check .
+    - ruff format --check .

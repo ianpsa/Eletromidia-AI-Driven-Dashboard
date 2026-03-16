@@ -1,3 +1,19 @@
+frontend:lint:
+  stage: test
+  image: node:20-alpine
+  extends:
+    - .actions-rules:frontend
+  cache:
+    key:
+      files:
+        - src/frontend/package-lock.json
+    paths:
+      - .npm/
+  script:
+    - cd src/frontend
+    - npm ci
+    - npm run lint
+
 frontend:typecheck:
   stage: test
   image: node:20-alpine

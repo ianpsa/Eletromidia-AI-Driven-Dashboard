@@ -1,0 +1,39 @@
+bff-storage:lint:
+  stage: test
+  image: golangci/golangci-lint:latest
+  extends:
+    - .actions-rules:bff-storage
+  script:
+    - cd src/services/bff-storage
+    - test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+    - golangci-lint run --no-config --enable=govet,errcheck,staticcheck,unused ./...
+
+bigquery-writer:lint:
+  stage: test
+  image: golangci/golangci-lint:latest
+  extends:
+    - .actions-rules:bigquery-writer
+  script:
+    - cd src/services/bigquery-writer
+    - test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+    - golangci-lint run --no-config --enable=govet,errcheck,staticcheck,unused ./...
+
+bucket-consumer:lint:
+  stage: test
+  image: golangci/golangci-lint:latest
+  extends:
+    - .actions-rules:bucket-consumer
+  script:
+    - cd src/services/bucket-consumer
+    - test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+    - golangci-lint run --no-config --enable=govet,errcheck,staticcheck,unused ./...
+
+populate-bigquery:lint:
+  stage: test
+  image: golangci/golangci-lint:latest
+  extends:
+    - .actions-rules:populate-bigquery
+  script:
+    - cd src/services/populate-bigquery
+    - test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+    - golangci-lint run --no-config --enable=govet,errcheck,staticcheck,unused ./...

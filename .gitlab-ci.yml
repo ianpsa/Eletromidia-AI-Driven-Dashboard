@@ -12,4 +12,8 @@ include:
   - local: ".gitlab/ci/docs.yml"
   - local: ".gitlab/ci/release.yml"
   - local: ".gitlab/ci/frontend.yml"
+  - local: ".gitlab/ci/go.yml"
+  - local: ".gitlab/ci/rust.yml"
+  - local: ".gitlab/ci/python.yml"
+  - local: ".gitlab/ci/iac.yml"
   # more component pipelines
