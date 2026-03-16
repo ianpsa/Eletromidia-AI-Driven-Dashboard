@@ -1,5 +1,5 @@
 import os
-
+import numpy as np
 import pandas as pd
 from core.answer import generate_final_answer
 from core.llm import parse_prompt
@@ -20,6 +20,14 @@ class CampaignRequest(BaseModel):
     limit: int = 5
 
 
+def convert_types(obj):
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
+    return obj
+
+
 @app.post("/analyze")
 def analyze_campaign(request: CampaignRequest):
     token = os.getenv("GROQ_API_KEY")
@@ -37,7 +45,7 @@ def analyze_campaign(request: CampaignRequest):
 
         if not rows and "city" in filters:
             del filters["city"]
-            rows = build_report(df, filters)
+            rows, used_range = build_report(df, filters)
             city_fallback = True
 
         if not rows:
@@ -46,7 +54,10 @@ def analyze_campaign(request: CampaignRequest):
                 "message": "Nenhum dado encontrado para os critérios informados.",
             }
 
-        top_points = rows[: request.limit]
+        top_points = [
+            {k: convert_types(v) for k, v in row.items()}
+            for row in rows[: request.limit]
+        ]
 
         final_answer = generate_final_answer(
             user_prompt=request.prompt,
@@ -57,7 +68,12 @@ def analyze_campaign(request: CampaignRequest):
             used_age_range=used_range
         )
 
-        return {"success": True, "analysis": final_answer, "top_points": top_points}
+        return {
+            "success": True,
+            "analysis": final_answer,
+            "top_points": top_points
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    

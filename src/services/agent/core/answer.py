@@ -1,5 +1,5 @@
 import json
-
+import numpy as np
 from langchain_groq import ChatGroq
 
 
@@ -7,6 +7,13 @@ def generate_final_answer(user_prompt, filters, ranking, api_key, city_fallback=
     llm = ChatGroq(
         api_key=api_key, model_name="llama-3.3-70b-versatile", temperature=0.3
     )
+
+    def convert(o):
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.floating):
+            return float(o)
+        return str(o)
 
     context = {
         "pergunta_usuario": user_prompt,
@@ -30,7 +37,7 @@ def generate_final_answer(user_prompt, filters, ranking, api_key, city_fallback=
         "Nunca mencione termos técnicos, nomes de campos ou funcionamento interno.\n"
         "Responda apenas como consultor.\n\n"
         "Responda em português.\n\n"
-        f"Contexto:\n{json.dumps(context, ensure_ascii=False)}"
+        f"Contexto:\n{json.dumps(context, ensure_ascii=False, default=convert)}"
     )
 
     response = llm.invoke(instruction)

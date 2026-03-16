@@ -32,7 +32,10 @@ def build_report(df, filters):
 
     if "city" in filters:
         mask &= df["cidade"].str.lower() == filters["city"].lower()
-    
+
+    used_min = None
+    used_max = None
+
     if "age_min" in filters or "age_max" in filters:
         age_min = filters.get("age_min", 0)
         age_max = filters.get("age_max", 200)
@@ -52,9 +55,6 @@ def build_report(df, filters):
         if not valid_ranges.empty:
             used_min = valid_ranges.apply(lambda x: x[0]).min()
             used_max = valid_ranges.apply(lambda x: x[1]).max()
-        else:
-            used_min = None
-            used_max = None
 
         mask &= ages.apply(
             lambda x: (
@@ -67,7 +67,7 @@ def build_report(df, filters):
     filtered = df[mask].copy()
 
     if filtered.empty:
-        return []
+        return [], (used_min, used_max)
 
     agg = (
         filtered.groupby(["endereco", "numero"])
@@ -76,21 +76,19 @@ def build_report(df, filters):
     )
 
     agg["affinity"] = (agg["joint_count"] / agg["uniques"]) * 100
-
     agg = agg.sort_values("affinity", ascending=False)
 
     rows = [
         {
             "point": f"{r.endereco}, {r.numero}",
-            "total_target": round(r.joint_count, 2),
-            "total_flow": round(r.uniques, 2),
-            "affinity": round(r.affinity, 2),
+            "total_target": float(round(r.joint_count, 2)),
+            "total_flow": float(round(r.uniques, 2)),
+            "affinity": float(round(r.affinity, 2)),
         }
         for r in agg.itertuples()
     ]
 
     return rows, (used_min, used_max)
-
 
 def print_table(rows, limit):
     if not rows:
