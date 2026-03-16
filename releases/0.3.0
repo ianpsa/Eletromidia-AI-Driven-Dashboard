@@ -1,0 +1,9 @@
+# Release v0.3.0
+
+## What's New
+- Sprint 3 documentation
+- Frontend (React + TypeScript) with Login, Dashboard, Cloud and AI Agent pages
+- AI agent for campaign analysis via natural language (LangGraph + FastAPI)
+- Kubernetes hardening: Liveness/Readiness Probes, Security Contexts, RBAC
+- CSV Kafka Producer: health checks, Prometheus metrics, precise rate control
+- GCP infrastructure with Terraform: IAM, separated Dev/Prod environments
