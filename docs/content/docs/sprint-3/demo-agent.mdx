@@ -26,7 +26,7 @@ O usuário descreve sua campanha utilizando linguagem natural.
 
 Exemplo:
 
-```
+```text
 Quero uma campanha para mulheres de 25 a 34 anos, classe A, em São Paulo
 ```
 
@@ -59,7 +59,7 @@ Após extrair os filtros, o sistema consulta os dados disponíveis.
 
 Nesta demo, os dados são carregados de um **arquivo CSV local**, localizado na pasta:
 
-```
+```text
 data/
 ```
 
@@ -127,7 +127,7 @@ A documentação completa do frontend pode ser encontrada em:
 
 Adicione os arquivos de dados dentro da pasta:
 
-```
+```text
 data/
 ```
 
@@ -135,7 +135,7 @@ data/
 
 Crie um arquivo `.env` baseado no exemplo:
 
-```
+```text
 .env.example
 ```
 
@@ -143,7 +143,7 @@ Crie um arquivo `.env` baseado no exemplo:
 
 ### inicializar a API
 
-```
+```bash
 cd src/services/agent
 python3 -m venv venv
 source venv/bin/activate
@@ -155,7 +155,7 @@ uvicorn api:app --reload
 
 Em outro terminal:
 
-```
+```bash
 cd src/frontend
 npm install
 npm run dev
@@ -171,7 +171,7 @@ Também é possível executar o agente diretamente pelo terminal.
 
 Adicione os dados na pasta:
 
-```
+```text
 data/
 ```
 
@@ -179,7 +179,7 @@ Configure o `.env` conforme o `.env.example`.
 
 rode:
 
-```
+```bash
 cd src/services/agent
 python3 -m venv venv
 source venv/bin/activate
@@ -189,7 +189,7 @@ python3 main.py --prompt "sua pergunta"
 
 Exemplo:
 
-```
+```bash
 python3 main.py --prompt "Campanha para mulheres de 25 a 34 anos em São Paulo"
 ```
 
