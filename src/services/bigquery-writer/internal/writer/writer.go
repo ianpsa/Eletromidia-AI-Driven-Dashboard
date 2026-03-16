@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"regexp"
 	"sync"
 
 	"cloud.google.com/go/bigquery"
@@ -62,16 +61,16 @@ type geodataRow struct {
 }
 
 type KafkaEvent struct {
-	ImpressionHour int64   `json:"impression_hour"`
-	LocationID     int64   `json:"location_id"`
-	Uniques        float64 `json:"uniques"`
-	Latitude       string  `json:"latitude"`
-	Longitude      string  `json:"longitude"`
-	UfEstado       string  `json:"uf_estado"`
-	Cidade         string  `json:"cidade"`
-	Endereco       string  `json:"endereco"`
-	Numero         int64   `json:"numero"`
-	Target         map[string]map[string]float64  `json:"target"`
+	ImpressionHour int64                         `json:"impression_hour"`
+	LocationID     int64                         `json:"location_id"`
+	Uniques        float64                       `json:"uniques"`
+	Latitude       string                        `json:"latitude"`
+	Longitude      string                        `json:"longitude"`
+	UfEstado       string                        `json:"uf_estado"`
+	Cidade         string                        `json:"cidade"`
+	Endereco       string                        `json:"endereco"`
+	Numero         int64                         `json:"numero"`
+	Target         map[string]map[string]float64 `json:"target"`
 }
 
 type TargetData struct {
@@ -129,12 +128,6 @@ func deterministicID(topic string, partition int, offset int64, table string) st
 	return uuid.NewSHA1(bqNamespace, []byte(seed)).String()
 }
 
-var singleQuoteRe = regexp.MustCompile(`'([^']*)'`)
-
-func normalizeTarget(raw string) string {
-	return singleQuoteRe.ReplaceAllString(raw, `"$1"`)
-}
-
 func validateMapKeys(td TargetData) error {
 	for _, k := range []string{"18-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"} {
 		if _, ok := td.Idade[k]; !ok {
@@ -179,7 +172,9 @@ func NewWriter(ctx context.Context, projectID, datasetID string, flushSize int) 
 
 	ins, err := initInserters(client.Dataset(datasetID))
 	if err != nil {
-		client.Close()
+		if closeErr := client.Close(); closeErr != nil {
+			log.Printf("error closing bigquery client: %v", closeErr)
+		}
 		return nil, fmt.Errorf("initInserters: %w", err)
 	}
 
@@ -226,15 +221,9 @@ func (w *Writer) Flush(ctx context.Context) error {
 			continue
 		}
 
-		var td TargetData
-		// if err := json.Unmarshal([]byte(normalizeTarget(event.Target)), &td); err != nil {
-		// 	log.Printf("flush: target parse error | partition=%d offset=%d: %v",
-		// 		msg.Partition, msg.Offset, err)
-		// 	continue
-		// }
-		td = TargetData{
-			Idade: event.Target["idade"],
-			Genero: event.Target["genero"],
+		td := TargetData{
+			Idade:        event.Target["idade"],
+			Genero:       event.Target["genero"],
 			ClasseSocial: event.Target["classe_social"],
 		}
 
