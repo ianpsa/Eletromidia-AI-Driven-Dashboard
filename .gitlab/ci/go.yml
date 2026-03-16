@@ -6,7 +6,7 @@ bff-storage:lint:
   script:
     - cd src/services/bff-storage
     - test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
-    - golangci-lint run --no-config --enable=govet,errcheck,staticcheck,unused ./...
+    - golangci-lint run ./...
 
 bigquery-writer:lint:
   stage: test
@@ -16,7 +16,7 @@ bigquery-writer:lint:
   script:
     - cd src/services/bigquery-writer
     - test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
-    - golangci-lint run --no-config --enable=govet,errcheck,staticcheck,unused ./...
+    - golangci-lint run ./...
 
 bucket-consumer:lint:
   stage: test
@@ -26,7 +26,7 @@ bucket-consumer:lint:
   script:
     - cd src/services/bucket-consumer
     - test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
-    - golangci-lint run --no-config --enable=govet,errcheck,staticcheck,unused ./...
+    - golangci-lint run ./...
 
 populate-bigquery:lint:
   stage: test
@@ -36,4 +36,4 @@ populate-bigquery:lint:
   script:
     - cd src/services/populate-bigquery
     - test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
-    - golangci-lint run --no-config --enable=govet,errcheck,staticcheck,unused ./...
+    - golangci-lint run ./...
