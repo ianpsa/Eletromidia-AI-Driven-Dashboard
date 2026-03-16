@@ -22,7 +22,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating cloud storage client: %v", err)
 	}
-	defer storageClient.Close()
+	defer func() {
+		if err := storageClient.Close(); err != nil {
+			log.Printf("error closing storage client: %v", err)
+		}
+	}()
 
 	h := handler.New(storageClient)
 
