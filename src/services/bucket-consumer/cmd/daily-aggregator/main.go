@@ -24,7 +24,9 @@ func getEnv(key, def string) string {
 
 func main() {
 	if _, err := os.Stat(".env"); err == nil {
-		godotenv.Overload()
+		if err := godotenv.Overload(); err != nil {
+			log.Printf("warning: could not load .env file: %v", err)
+		}
 	}
 
 	dateStr := flag.String("date", "", "data para agregar (formato: YYYY-MM-DD). default: ontem")
@@ -50,14 +52,22 @@ func main() {
 
 	var opts []option.ClientOption
 	if credentials != "" {
-		opts = append(opts, option.WithCredentialsFile(credentials))
+		credBytes, err := os.ReadFile(credentials)
+		if err != nil {
+			log.Fatalf("erro ao ler arquivo de credenciais: %v", err)
+		}
+		opts = append(opts, option.WithCredentialsJSON(credBytes))
 	}
 
 	client, err := storage.NewClient(ctx, opts...)
 	if err != nil {
 		log.Fatalf("erro ao criar cliente GCS: %v", err)
 	}
-	defer client.Close()
+	defer func() {
+		if err := client.Close(); err != nil {
+			log.Printf("error closing gcs client: %v", err)
+		}
+	}()
 
 	srcPrefix := fmt.Sprintf("%s/topics/%s/year=%04d/month=%02d/day=%02d/",
 		basePath, topic,
@@ -87,20 +97,28 @@ func main() {
 			break
 		}
 		if err != nil {
-			writer.Close()
+			if closeErr := writer.Close(); closeErr != nil {
+				log.Printf("error closing gcs writer: %v", closeErr)
+			}
 			log.Fatalf("erro ao listar objetos: %v", err)
 		}
 
 		reader, err := bkt.Object(attrs.Name).NewReader(ctx)
 		if err != nil {
-			writer.Close()
+			if closeErr := writer.Close(); closeErr != nil {
+				log.Printf("error closing gcs writer: %v", closeErr)
+			}
 			log.Fatalf("erro ao ler %s: %v", attrs.Name, err)
 		}
 
 		n, err := io.Copy(writer, reader)
-		reader.Close()
+		if closeErr := reader.Close(); closeErr != nil {
+			log.Printf("error closing gcs reader: %v", closeErr)
+		}
 		if err != nil {
-			writer.Close()
+			if closeErr := writer.Close(); closeErr != nil {
+				log.Printf("error closing gcs writer: %v", closeErr)
+			}
 			log.Fatalf("erro ao copiar %s: %v", attrs.Name, err)
 		}
 
@@ -110,7 +128,9 @@ func main() {
 	}
 
 	if totalFiles == 0 {
-		writer.Close()
+		if err := writer.Close(); err != nil {
+			log.Printf("error closing gcs writer: %v", err)
+		}
 		log.Printf("nenhum fragmento encontrado para %s", targetDate.Format("2006-01-02"))
 		return
 	}

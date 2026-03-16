@@ -16,7 +16,11 @@ func main() {
 		Topic:    "geodata",
 		Balancer: &kafka.LeastBytes{},
 	}
-	defer writer.Close()
+	defer func() {
+		if err := writer.Close(); err != nil {
+			log.Printf("error closing kafka writer: %v", err)
+		}
+	}()
 
 	event := map[string]interface{}{
 		"impression_hour": "2026-02-26 18:00:00",

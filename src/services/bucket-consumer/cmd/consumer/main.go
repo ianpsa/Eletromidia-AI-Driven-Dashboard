@@ -5,22 +5,22 @@ import (
 	"bucket-consumer/internal/consumer"
 	"bucket-consumer/internal/storage"
 	"context"
+	"errors"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
-	"net/http"
-	"errors"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
-type HealthAssistant struct{
-	BucketWriter 	*storage.Writer
-	Consumer 		*consumer.Consumer
-	Context 		context.Context	
+type HealthAssistant struct {
+	BucketWriter *storage.Writer
+	Consumer     *consumer.Consumer
+	Context      context.Context
 }
 
 func (ha *HealthAssistant) readnessProbe(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +38,7 @@ func (ha *HealthAssistant) readnessProbe(w http.ResponseWriter, r *http.Request)
 	err = ha.BucketWriter.BucketReadnessProbe(ha.Context)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		return 
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -47,7 +47,9 @@ func (ha *HealthAssistant) readnessProbe(w http.ResponseWriter, r *http.Request)
 
 func main() {
 	if _, err := os.Stat(".env"); err == nil {
-		godotenv.Overload()
+		if err := godotenv.Overload(); err != nil {
+			log.Printf("warning: could not load .env file: %v", err)
+		}
 	}
 
 	cfg := config.Load()
@@ -68,13 +70,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("erro ao criar writer do GCS: %v", err)
 	}
-	defer writer.Close()
+	defer func() {
+		if err := writer.Close(); err != nil {
+			log.Printf("error closing gcs writer: %v", err)
+		}
+	}()
 
 	c := consumer.New(cfg, writer)
 
-	ha := HealthAssistant{  BucketWriter: writer, Consumer: c, Context: ctx,  }
-	
-	mux := http.NewServeMux()	
+	ha := HealthAssistant{BucketWriter: writer, Consumer: c, Context: ctx}
+
+	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", ha.readnessProbe)
 
 	server := &http.Server{
@@ -83,7 +89,7 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	go func () {
+	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("server error: %v\n", err)
 		}
