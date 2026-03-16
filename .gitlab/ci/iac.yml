@@ -1,6 +1,8 @@
 iac:lint:
   stage: test
-  image: hashicorp/terraform:latest
+  image:
+    name: hashicorp/terraform:latest
+    entrypoint: [""]
   extends:
     - .actions-rules:iac
   before_script:
