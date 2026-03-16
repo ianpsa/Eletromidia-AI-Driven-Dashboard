@@ -1,0 +1,217 @@
+---
+title: Demo agente de IA
+description: Funcionamento do agente de IA utilizado para análise estratégica de mídia OOH.
+---
+
+## Visão Geral
+
+Este serviço implementa um **agente de IA capaz de interpretar descrições de campanhas em linguagem natural** e gerar recomendações estratégicas de pontos de mídia OOH com base em dados.
+
+O usuário descreve sua campanha — por exemplo, público-alvo, cidade ou perfil demográfico — e o agente interpreta essa descrição para identificar filtros relevantes. Em seguida, o sistema consulta os dados disponíveis e retorna uma análise estratégica com os melhores pontos de mídia.
+
+A aplicação foi construída para demonstrar como um agente de IA pode **conectar linguagem natural à análise de dados**, permitindo que usuários consultem informações complexas de forma simples.
+
+A explicação completa da arquitetura e dos componentes do sistema pode ser encontrada em:  
+**[Documentação de Arquitetura do Agente](./arquitetura-ia)**
+
+Atualmente, a aplicação utiliza **dados locais em CSV**, mas foi projetada para evoluir para integrações com **BigQuery e Looker**.
+
+## Fluxo de Funcionamento
+
+O funcionamento do agente ocorre em algumas etapas principais.
+
+### 1. Recebimento da pergunta
+
+O usuário descreve sua campanha utilizando linguagem natural.
+
+Exemplo:
+
+```
+Quero uma campanha para mulheres de 25 a 34 anos, classe A, em São Paulo
+```
+
+A descrição pode incluir diferentes critérios de segmentação, como:
+
+- gênero  
+- faixa etária  
+- classe social  
+- cidade  
+
+### 2. Interpretação da campanha pela IA
+
+A primeira etapa utiliza um modelo de linguagem para interpretar a descrição da campanha.
+
+Essa IA analisa o texto e extrai **filtros estruturados** que podem ser utilizados pelo sistema.
+
+Entre os filtros que podem ser identificados estão:
+
+- `gender`
+- `age_min`
+- `age_max`
+- `classes`
+- `city`
+
+Essa etapa transforma uma descrição livre em parâmetros estruturados que permitem consultar os dados de forma consistente.
+
+### 3. Consulta e processamento dos dados
+
+Após extrair os filtros, o sistema consulta os dados disponíveis.
+
+Nesta demo, os dados são carregados de um **arquivo CSV local**, localizado na pasta:
+
+```
+data/
+```
+
+Os filtros identificados pela IA são aplicados sobre o dataset e o sistema calcula métricas para cada ponto de mídia.
+
+Entre as métricas utilizadas estão:
+
+- volume de público-alvo  
+- fluxo total de pessoas  
+- índice de afinidade  
+
+A afinidade é utilizada para ordenar os pontos e identificar aqueles mais relevantes para a campanha.
+
+### 4. Tratamento de casos especiais
+
+O agente implementa alguns mecanismos para lidar com situações em que os filtros não retornam resultados diretos.
+
+#### Cidade não encontrada
+
+Caso a cidade solicitada não possua dados no dataset:
+
+- o sistema remove o filtro de cidade  
+- executa novamente a análise considerando todos os pontos disponíveis  
+
+A resposta final informa ao usuário que a cidade solicitada não possuía dados e que todos os dados foram considerados.
+
+#### Faixa etária
+
+Os dados disponíveis são organizados em **faixas etárias predefinidas**.
+
+Quando o usuário solicita um intervalo que não corresponde exatamente às faixas disponíveis, o sistema utiliza as **faixas mais próximas que cobrem o intervalo solicitado**.
+
+A resposta final explica esse ajuste para o usuário. Por exemplo, se o usuário solicitar pessoas de 24 a 36 anos e as faixas disponíveis forem 20-29 e 30-39, o sistema informará que, de acordo com as faixas disponíveis, foram considerados dados das faixas mais próximas.
+
+### 5. Geração da resposta estratégica
+
+Após a análise dos dados, uma segunda chamada para a IA é realizada.
+
+Essa etapa utiliza:
+
+- a pergunta original do usuário  
+- os filtros identificados  
+- os pontos recomendados  
+- as métricas calculadas  
+
+Com base nessas informações, a IA gera uma **resposta estratégica em linguagem natural**, simulando o comportamento de um consultor de mídia.
+
+## Frontend
+
+A aplicação possui um frontend já integrado ao agente.
+
+Ele permite que o usuário:
+
+- descreva sua campanha em linguagem natural  
+- visualize a resposta gerada pela IA  
+- consultar os principais pontos recomendados em formato estruturado  
+
+A documentação completa do frontend pode ser encontrada em:
+
+**[Documentação do Frontend](./frontend/agent)**
+
+## Como executar o projeto
+
+### 1. Adicionar os dados
+
+Adicione os arquivos de dados dentro da pasta:
+
+```
+data/
+```
+
+### 2. Configurar variáveis de ambiente
+
+Crie um arquivo `.env` baseado no exemplo:
+
+```
+.env.example
+```
+
+## Execução com API + Frontend
+
+### inicializar a API
+
+```
+cd src/services/agent
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn api:app --reload
+```
+
+### Iniciar o frontend
+
+Em outro terminal:
+
+```
+cd src/frontend
+npm install
+npm run dev
+```
+
+O frontend estará disponível em: http://localhost:5173
+
+## Execução apenas do agente (modo CLI)
+
+Também é possível executar o agente diretamente pelo terminal.
+
+### Preparação
+
+Adicione os dados na pasta:
+
+```
+data/
+```
+
+Configure o `.env` conforme o `.env.example`.
+
+rode:
+
+```
+cd src/services/agent
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python3 main.py --prompt "sua pergunta"
+```
+
+Exemplo:
+
+```
+python3 main.py --prompt "Campanha para mulheres de 25 a 34 anos em São Paulo"
+```
+
+## Próximos passos
+
+A demo atual foi construída utilizando **dados locais**, mas a solução foi pensada para evoluir para um ambiente de produção.
+
+### Integração com BigQuery
+
+Substituir a leitura de arquivos CSV por consultas diretas ao **BigQuery**, permitindo trabalhar com dados atualizados e em escala.
+
+### Integração com Looker MCP
+
+Integrar o agente com o **Looker via MCP**, permitindo:
+
+- acessar métricas e dimensões definidas no modelo de dados  
+- gerar filtros automaticamente  
+- construir análises mais avançadas a partir da pergunta do usuário  
+- retornar o dashboard apenas com os pontos mais interessantes para a campanha  
+
+### Junção dos dados da Claro com os da Eletromídia
+
+Atualmente, a análise está sendo feita somente com os dados da Claro. A ideia é que, no futuro, o sistema retorne os melhores pontos de investimento nos espaços da Eletromídia.
+
+Para isso, será necessário encontrar uma forma de, com base nos melhores pontos identificados nos dados da Claro, retornar também os melhores pontos da Eletromídia. A proposta é realizar uma média ponderada considerando os pontos localizados a **no máximo 5 km de distância** de cada ponto da Eletromídia.
