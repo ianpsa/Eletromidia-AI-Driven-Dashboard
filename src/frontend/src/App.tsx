@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Login } from "./components/Login";
 import { Sidebar } from "./components/Sidebar";
-import { DashboardPage } from "./pages/DashboardPage";
-import { CloudPage } from "./pages/CloudPage";
 import { AgentPage } from "./pages/AgentPage";
+import { CloudPage } from "./pages/CloudPage";
+import { DashboardPage } from "./pages/DashboardPage";
 
 type Page = "dashboard" | "cloud" | "agent";
 

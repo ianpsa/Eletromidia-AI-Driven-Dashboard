@@ -6,7 +6,7 @@ export function formatBytes(bytes: number): string {
     Math.floor(Math.log(bytes) / Math.log(1024)),
     units.length - 1,
   );
-  const formatted = bytes / Math.pow(1024, i);
+  const formatted = bytes / 1024 ** i;
 
   return `${formatted >= 10 || i === 0 ? formatted.toFixed(0) : formatted.toFixed(1)} ${units[i]}`;
 }

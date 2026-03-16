@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buildApiUrl } from "../utils/url";
 
 type RankingItem = {
@@ -22,9 +22,12 @@ export function AgentPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
+  const messageCount = messages.length;
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (messageCount > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messageCount]);
 
   async function handleSend() {
     if (!input.trim() || loading) return;
@@ -150,7 +153,11 @@ export function AgentPage() {
           placeholder="Descreva sua campanha..."
           disabled={loading}
         />
-        <button onClick={handleSend} disabled={!input.trim() || loading}>
+        <button
+          type="button"
+          onClick={handleSend}
+          disabled={!input.trim() || loading}
+        >
           Enviar
         </button>
       </div>

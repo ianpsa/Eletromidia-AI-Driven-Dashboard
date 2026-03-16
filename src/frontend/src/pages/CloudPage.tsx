@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
+import { Breadcrumb } from "../components/Breadcrumb";
+import { FilesTable } from "../components/FilesTable";
+import { StatusMessage } from "../components/StatusMessage";
+import { SummaryCards } from "../components/SummaryCards";
+import { TopBar } from "../components/TopBar";
 import { useBucketFolder } from "../hooks/useBucketFolder";
 import { computeSortedItems } from "../utils/sort";
-import { TopBar } from "../components/TopBar";
-import { Breadcrumb } from "../components/Breadcrumb";
-import { SummaryCards } from "../components/SummaryCards";
-import { StatusMessage } from "../components/StatusMessage";
-import { FilesTable } from "../components/FilesTable";
 
 export function CloudPage() {
   const bucket = useBucketFolder();

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ObjectItem } from "../types/api";
+import { fileDisplayName, parseDownloadFilename } from "../utils/filename";
 import { buildApiUrl } from "../utils/url";
-import { parseDownloadFilename, fileDisplayName } from "../utils/filename";
 
 export function useBucketFolder() {
   const [bucketName, setBucketName] = useState("-");
@@ -18,7 +18,7 @@ export function useBucketFolder() {
     const parts = currentFolder.replace(/\/+$/, "").split("/");
     return parts.map((part, i) => ({
       label: part,
-      path: parts.slice(0, i + 1).join("/") + "/",
+      path: `${parts.slice(0, i + 1).join("/")}/`,
     }));
   }, [currentFolder]);
 

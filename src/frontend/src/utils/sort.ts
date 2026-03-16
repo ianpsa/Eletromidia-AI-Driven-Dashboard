@@ -1,5 +1,5 @@
-import type { ObjectItem, DisplayItem } from "../types/api";
-import { folderDisplayName, fileDisplayName } from "./filename";
+import type { DisplayItem, ObjectItem } from "../types/api";
+import { fileDisplayName, folderDisplayName } from "./filename";
 
 export function computeSortedItems(
   folders: string[],

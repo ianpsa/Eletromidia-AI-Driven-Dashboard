@@ -1,4 +1,7 @@
-export function parseDownloadFilename(contentDisposition: string | null, fallback: string): string {
+export function parseDownloadFilename(
+  contentDisposition: string | null,
+  fallback: string,
+): string {
   if (!contentDisposition) return fallback;
 
   const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition);
