@@ -2,6 +2,7 @@
   "title": "Sprint 3",
   "pages": [
     "csv-kafka-producer",
+    "chatbot",
     "frontend",
     "frontend-bff",
     "kubernetes"
