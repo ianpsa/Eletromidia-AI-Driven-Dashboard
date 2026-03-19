@@ -39,8 +39,6 @@ func NewFlushMetrics(reg *prometheus.Registry) *FlushMetrics {
 		[]string{"topic"},
 	)
 
-	//bufferedMessagesCount
-
 	// 2. Tempo total do flush assíncrono: do disparo até a confirmação do Bucket.
 	flushDuration := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -87,7 +85,7 @@ func NewFlushMetrics(reg *prometheus.Registry) *FlushMetrics {
 			Name: "kafka_consumer_flush_error_total",
 			Help: "Total acumulado de erros ocorridos durante flushes.",
 		},
-		[]string{"topic", "error_type"},
+		[]string{"topic"},
 	)
 
 	reg.MustRegister(
