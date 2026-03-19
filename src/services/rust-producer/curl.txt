@@ -1,11 +1,6 @@
 curl -X POST http://192.168.49.2:32073/csv \
   -H "Content-Type: application/json" \
-<<<<<<< HEAD
-  -d '{"mensagens_por_segundo": 100, "tempo_envio_segundos": 50, "log_mensagens": true}'
-=======
   -d '{"mensagens_por_segundo": 1000, "tempo_envio_segundos": 5, "log_mensagens": true}'
->>>>>>> 74028ba (fix: adjust countervec metrics to increment)
-  -d '{"mensagens_por_segundo": 100, "tempo_envio_segundos": 50, "log_mensagens": true}'
 
 
   curl -X POST http://192.168.49.2:32073/csv \
