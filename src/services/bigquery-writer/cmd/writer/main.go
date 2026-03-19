@@ -3,7 +3,7 @@ package main
 import (
 	"bigquery-writer/internal/config"
 	"bigquery-writer/internal/consumer"
-	"bigquery-writer/internal/logs"
+	"bigquery-writer/internal/metrics"
 	"bigquery-writer/internal/writer"
 	"context"
 	"errors"
@@ -14,6 +14,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -71,7 +72,7 @@ func main() {
 
 	ha := &healthAssistant{writer: w, consumer: c, ctx: ctx}
 	reg := prometheus.NewRegistry()
-	m := logs.NewFlushMetrics(reg)
+	m := metrics.NewFlushMetrics(reg)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", ha.healthCheck)
