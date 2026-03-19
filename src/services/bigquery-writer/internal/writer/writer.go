@@ -1,12 +1,14 @@
 package writer
 
 import (
+	"bigquery-writer/internal/logs"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
 	"sync"
+	"time"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/google/uuid"
@@ -155,10 +157,11 @@ func validateMapKeys(td TargetData) error {
 }
 
 type BufferedMessage struct {
-	Topic     string
-	Partition int
-	Offset    int64
-	Value     []byte
+	Topic     		string
+	Partition 		int
+	Offset    		int64
+	Value     		[]byte
+	HighWatermark  	int64	
 }
 
 type Writer struct {
@@ -199,15 +202,22 @@ func (w *Writer) Add(msg BufferedMessage) bool {
 	return full
 }
 
-func (w *Writer) Flush(ctx context.Context) error {
+func (w *Writer) Flush(ctx context.Context, m *logs.FlushMetrics) error {
 	w.mu.Lock()
 	if len(w.buffer) == 0 {
 		w.mu.Unlock()
 		return nil
 	}
+
+	// Metrics Data
+	start := time.Now()
+
 	batch := w.buffer
 	w.buffer = nil
 	w.mu.Unlock()
+
+	msg := batch[0]
+	m.FlushTotal.WithLabelValues(msg.Topic)
 
 	var (
 		ageSavers         []*bigquery.StructSaver
@@ -217,21 +227,38 @@ func (w *Writer) Flush(ctx context.Context) error {
 		geodataSavers     []*bigquery.StructSaver
 	)
 
+	type waterMarkSnapshots struct{
+		highWatermark 			int64
+		lastProcessedOffset 	int64
+		partition				int
+		topic 					string
+	}
+
+	snapshots := make(map[int32]waterMarkSnapshots)
+
+
 	parsed := 0
 	for _, msg := range batch {
 		var event KafkaEvent
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			log.Printf("flush: json unmarshal error | partition=%d offset=%d: %v",
 				msg.Partition, msg.Offset, err)
+			m.FlushErrorTotal.WithLabelValues(msg.Topic, fmt.Sprintf("%v", err))
 			continue
 		}
 
+		current, exists := snapshots[int32(msg.Partition)]
+		if !exists || msg.Offset > current.lastProcessedOffset {
+			snapshots[int32(msg.Partition)] = waterMarkSnapshots{
+				highWatermark: msg.HighWatermark,
+				lastProcessedOffset: msg.Offset,
+				partition: msg.Partition,
+				topic: msg.Topic,
+			}
+		}
+
 		var td TargetData
-		// if err := json.Unmarshal([]byte(normalizeTarget(event.Target)), &td); err != nil {
-		// 	log.Printf("flush: target parse error | partition=%d offset=%d: %v",
-		// 		msg.Partition, msg.Offset, err)
-		// 	continue
-		// }
+
 		td = TargetData{
 			Idade: event.Target["idade"],
 			Genero: event.Target["genero"],
@@ -241,6 +268,7 @@ func (w *Writer) Flush(ctx context.Context) error {
 		if err := validateMapKeys(td); err != nil {
 			log.Printf("flush: target validation error | partition=%d offset=%d: %v",
 				msg.Partition, msg.Offset, err)
+			m.FlushErrorTotal.WithLabelValues(msg.Topic, fmt.Sprintf("%v", err))
 			continue
 		}
 
@@ -304,6 +332,12 @@ func (w *Writer) Flush(ctx context.Context) error {
 		return nil
 	}
 
+	for _, snap := range snapshots {
+		lag := float64(snap.highWatermark - snap.lastProcessedOffset)
+		m.PartitionLag.WithLabelValues(snap.topic, fmt.Sprintf("%d", snap.partition)).Set(lag)
+		m.PartitionLagHistogram.WithLabelValues(snap.topic, fmt.Sprintf("%d", snap.partition)).Observe(lag)
+	}
+
 	type tableInsert struct {
 		name     string
 		inserter *bigquery.Inserter
@@ -323,12 +357,19 @@ func (w *Writer) Flush(ctx context.Context) error {
 		if err := t.inserter.Put(ctx, t.savers); err != nil {
 			log.Printf("flush: insert %s error (%d rows): %v", t.name, len(t.savers), err)
 			insertErr = err
+			m.FlushErrorTotal.WithLabelValues(msg.Topic, fmt.Sprintf("%v", err))
 		} else {
 			log.Printf("flush: %s inserted %d rows", t.name, len(t.savers))
 		}
 	}
 
 	log.Printf("flush complete: %d/%d messages processed, 5 tables", parsed, len(batch))
+
+	duration := time.Since(start).Seconds() 
+	m.FlushDuration.WithLabelValues(msg.Topic, "sucess").Observe(duration)
+	m.FlushEventCount.WithLabelValues(msg.Topic).Observe(float64(parsed))
+
+
 	return insertErr
 }
 
