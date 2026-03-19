@@ -2,8 +2,8 @@ package consumer
 
 import (
 	"bigquery-writer/internal/config"
+	"bigquery-writer/internal/metrics"
 	"bigquery-writer/internal/writer"
-	"bigquery-writer/internal/logs"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"os"
 	"sync"
 	"time"
+
 	kafka "github.com/segmentio/kafka-go"
 )
 
@@ -33,7 +34,7 @@ func touchHealthFile() {
 	})
 }
 
-func (c *Consumer) Run(ctx context.Context, m *logs.FlushMetrics) {
+func (c *Consumer) Run(ctx context.Context, m *metrics.FlushMetrics) {
 
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  c.Cfg.KafkaBrokers,
