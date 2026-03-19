@@ -69,6 +69,7 @@ func main() {
 	ha := &healthAssistant{writer: w, consumer: c, ctx: ctx}
 	reg := prometheus.NewRegistry()
 	m := metrics.NewFlushMetrics(reg)
+	log.Printf("DEBUG: metrics initialized: %+v", m)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", ha.healthCheck)
