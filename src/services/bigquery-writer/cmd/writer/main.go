@@ -3,6 +3,7 @@ package main
 import (
 	"bigquery-writer/internal/config"
 	"bigquery-writer/internal/consumer"
+	"bigquery-writer/internal/logs"
 	"bigquery-writer/internal/writer"
 	"context"
 	"errors"
@@ -13,6 +14,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type healthAssistant struct {
@@ -67,9 +70,12 @@ func main() {
 	c := consumer.New(cfg, w)
 
 	ha := &healthAssistant{writer: w, consumer: c, ctx: ctx}
+	reg := prometheus.NewRegistry()
+	m := logs.NewFlushMetrics(reg)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", ha.healthCheck)
+	mux.HandleFunc("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}).ServeHTTP)
 
 	server := &http.Server{
 		Addr:              ":8080",
@@ -90,7 +96,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		c.Run(ctx)
+		c.Run(ctx, m)
 	}()
 
 	<-sigCh
@@ -98,7 +104,7 @@ func main() {
 	cancel()
 	wg.Wait()
 
-	if err := w.Flush(context.Background()); err != nil {
+	if err := w.Flush(context.Background(), m); err != nil {
 		log.Printf("final flush error: %v", err)
 	}
 
