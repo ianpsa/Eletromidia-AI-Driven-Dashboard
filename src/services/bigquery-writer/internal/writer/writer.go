@@ -212,7 +212,10 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 	w.mu.Unlock()
 
 	msg := batch[0]
-	m.FlushTotal.WithLabelValues(msg.Topic)
+	topic := msg.Topic
+	if topic == "" {
+		topic = "unknown"
+	}
 
 	var (
 		ageSavers         []*bigquery.StructSaver
@@ -238,7 +241,7 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			log.Printf("flush: json unmarshal error | partition=%d offset=%d: %v",
 				msg.Partition, msg.Offset, err)
-			m.FlushErrorTotal.WithLabelValues(msg.Topic, fmt.Sprintf("%v", err))
+			m.FlushErrorTotal.WithLabelValues(topic).Inc()
 			continue
 		}
 
@@ -263,7 +266,7 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 		if err := validateMapKeys(td); err != nil {
 			log.Printf("flush: target validation error | partition=%d offset=%d: %v",
 				msg.Partition, msg.Offset, err)
-			m.FlushErrorTotal.WithLabelValues(msg.Topic, fmt.Sprintf("%v", err))
+			m.FlushErrorTotal.WithLabelValues(topic).Inc()
 			continue
 		}
 
@@ -352,18 +355,21 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 		if err := t.inserter.Put(ctx, t.savers); err != nil {
 			log.Printf("flush: insert %s error (%d rows): %v", t.name, len(t.savers), err)
 			insertErr = err
-			m.FlushErrorTotal.WithLabelValues(msg.Topic, fmt.Sprintf("%v", err))
+			m.FlushErrorTotal.WithLabelValues(topic).Inc()
+			duration := time.Since(start).Seconds()
+			m.FlushDuration.WithLabelValues(topic, "error").Observe(duration)
+			m.FlushTotal.WithLabelValues(topic).Inc()
 		} else {
 			log.Printf("flush: %s inserted %d rows", t.name, len(t.savers))
+			m.FlushTotal.WithLabelValues(topic).Inc()
 		}
 	}
 
 	log.Printf("flush complete: %d/%d messages processed, 5 tables", parsed, len(batch))
 
 	duration := time.Since(start).Seconds() 
-	m.FlushDuration.WithLabelValues(msg.Topic, "sucess").Observe(duration)
-	m.FlushEventCount.WithLabelValues(msg.Topic).Observe(float64(parsed))
-
+	m.FlushDuration.WithLabelValues(topic, "sucess").Observe(duration)
+	m.FlushEventCount.WithLabelValues(topic).Observe(float64(parsed))
 
 	return insertErr
 }
