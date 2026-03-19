@@ -4,6 +4,7 @@ import (
 	"bigquery-writer/internal/config"
 	"bigquery-writer/internal/metrics"
 	"bigquery-writer/internal/writer"
+	"bigquery-writer/internal/logs"
 	"context"
 	"errors"
 	"fmt"
@@ -11,7 +12,6 @@ import (
 	"os"
 	"sync"
 	"time"
-
 	kafka "github.com/segmentio/kafka-go"
 )
 
