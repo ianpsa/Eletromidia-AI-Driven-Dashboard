@@ -1,7 +1,7 @@
 package writer
 
 import (
-	"bigquery-writer/internal/logs"
+	"bigquery-writer/internal/metrics"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -197,7 +197,7 @@ func (w *Writer) Add(msg BufferedMessage) bool {
 	return full
 }
 
-func (w *Writer) Flush(ctx context.Context, m *logs.FlushMetrics) error {
+func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 	w.mu.Lock()
 	if len(w.buffer) == 0 {
 		w.mu.Unlock()
