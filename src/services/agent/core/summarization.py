@@ -107,7 +107,7 @@ def maybe_summarize(state: MessagesState) -> dict:
     if estimated <= threshold:
         return {"messages": []}
 
-    keep = int(_KEEP_RECENT)
+    keep = _KEEP_RECENT
     old_messages = messages[:-keep] if keep < len(messages) else []
 
     if not old_messages:

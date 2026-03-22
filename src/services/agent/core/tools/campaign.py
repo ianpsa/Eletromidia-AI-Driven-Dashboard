@@ -86,9 +86,12 @@ def _build_sql(
             "ST_DISTANCE("
             "ST_GEOGPOINT(CAST(g.longitude AS FLOAT64), "
             "CAST(g.latitude AS FLOAT64)), "
-            f"ST_GEOGPOINT({longitude}, {latitude})"
-            f") <= {radius_m}"
+            "ST_GEOGPOINT(@lng, @lat)"
+            ") <= @radius_m"
         )
+        params.append(bigquery.ScalarQueryParameter("lng", "FLOAT64", longitude))
+        params.append(bigquery.ScalarQueryParameter("lat", "FLOAT64", latitude))
+        params.append(bigquery.ScalarQueryParameter("radius_m", "FLOAT64", radius_m))
 
     if city:
         where_parts.append("LOWER(g.cidade) = LOWER(@city)")
@@ -114,9 +117,10 @@ JOIN `{ds}.gender` gnd ON t.gender_id = gnd.id
 JOIN `{ds}.social_class` sc ON t.social_class_id = sc.id
 {where_clause}
 ORDER BY affinity DESC
-LIMIT {limit}
+LIMIT @result_limit
 """.strip()
 
+    params.append(bigquery.ScalarQueryParameter("result_limit", "INT64", limit))
     return sql, params
 
 

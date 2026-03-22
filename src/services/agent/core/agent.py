@@ -38,14 +38,7 @@ def _get_llm():
 def llm_call(state: MessagesState) -> dict:
     """Invoke the LLM with the current message history."""
     llm = _get_llm()
-    messages = list(state["messages"])
-
-    if not messages or not (
-        isinstance(messages[0], SystemMessage)
-        and messages[0].content.startswith("Você é um assistente")
-    ):
-        messages = [SystemMessage(content=SYSTEM_PROMPT)] + messages
-
+    messages = [SystemMessage(content=SYSTEM_PROMPT)] + list(state["messages"])
     response = llm.invoke(messages)
     return {"messages": [response]}
 
@@ -76,9 +69,12 @@ def build_graph() -> StateGraph:
 
 
 _memory = MemorySaver()
+_cached_agent = None
 
 
 def get_agent():
     """Return the compiled agent with memory checkpointer."""
-    graph = build_graph()
-    return graph.compile(checkpointer=_memory)
+    global _cached_agent
+    if _cached_agent is None:
+        _cached_agent = build_graph().compile(checkpointer=_memory)
+    return _cached_agent
