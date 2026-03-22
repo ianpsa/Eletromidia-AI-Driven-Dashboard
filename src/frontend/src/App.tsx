@@ -1,23 +1,34 @@
 import { useState } from "react";
+import { ChatSidebar } from "./components/ChatSidebar";
 import { Login } from "./components/Login";
 import { Sidebar } from "./components/Sidebar";
-import { AgentPage } from "./pages/AgentPage";
 import { CloudPage } from "./pages/CloudPage";
 import { DashboardPage } from "./pages/DashboardPage";
 
-type Page = "dashboard" | "cloud" | "agent";
+type Page = "dashboard" | "cloud";
 
 function AppShell() {
   const [page, setPage] = useState<Page>("dashboard");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="drive-shell">
-      <Sidebar activePage={page} onNavigate={setPage} />
+    <div
+      className={`drive-shell ${sidebarCollapsed ? "sidebar-is-collapsed" : ""}`}
+    >
+      <Sidebar
+        activePage={page}
+        onNavigate={setPage}
+        onToggleChat={() => setChatOpen((v) => !v)}
+        chatOpen={chatOpen}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+      />
       <main className="content">
         {page === "dashboard" && <DashboardPage />}
         {page === "cloud" && <CloudPage />}
-        {page === "agent" && <AgentPage />}
       </main>
+      <ChatSidebar open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 }
