@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from langchain_core.tools import tool
 
 
 @tool
 def filter_looker_dashboard(
-    gender: Optional[str] = None,
-    age_range: Optional[str] = None,
-    city: Optional[str] = None,
-    social_class: Optional[list[str]] = None,
+    gender: str | None = None,
+    age_range: str | None = None,
+    city: str | None = None,
+    social_class: list[str] | None = None,
 ) -> str:
     """Generate a filtered Looker Studio dashboard URL for the user to view.
 
