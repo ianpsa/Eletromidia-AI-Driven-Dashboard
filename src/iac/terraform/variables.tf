@@ -42,3 +42,8 @@ variable "cs_dev_name" {
   type        = string
 }
 
+variable "cluster_name" {
+  type = string
+  description = "Nome do Cluster GKE"
+}
+

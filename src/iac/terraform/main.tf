@@ -17,12 +17,30 @@ module "bigquery_dev" {
   tables         = var.tables
 }
 
+module "vpc" {
+  source = "./modules/vpc"
+
+  region = var.location
+  cluster_name = var.cluster_name
+}
+
+module "gke" {
+  source = "./modules/gke"
+
+  project_id = var.project_id
+  zone = var.location
+  cluster_name = var.cluster_name
+  gke_subnet_id = module.vpc.gke_subnet_id
+  vpc_id = module.vpc.vpc_id
+}
+
 module "iam" {
   source = "./modules/iam"
 
   project_id            = var.project_id
   admin_email           = var.admin_email
   service_account_email = module.bigquery.service_account_email
+  gke_sa_email = module.gke.gke_sa_email
 }
 
 module "iam_dev" {
