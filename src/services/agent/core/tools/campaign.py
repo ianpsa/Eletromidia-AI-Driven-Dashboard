@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import logging
 
-from core.bigquery_client import get_dataset_ref, run_query_with_params
 from google.cloud import bigquery
 from langchain_core.tools import tool
+
+from core.bigquery_client import get_dataset_ref, run_query_with_params
 
 logger = logging.getLogger(__name__)
 

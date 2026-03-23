@@ -5,13 +5,14 @@ import logging
 import os
 import uuid
 
-from core.agent import get_agent
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessageChunk, HumanMessage, ToolMessage
 from pydantic import BaseModel, Field
+
+from core.agent import get_agent
 
 load_dotenv()
 
