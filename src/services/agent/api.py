@@ -1,19 +1,25 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import uuid
 
+from core.agent import get_agent
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessageChunk, HumanMessage, ToolMessage
-from pydantic import BaseModel
-
-from core.agent import get_agent
+from pydantic import BaseModel, Field
 
 load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s %(levelname)s %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -32,8 +38,10 @@ async def health():
 
 
 class ChatRequest(BaseModel):
-    message: str
-    thread_id: str | None = None
+    message: str = Field(..., min_length=1, max_length=10_000)
+    thread_id: str | None = Field(
+        default=None, max_length=100, pattern=r"^[a-zA-Z0-9_\-]+$"
+    )
 
 
 @app.post("/chat")
@@ -65,6 +73,7 @@ async def chat(request: ChatRequest):
                     payload = json.dumps({"tool": event.name, "content": event.content})
                     yield f"event: tool_result\ndata: {payload}\n\n"
         except Exception:
+            logger.exception("SSE stream error for thread_id=%s", thread_id)
             payload = json.dumps({"error": "Erro interno. Tente novamente."})
             yield f"event: error\ndata: {payload}\n\n"
 

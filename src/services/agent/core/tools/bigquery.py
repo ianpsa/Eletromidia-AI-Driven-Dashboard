@@ -1,12 +1,34 @@
 from __future__ import annotations
 
+import logging
 import re
 
+from core.bigquery_client import get_dataset_ref, run_query
 from langchain_core.tools import tool
 
-from core.bigquery_client import get_dataset_ref, run_query
+logger = logging.getLogger(__name__)
 
 _LIMIT_RE = re.compile(r"\bLIMIT\s+\d+", re.IGNORECASE)
+_DANGEROUS_RE = re.compile(
+    r"\b(?:INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|MERGE"
+    r"|GRANT|REVOKE|CALL|EXEC|EXECUTE)\b",
+    re.IGNORECASE,
+)
+_SELECT_ONLY_ERROR = "Erro: apenas consultas SELECT são permitidas."
+
+
+def _validate_sql(sql: str) -> str | None:
+    """Return an error string if *sql* is not a safe read-only query, else None."""
+    if ";" in sql:
+        return _SELECT_ONLY_ERROR
+
+    normalized = sql.upper().lstrip()
+    if not (normalized.startswith("SELECT") or normalized.startswith("WITH")):
+        return _SELECT_ONLY_ERROR
+    if _DANGEROUS_RE.search(normalized):
+        return _SELECT_ONLY_ERROR
+
+    return None
 
 
 @tool
@@ -31,16 +53,16 @@ def query_bigquery(sql_query: str) -> str:
     CAST(latitude AS FLOAT64)), ST_GEOGPOINT(lon, lat)) for distance.
 
     Args:
-        sql_query: A BigQuery SQL query. Table names without project/dataset
-                   prefix will be auto-qualified.
+        sql_query: A BigQuery SQL query (SELECT only). Table names without
+                   project/dataset prefix will be auto-qualified.
     """
     dataset = get_dataset_ref()
 
     sql = sql_query.strip().rstrip(";")
 
-    normalized = sql.lstrip("(")
-    if not normalized.upper().startswith("SELECT"):
-        return "Erro: apenas consultas SELECT são permitidas."
+    error = _validate_sql(sql)
+    if error:
+        return error
 
     tables = ["geodata", "target", "age", "gender", "social_class"]
     for table in tables:
@@ -56,6 +78,7 @@ def query_bigquery(sql_query: str) -> str:
     try:
         rows = run_query(sql)
     except Exception:
+        logger.exception("BigQuery query failed")
         return "Erro ao executar query. Verifique a sintaxe SQL e tente novamente."
 
     if not rows:
