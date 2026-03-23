@@ -1,4 +1,4 @@
-export function DashboardPage() {
+export function AnalyticsPage() {
   return (
     <>
       <div className="looker-header">

@@ -4,17 +4,18 @@ import { Sidebar } from "./components/Sidebar";
 import { AgentPage } from "./pages/AgentPage";
 import { CloudPage } from "./pages/CloudPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
 
-type Page = "dashboard" | "cloud" | "agent";
+type Page = "analytics" | "cloud" | "agent";
 
 function AppShell() {
-  const [page, setPage] = useState<Page>("dashboard");
+  const [page, setPage] = useState<Page>("analytics");
 
   return (
     <div className="drive-shell">
       <Sidebar activePage={page} onNavigate={setPage} />
       <main className="content">
-        {page === "dashboard" && <DashboardPage />}
+        {page === "analytics" && <AnalyticsPage />}
         {page === "cloud" && <CloudPage />}
         {page === "agent" && <AgentPage />}
       </main>
