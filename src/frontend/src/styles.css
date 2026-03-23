@@ -582,7 +582,9 @@ tbody tr:hover {
   height: 100vh;
   position: sticky;
   top: 0;
-  transition: width 0.3s ease, border-color 0.3s ease;
+  transition:
+    width 0.3s ease,
+    border-color 0.3s ease;
 }
 
 .chat-sidebar-open {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { buildApiUrl } from "../utils/url";
 
 type RankingItem = {
@@ -30,7 +30,7 @@ function parseRankingFromToolResult(content: string): RankingItem[] {
   const lines = content.split("\n");
   for (const line of lines) {
     const match = line.match(
-      /^\d+\.\s+(.+?)\s+—\s+Afinidade:\s+([\d.]+)%.*?Público-alvo:\s+([\d.]+).*?Fluxo total:\s+([\d.]+)/
+      /^\d+\.\s+(.+?)\s+—\s+Afinidade:\s+([\d.]+)%.*?Público-alvo:\s+([\d.]+).*?Fluxo total:\s+([\d.]+)/,
     );
     if (match) {
       items.push({
@@ -71,10 +71,10 @@ export function ChatSidebar({ open, onClose }: ChatSidebarProps) {
         prev.map((m) => {
           if (m.id !== msgId) return m;
           return { ...m, contents: [...m.contents, content] };
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   const appendTextToken = useCallback((msgId: number, token: string) => {
@@ -91,8 +91,11 @@ export function ChatSidebar({ open, onClose }: ChatSidebarProps) {
             ],
           };
         }
-        return { ...m, contents: [...m.contents, { type: "text", text: token }] };
-      })
+        return {
+          ...m,
+          contents: [...m.contents, { type: "text", text: token }],
+        };
+      }),
     );
   }, []);
 
@@ -134,7 +137,7 @@ export function ChatSidebar({ open, onClose }: ChatSidebarProps) {
           break;
       }
     },
-    [appendTextToken, appendToAgentMessage]
+    [appendTextToken, appendToAgentMessage],
   );
 
   async function handleSend() {
@@ -146,7 +149,11 @@ export function ChatSidebar({ open, onClose }: ChatSidebarProps) {
 
     setMessages((prev) => [
       ...prev,
-      { id: userMsgId, sender: "user", contents: [{ type: "text", text: prompt }] },
+      {
+        id: userMsgId,
+        sender: "user",
+        contents: [{ type: "text", text: prompt }],
+      },
       { id: agentMsgId, sender: "agent", contents: [], streaming: true },
     ]);
     setInput("");
@@ -197,14 +204,12 @@ export function ChatSidebar({ open, onClose }: ChatSidebarProps) {
                   { type: "text", text: "Erro ao conectar com o agente." },
                 ],
               }
-            : m
-        )
+            : m,
+        ),
       );
     } finally {
       setMessages((prev) =>
-        prev.map((m) =>
-          m.id === agentMsgId ? { ...m, streaming: false } : m
-        )
+        prev.map((m) => (m.id === agentMsgId ? { ...m, streaming: false } : m)),
       );
       setLoading(false);
     }
