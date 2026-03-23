@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Optional
+import logging
 
+from core.bigquery_client import get_dataset_ref, run_query_with_params
 from google.cloud import bigquery
 from langchain_core.tools import tool
 
-from core.bigquery_client import get_dataset_ref, run_query_with_params
+logger = logging.getLogger(__name__)
 
 _AGE_BUCKETS: list[tuple[str, int, int]] = [
     ("x18_19", 18, 19),
@@ -45,13 +46,13 @@ def _class_columns(classes: list[str]) -> list[str]:
 
 def _build_sql(
     *,
-    gender: Optional[str],
-    age_min: Optional[int],
-    age_max: Optional[int],
-    classes: Optional[list[str]],
-    city: Optional[str],
-    latitude: Optional[float],
-    longitude: Optional[float],
+    gender: str | None,
+    age_min: int | None,
+    age_max: int | None,
+    classes: list[str] | None,
+    city: str | None,
+    latitude: float | None,
+    longitude: float | None,
     radius_km: float,
     limit: int,
 ) -> tuple[str, list[bigquery.ScalarQueryParameter]]:
@@ -126,15 +127,15 @@ LIMIT @result_limit
 
 @tool
 def analyze_campaign(
-    gender: Optional[str] = None,
-    age_min: Optional[int] = None,
-    age_max: Optional[int] = None,
-    classes: Optional[list[str]] = None,
-    city: Optional[str] = None,
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
-    radius_km: Optional[float] = 2.0,
-    limit: Optional[int] = 5,
+    gender: str | None = None,
+    age_min: int | None = None,
+    age_max: int | None = None,
+    classes: list[str] | None = None,
+    city: str | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+    radius_km: float | None = 2.0,
+    limit: int | None = 5,
 ) -> str:
     """Analyze OOH media points and return a ranked list by audience affinity.
 
@@ -170,6 +171,7 @@ def analyze_campaign(
     try:
         rows = run_query_with_params(sql, params)
     except Exception:
+        logger.exception("Campaign query failed")
         return "Erro ao consultar BigQuery. Verifique os filtros e tente novamente."
 
     if not rows:

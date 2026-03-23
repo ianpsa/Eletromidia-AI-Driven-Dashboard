@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from langchain_core.tools import tool
+import logging
 
 from core.bigquery_client import get_dataset_ref, run_query
+from langchain_core.tools import tool
+
+logger = logging.getLogger(__name__)
 
 
 @tool
@@ -25,6 +28,7 @@ def get_available_filters() -> str:
             """
         )
     except Exception:
+        logger.exception("Metadata filter query failed")
         return "Erro ao consultar filtros disponíveis. Tente novamente."
 
     total_points = rows[0]["total_points"] if rows else 0
