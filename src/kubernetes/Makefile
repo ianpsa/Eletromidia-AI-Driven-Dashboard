@@ -1,3 +1,6 @@
+include .env
+export
+
 .PHONY: curl-pod
 curl-pod:
 	kubectl run mycurlpod --image=curlimages/curl -i --tty -- sh
@@ -5,6 +8,22 @@ curl-pod:
 
 .PHONY: connect
 connect:
-	gcloud container clusters get-credentials gke-standard \
-  --zone us-central1-a \
-  --project midia-in-da-house
+	gcloud container clusters get-credentials $(CLUSTER_NAME) \
+		--zone $(GKE_ZONE) \
+		--project $(PROJECT_ID)
+
+.PHONY: auth-plugin
+auth-plugin:
+	sudo apt-get install google-cloud-cli-gke-gcloud-auth-plugin
+
+.PHONY: node_pools
+node_pools:
+	gcloud container node-pools list \
+	--cluster=$(CLUSTER_NAME) \
+	--zone=$(GKE_ZONE) \
+	--project=$(PROJECT_ID)
+
+	gcloud container node-pools describe main-pool \
+	--cluster=$(CLUSTER_NAME) \
+	--zone=$(GKE_ZONE) \
+	--project=$(PROJECT_ID)

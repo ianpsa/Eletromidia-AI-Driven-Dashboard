@@ -28,7 +28,7 @@ module "gke" {
   source = "./modules/gke"
 
   project_id = var.project_id
-  zone = var.location
+  zone = var.gke_zone
   cluster_name = var.cluster_name
   gke_subnet_id = module.vpc.gke_subnet_id
   vpc_id = module.vpc.vpc_id
