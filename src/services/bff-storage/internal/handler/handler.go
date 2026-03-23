@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bff-storage/internal/models"
 	"bff-storage/internal/storage"
 	"context"
 	"encoding/json"
@@ -17,11 +18,19 @@ import (
 	gcs "cloud.google.com/go/storage"
 )
 
-type Handler struct {
-	Storage *storage.Client
+type StorageService interface {
+	CheckBucket(ctx context.Context) error
+	ListObjects(ctx context.Context, prefix string) ([]models.ObjectItem, error)
+	ListLevel(ctx context.Context, prefix string) (*models.FolderListing, error)
+	GetFile(ctx context.Context, id string) (*storage.FileResult, error)
+	GetBucketName() string
 }
 
-func New(s *storage.Client) *Handler {
+type Handler struct {
+	Storage StorageService
+}
+
+func New(s StorageService) *Handler {
 	return &Handler{Storage: s}
 }
 
@@ -70,7 +79,7 @@ func (h *Handler) ListItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"bucket": h.Storage.BucketName,
+		"bucket": h.Storage.GetBucketName(),
 		"count":  len(items),
 		"items":  items,
 	})
@@ -96,7 +105,7 @@ func (h *Handler) ListItemsByFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"bucket":  h.Storage.BucketName,
+		"bucket":  h.Storage.GetBucketName(),
 		"folder":  folder,
 		"folders": listing.Folders,
 		"count":   len(listing.Items),
