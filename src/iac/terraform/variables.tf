@@ -47,3 +47,8 @@ variable "cluster_name" {
   description = "Nome do Cluster GKE"
 }
 
+variable "gke_zone" {
+  type = string
+  description = "Zona de Disponibilidade do GKE"
+}
+
