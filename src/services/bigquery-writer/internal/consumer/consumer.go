@@ -87,10 +87,10 @@ func (c *Consumer) Run(ctx context.Context, m *metrics.FlushMetrics) {
 		}
 
 		shouldFlush := c.w.Add(writer.BufferedMessage{
-			Topic:     msg.Topic,
-			Partition: msg.Partition,
-			Offset:    msg.Offset,
-			Value:     msg.Value,
+			Topic:         msg.Topic,
+			Partition:     msg.Partition,
+			Offset:        msg.Offset,
+			Value:         msg.Value,
 			HighWatermark: msg.HighWaterMark,
 		})
 
