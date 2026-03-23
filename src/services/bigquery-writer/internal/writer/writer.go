@@ -150,11 +150,11 @@ func validateMapKeys(td TargetData) error {
 }
 
 type BufferedMessage struct {
-	Topic     		string
-	Partition 		int
-	Offset    		int64
-	Value     		[]byte
-	HighWatermark  	int64	
+	Topic         string
+	Partition     int
+	Offset        int64
+	Value         []byte
+	HighWatermark int64
 }
 
 type Writer struct {
@@ -225,15 +225,14 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 		geodataSavers     []*bigquery.StructSaver
 	)
 
-	type waterMarkSnapshots struct{
-		highWatermark 			int64
-		lastProcessedOffset 	int64
-		partition				int
-		topic 					string
+	type waterMarkSnapshots struct {
+		highWatermark       int64
+		lastProcessedOffset int64
+		partition           int
+		topic               string
 	}
 
 	snapshots := make(map[int32]waterMarkSnapshots)
-
 
 	parsed := 0
 	for _, msg := range batch {
@@ -248,18 +247,18 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 		current, exists := snapshots[int32(msg.Partition)]
 		if !exists || msg.Offset > current.lastProcessedOffset {
 			snapshots[int32(msg.Partition)] = waterMarkSnapshots{
-				highWatermark: msg.HighWatermark,
+				highWatermark:       msg.HighWatermark,
 				lastProcessedOffset: msg.Offset,
-				partition: msg.Partition,
-				topic: msg.Topic,
+				partition:           msg.Partition,
+				topic:               msg.Topic,
 			}
 		}
 
 		var td TargetData
 
 		td = TargetData{
-			Idade: event.Target["idade"],
-			Genero: event.Target["genero"],
+			Idade:        event.Target["idade"],
+			Genero:       event.Target["genero"],
 			ClasseSocial: event.Target["classe_social"],
 		}
 
@@ -367,7 +366,7 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 
 	log.Printf("flush complete: %d/%d messages processed, 5 tables", parsed, len(batch))
 
-	duration := time.Since(start).Seconds() 
+	duration := time.Since(start).Seconds()
 	m.FlushDuration.WithLabelValues(topic, "sucess").Observe(duration)
 	m.FlushEventCount.WithLabelValues(topic).Observe(float64(parsed))
 
