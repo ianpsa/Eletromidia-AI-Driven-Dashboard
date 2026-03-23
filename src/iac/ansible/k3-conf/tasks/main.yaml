@@ -1,5 +1,0 @@
-- name: Instalação do K3 no Master Node
-  hosts: master-node
-  become: true
-  vars:
-    k3s_cluster_version
