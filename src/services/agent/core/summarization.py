@@ -3,10 +3,16 @@ from __future__ import annotations
 import os
 import threading
 
-from core.llm_provider import get_llm_provider
-from langchain_core.messages import (BaseMessage, HumanMessage, RemoveMessage,
-                                     SystemMessage, get_buffer_string)
+from langchain_core.messages import (
+    BaseMessage,
+    HumanMessage,
+    RemoveMessage,
+    SystemMessage,
+    get_buffer_string,
+)
 from langgraph.graph import MessagesState
+
+from core.llm_provider import get_llm_provider
 
 _cached_summarization_llm = None
 _summarization_llm_lock = threading.Lock()
@@ -33,7 +39,7 @@ _CONTEXT_WINDOWS: dict[str, int] = {
 }
 _DEFAULT_CONTEXT = 128_000
 _TRIGGER_RATIO = 0.75
-_KEEP_RECENT = 6
+_KEEP_RECENT_TURNS = 3
 
 SUMMARIZATION_PROMPT = (
     "Sua tarefa é criar um resumo detalhado da conversa abaixo entre um usuário "
@@ -118,8 +124,19 @@ def maybe_summarize(state: MessagesState) -> dict:
     if estimated <= threshold:
         return {"messages": []}
 
-    keep = _KEEP_RECENT
-    old_messages = messages[:-keep] if keep < len(messages) else []
+    human_indices = [i for i, m in enumerate(messages) if isinstance(m, HumanMessage)]
+
+    split_idx = 0
+    for keep in range(_KEEP_RECENT_TURNS, 0, -1):
+        if keep > len(human_indices):
+            continue
+        candidate = human_indices[-keep]
+        kept_tokens = _estimate_tokens(messages[candidate:])
+        if kept_tokens <= threshold:
+            split_idx = candidate
+            break
+
+    old_messages = messages[:split_idx]
 
     if not old_messages:
         return {"messages": []}
