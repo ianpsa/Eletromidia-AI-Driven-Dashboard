@@ -1,11 +1,7 @@
 from __future__ import annotations
 
+import threading
 from typing import Literal
-
-from langchain_core.messages import SystemMessage
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import START, MessagesState, StateGraph
-from langgraph.prebuilt import ToolNode
 
 from core.llm_provider import get_llm_provider
 from core.prompt import SYSTEM_PROMPT
@@ -15,6 +11,10 @@ from core.tools.campaign import analyze_campaign
 from core.tools.geocoding import geocode_location
 from core.tools.looker import filter_looker_dashboard
 from core.tools.metadata import get_available_filters
+from langchain_core.messages import SystemMessage
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import START, MessagesState, StateGraph
+from langgraph.prebuilt import ToolNode
 
 TOOLS = [
     analyze_campaign,
@@ -26,13 +26,18 @@ TOOLS = [
 
 
 _cached_llm = None
+_llm_lock = threading.Lock()
 
 
 def _get_llm():
     global _cached_llm
-    if _cached_llm is None:
+    if _cached_llm is not None:
+        return _cached_llm
+    with _llm_lock:
+        if _cached_llm is not None:
+            return _cached_llm
         _cached_llm = get_llm_provider().build().bind_tools(TOOLS)
-    return _cached_llm
+        return _cached_llm
 
 
 def llm_call(state: MessagesState) -> dict:
@@ -70,11 +75,16 @@ def build_graph() -> StateGraph:
 
 _memory = MemorySaver()
 _cached_agent = None
+_agent_lock = threading.Lock()
 
 
 def get_agent():
     """Return the compiled agent with memory checkpointer."""
     global _cached_agent
-    if _cached_agent is None:
+    if _cached_agent is not None:
+        return _cached_agent
+    with _agent_lock:
+        if _cached_agent is not None:
+            return _cached_agent
         _cached_agent = build_graph().compile(checkpointer=_memory)
-    return _cached_agent
+        return _cached_agent

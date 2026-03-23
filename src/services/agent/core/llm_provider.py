@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from typing import Protocol
 
 from langchain_core.language_models import BaseChatModel
@@ -38,18 +39,21 @@ _PROVIDERS: dict[str, type[LLMProvider]] = {
 }
 
 _cached_provider: LLMProvider | None = None
+_provider_lock = threading.Lock()
 
 
 def get_llm_provider() -> LLMProvider:
     global _cached_provider
     if _cached_provider is not None:
         return _cached_provider
-
-    name = os.environ.get("LLM_PROVIDER", "groq").lower()
-    cls = _PROVIDERS.get(name)
-    if cls is None:
-        raise ValueError(
-            f"Unknown LLM_PROVIDER={name!r}. Choose from: {', '.join(_PROVIDERS)}"
-        )
-    _cached_provider = cls()
-    return _cached_provider
+    with _provider_lock:
+        if _cached_provider is not None:
+            return _cached_provider
+        name = os.environ.get("LLM_PROVIDER", "groq").lower()
+        cls = _PROVIDERS.get(name)
+        if cls is None:
+            raise ValueError(
+                f"Unknown LLM_PROVIDER={name!r}. Choose from: {', '.join(_PROVIDERS)}"
+            )
+        _cached_provider = cls()
+        return _cached_provider

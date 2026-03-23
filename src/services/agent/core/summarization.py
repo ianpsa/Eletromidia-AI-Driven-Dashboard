@@ -1,17 +1,28 @@
 from __future__ import annotations
 
 import os
-
-from langchain_core.messages import (
-    BaseMessage,
-    HumanMessage,
-    RemoveMessage,
-    SystemMessage,
-    get_buffer_string,
-)
-from langgraph.graph import MessagesState
+import threading
 
 from core.llm_provider import get_llm_provider
+from langchain_core.messages import (BaseMessage, HumanMessage, RemoveMessage,
+                                     SystemMessage, get_buffer_string)
+from langgraph.graph import MessagesState
+
+_cached_summarization_llm = None
+_summarization_llm_lock = threading.Lock()
+
+
+def _get_summarization_llm():
+    """Return a cached LLM instance for summarization (no tool bindings)."""
+    global _cached_summarization_llm
+    if _cached_summarization_llm is not None:
+        return _cached_summarization_llm
+    with _summarization_llm_lock:
+        if _cached_summarization_llm is not None:
+            return _cached_summarization_llm
+        _cached_summarization_llm = get_llm_provider().build()
+        return _cached_summarization_llm
+
 
 _CONTEXT_WINDOWS: dict[str, int] = {
     # Groq
@@ -113,7 +124,7 @@ def maybe_summarize(state: MessagesState) -> dict:
     if not old_messages:
         return {"messages": []}
 
-    llm = get_llm_provider().build()
+    llm = _get_summarization_llm()
     summary_input = [
         SystemMessage(content=SUMMARIZATION_PROMPT),
         HumanMessage(content=get_buffer_string(old_messages)),

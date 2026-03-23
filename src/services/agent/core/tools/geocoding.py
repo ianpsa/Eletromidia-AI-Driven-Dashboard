@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from typing import Protocol
 
 import httpx
@@ -77,21 +78,25 @@ _PROVIDERS: dict[str, type[GeocodingProvider]] = {
 }
 
 _cached_provider: GeocodingProvider | None = None
+_provider_lock = threading.Lock()
 
 
 def get_provider() -> GeocodingProvider:
     global _cached_provider
     if _cached_provider is not None:
         return _cached_provider
-
-    name = os.environ.get("GEOCODING_PROVIDER", "nominatim").lower()
-    cls = _PROVIDERS.get(name)
-    if cls is None:
-        raise ValueError(
-            f"Unknown GEOCODING_PROVIDER={name!r}. Choose from: {', '.join(_PROVIDERS)}"
-        )
-    _cached_provider = cls()
-    return _cached_provider
+    with _provider_lock:
+        if _cached_provider is not None:
+            return _cached_provider
+        name = os.environ.get("GEOCODING_PROVIDER", "nominatim").lower()
+        cls = _PROVIDERS.get(name)
+        if cls is None:
+            valid = ", ".join(_PROVIDERS)
+            raise ValueError(
+                f"Unknown GEOCODING_PROVIDER={name!r}. Choose from: {valid}"
+            )
+        _cached_provider = cls()
+        return _cached_provider
 
 
 @tool
