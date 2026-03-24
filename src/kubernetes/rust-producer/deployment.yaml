@@ -24,7 +24,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - image: rust-producer:latest
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         name: rust-producer
         ports:
           - containerPort: 5000
