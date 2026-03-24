@@ -39,6 +39,7 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) StartUpProbe(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Printf("Método não autorizado!")
 		return
 	}
 
@@ -47,6 +48,7 @@ func (h *Handler) StartUpProbe(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"message": fmt.Sprintf("Bucket não conectado: %v", err),
 		})
+		fmt.Printf("Bucket não conectado: %v", err)
 		return
 	}
 
