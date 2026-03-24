@@ -24,8 +24,8 @@ spec:
         runAsNonRoot: true
       automountServiceAccountToken: false
       containers:
-        - image: bigquery-writer:latest
-          imagePullPolicy: Never
+        - image: southamerica-east1-docker.pkg.dev/midia-in-da-house/gke-cr/bigquery-writer:latest
+          imagePullPolicy: Always
           name: bigquery-writer
           securityContext:
             allowPrivilegeEscalation: false
