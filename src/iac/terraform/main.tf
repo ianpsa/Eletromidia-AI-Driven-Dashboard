@@ -17,6 +17,13 @@ module "bigquery_dev" {
   tables         = var.tables
 }
 
+module "artifact_registry" {
+  source = "./modules/artifact_registry"
+
+  project_id = var.project_id
+  region = var.location
+}
+
 module "vpc" {
   source = "./modules/vpc"
 
