@@ -1,7 +1,3 @@
-# Como o BFF-Storage não é um serviço interno, ele preciso se expor
-# Criei um NodePort somente para teste
-# Futuramente criarei um API Gateway
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -10,12 +6,12 @@ metadata:
   name: rust-producer-svc
 spec:
   ports:
-  - name: 5678-8080
-    port: 5678
+  - name: 80-8080
+    port: 80
     protocol: TCP
     targetPort: 5000
   selector:
     app: rust-producer
-  type: NodePort
+  type: ClusterIP
 status:
   loadBalancer: {}

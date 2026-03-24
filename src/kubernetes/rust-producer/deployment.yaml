@@ -23,7 +23,7 @@ spec:
         runAsNonRoot: true
       automountServiceAccountToken: false
       containers:
-      - image: rust-producer:latest
+      - image: southamerica-east1-docker.pkg.dev/midia-in-da-house/gke-cr/rust-producer:latest
         imagePullPolicy: Always
         name: rust-producer
         ports:
