@@ -668,6 +668,30 @@ tbody tr:hover {
   cursor: default;
 }
 
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 18px;
+  align-items: start;
+}
+
+.dashboard-grid--hexbin {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.main-column {
+  min-height: 0;
+}
+
+.main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 @media (max-width: 980px) {
   .drive-shell {
     grid-template-columns: 1fr;
