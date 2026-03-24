@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"fmt"
 )
 
 func main() {
@@ -16,6 +17,9 @@ func main() {
 	if err := cfg.Validate(); err != nil {
 		log.Fatalf("config error: %v", err)
 	}
+
+	fmt.Printf("Bucket Name: %s\n", cfg.BucketName)
+	fmt.Printf("Key: %s\n", cfg.Key)
 
 	ctx := context.Background()
 	storageClient, err := storage.NewClient(ctx, cfg.BucketName, cfg.Key)

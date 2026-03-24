@@ -20,25 +20,25 @@ spec:
         runAsNonRoot: true
       automountServiceAccountToken: false
       containers:
-      - image: bff-storage:latest
+      - image: southamerica-east1-docker.pkg.dev/midia-in-da-house/gke-cr/bff-storage:latest
         name: bff-storage
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         ports: 
           - containerPort: 8080
             name: http-web-svc
         livenessProbe:
           httpGet:
-            path: /probe/healthz
+            path: /probe/startup
             port: 8080
           initialDelaySeconds: 10
           failureThreshold: 5
           periodSeconds: 3
         readinessProbe:
           httpGet:
-            path: /probe/healthz
+            path: /probe/startup
             port: 8080
           initialDelaySeconds: 5
           failureThreshold: 2

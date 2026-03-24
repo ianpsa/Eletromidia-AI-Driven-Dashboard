@@ -3,6 +3,6 @@ curl -X POST http://192.168.49.2:32073/csv \
   -d '{"mensagens_por_segundo": 10, "tempo_envio_segundos": 5, "log_mensagens": true}'
 
 
-  curl -X POST http://192.168.49.2:32073/csv \
+  curl -X POST http://rust-producer-svc.dev.svc/csv \
   -H "Content-Type: application/json" \
   -d '{"mensagens_por_segundo": 1, "tempo_envio_segundos": 1, "log_mensagens": true}'
