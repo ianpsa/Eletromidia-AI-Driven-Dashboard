@@ -66,7 +66,7 @@ resource "google_container_node_pool" "main" {
   node_count = 3
 
   node_config {
-    machine_type = "e2-medium"
+    machine_type = "e2-standard-2"
 
     service_account = google_service_account.gke_sa.email
 
