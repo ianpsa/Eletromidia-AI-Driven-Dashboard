@@ -4,7 +4,6 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use crate::jwt::Claims;
-use async_trait::async_trait;
 use serde::Serialize;
 use std::env;
 
@@ -38,7 +37,6 @@ impl IntoResponse for AuthError {
 
 pub struct AuthToken(pub Claims);
 
-#[async_trait]
 impl<S> FromRequestParts<S> for AuthToken 
 where 
     S: Send + Sync,
