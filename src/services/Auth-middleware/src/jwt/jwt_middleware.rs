@@ -1,59 +1,68 @@
 use axum::{
-  extract::FromRequestParts,
-  http::{request::Parts, StatusCode, header::AUTHORIZATION},
-  response::{IntoResponse, Response},
+    extract::FromRequestParts,
+    http::{request::Parts, StatusCode, header::AUTHORIZATION},
+    response::{IntoResponse, Response},
 };
 use crate::jwt::Claims;
 use async_trait::async_trait;
+use serde::Serialize;
+use std::env;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum AuthError {
     MissingToken,
     InvalidToken,
+    InsufficientPermissions,
 }
 
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
-        match self {
+        let (status, message) = match self {
             AuthError::MissingToken => (
                 StatusCode::UNAUTHORIZED,
-                "Toke de autorização faltando",
-            ).into_response(),
+                "Authorization token missing",
+            ),
             AuthError::InvalidToken => (
                 StatusCode::UNAUTHORIZED,
-                "Token de autorização inválido!",
-            ).into_response(),
-        }
+                "Invalid authorization token!",
+            ),
+            AuthError::InsufficientPermissions => (
+                StatusCode::FORBIDDEN,
+                "Insufficient permissions for this resource",
+            ),
+        };
+
+        (status, message).into_response()
     }
 }
 
 pub struct AuthToken(pub Claims);
 
 #[async_trait]
-impl<s> FromRequestPat for AuthToken 
+impl<S> FromRequestParts<S> for AuthToken 
 where 
     S: Send + Sync,
 {
-  type Rejection = AthError;
-  
-  async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-    let auth_header = parts
-      .headers
-      .get(AUTHORIZATION)
-      .and_then(|h| h.to_str().ok())
-      .ok_or(AuthError::MissingToken)?;
+    type Rejection = AuthError;
     
-    let token = auth_header
-      .strrip_prefix("Bearer ")
-      .ok_or(AuthError::InvalidToken)?;
-    
-    let secret = "nossakeynaovouharcodar".to_string();
-    let manager = crate::jwt::JwtManager::new(secret);
-    
-    let claims = manager
-      .verify_token(token)
-      .map_err(|_| AuthError::InvalidToken)?;
-    
-    Ok(AuthToken(claims))
-  }
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let auth_header = parts
+            .headers
+            .get(AUTHORIZATION)
+            .and_then(|h| h.to_str().ok())
+            .ok_or(AuthError::MissingToken)?;
+        
+        let token = auth_header
+            .strip_prefix("Bearer ")
+            .ok_or(AuthError::InvalidToken)?;
+        
+        let secret = env::var("JWT_SECRET").unwrap_or_else(|_| "nossakeynaovouharcodar".to_string());
+        let manager = crate::jwt::JwtManager::new(secret);
+        
+        let claims = manager
+            .verify_token(token)
+            .map_err(|_| AuthError::InvalidToken)?;
+        
+        Ok(AuthToken(claims))
+    }
 }
