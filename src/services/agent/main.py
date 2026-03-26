@@ -1,57 +1,47 @@
+from __future__ import annotations
+
 import argparse
+import asyncio
 import os
 import sys
 
-import pandas as pd
 from dotenv import load_dotenv
 
-from core.answer import generate_final_answer
-from core.llm import parse_prompt
-from core.report import build_report
-
 load_dotenv()
+
+
+async def run(prompt: str, thread_id: str = "cli-session") -> str:
+    from langchain_core.messages import HumanMessage
+
+    from core.agent import get_agent
+
+    agent = get_agent()
+    config = {"configurable": {"thread_id": thread_id}}
+    result = await agent.ainvoke(
+        {"messages": [HumanMessage(content=prompt)]},
+        config,
+    )
+    return result["messages"][-1].content
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--prompt", required=True)
-    parser.add_argument("--limit", type=int, default=10)
     args = parser.parse_args()
 
-    token = os.getenv("GROQ_API_KEY")
-    if not token:
-        sys.exit("GROQ_API_KEY not set")
+    required_keys = {
+        "groq": "GROQ_API_KEY",
+        "google": "GOOGLE_API_KEY",
+    }
+    provider = os.getenv("LLM_PROVIDER", "").lower()
+    key_name = required_keys.get(provider)
+    if key_name and not os.getenv(key_name):
+        sys.exit(f"{key_name} not set (LLM_PROVIDER={provider})")
 
-    user_prompt = args.prompt
+    answer = asyncio.run(run(args.prompt))
 
-    filters = parse_prompt(user_prompt, token)
-
-    df = pd.read_csv("../../../data/claro.csv")
-
-    rows, used_range = build_report(df, filters)
-
-    city_fallback = False
-
-    if not rows and "city" in filters:
-        del filters["city"]
-        rows, used_range = build_report(df, filters)
-        city_fallback = True
-
-    if not rows:
-        print("Nenhum dado encontrado para os filtros informados.")
-        return
-
-    final_answer = generate_final_answer(
-        user_prompt=user_prompt,
-        filters=filters,
-        ranking=rows[: args.limit],
-        api_key=token,
-        city_fallback=city_fallback,
-        used_age_range=used_range,
-    )
-
-    print("\nResposta Estratégica:\n")
-    print(final_answer)
+    print("\nResposta:\n")
+    print(answer)
 
 
 if __name__ == "__main__":

@@ -35,3 +35,35 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       - kafka
+
+  agent:
+    build:
+      context: ./services/agent
+      dockerfile: Dockerfile
+    container_name: agent
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./services/agent/.env
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      agent:
+        condition: service_healthy
