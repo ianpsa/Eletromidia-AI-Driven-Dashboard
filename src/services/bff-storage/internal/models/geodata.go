@@ -54,6 +54,15 @@ type SocialClassSummary struct {
 	DEClass float64 `json:"de_class"`
 }
 
+type CompareGroup struct {
+	Label string `json:"label"`
+	DemographicSummary
+}
+
+type CompareResponse struct {
+	Groups []CompareGroup `json:"groups"`
+}
+
 type FilterOptions struct {
 	Estados   []string `json:"estados"`
 	Cidades   []string `json:"cidades"`
