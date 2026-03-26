@@ -1,0 +1,72 @@
+---
+title: Autenticação e Segurança
+description: Detalhes da implementação de autenticação JWT e integração com GCP IAM
+---
+
+## Visão Geral
+
+Na Sprint 4, consolidamos a estratégia de segurança do ecossistema. Dado que o projeto envolve APIs de interface, processamento assíncrono (Kafka) e serviços gerenciados no Google Cloud Platform (GCP), a segurança foi segmentada em duas abordagens complementares.
+
+1.  **Autenticação de Aplicação (JWT)**: Focada no usuário final e controle de acesso baseado em papéis (RBAC).
+2.  **Autenticação de Infraestrutura (GCP IAM)**: Focada na comunicação segura entre serviços e recursos de nuvem.
+
+---
+
+## 1. Auth-middleware (JWT)
+
+O serviço `Auth-middleware`, desenvolvido em Rust com Axum, centraliza a emissão e validação de tokens. Implementamos três níveis de acesso principais:
+
+| Papel (Role) | Descrição |
+| :--- | :--- |
+| **User** | Acesso básico para visualização de dashboards e consultas simples. |
+| **Administrator** | Controle total do sistema, gestão de usuários e configurações críticas. |
+| **Eletromidia-Employee** | Operadores técnicos com acesso a monitoramento e gestão de inventário. |
+
+### Endpoints de Autenticação
+
+*   `POST /authenticate`: Recebe credenciais e retorna um token JWT assinado.
+*   `POST /authorize`: Valida se um token é legítimo e possui o papel (`Role`) necessário.
+*   `GET /me`: Permite que a interface recupere os dados do usuário logado a partir do token.
+
+---
+
+## 2. Aplicabilidade e Arquitetura
+
+A segurança é aplicada de forma distinta dependendo da natureza do serviço:
+
+### Serviços com Proteção JWT
+Estes serviços expõem endpoints HTTP para clientes ou administradores e utilizam o `AuthToken` extractor:
+
+*   **`bff-storage`**: Protege o upload de arquivos para o Cloud Storage.
+*   **`agent`**: Garante que as consultas de IA (LLM) sejam feitas apenas por usuários autorizados.
+*   **`rust-producer`**: Restringe o disparo de testes de carga e ingestão manual de CSVs a administradores.
+
+### Serviços com Proteção GCP IAM
+Serviços de background (workers) que não possuem interface pública utilizam identidades de serviço (`Service Accounts`) nativas do GCP:
+
+*   **`bucket-consumer`**: Autorizado via IAM para escrever objetos no Cloud Storage.
+*   **`bigquery-writer`**: Autorizado para inserir linhas no Data Warehouse (BigQuery).
+*   **`populate-bigquery`**: Job de ETL que utiliza permissões de leitura/escrita no Storage e BigQuery.
+
+---
+
+## 3. Fluxo de Segurança
+
+O diagrama abaixo ilustra como um usuário interage com o sistema de forma segura:
+
+<Mermaid chart={`
+sequenceDiagram
+    participant U as Usuário/Admin
+    participant A as Auth-middleware
+    participant S as Serviços (BFF/Agent)
+    participant G as Recursos GCP
+
+    U->>A: Login (POST /authenticate)
+    A-->>U: Token JWT
+    U->>S: Request + Bearer Token
+    S->>A: Valida Token (POST /authorize)
+    A-->>S: OK + Roles
+    S->>G: Operação Cloud (via IAM)
+    G-->>S: Dados/Sucesso
+    S-->>U: Resposta
+`} />
