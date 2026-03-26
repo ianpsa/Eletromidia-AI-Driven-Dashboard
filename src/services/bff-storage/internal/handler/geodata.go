@@ -74,6 +74,39 @@ func (h *Handler) GetFilterOptions(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, result)
 }
 
+func (h *Handler) GetCompare(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	groupBy := r.URL.Query().Get("group_by")
+	if groupBy == "" {
+		writeError(w, http.StatusBadRequest, "group_by parameter is required (genero, faixa_etaria, classe_social)")
+		return
+	}
+
+	validGroups := map[string]bool{"genero": true, "faixa_etaria": true, "classe_social": true}
+	if !validGroups[groupBy] {
+		writeError(w, http.StatusBadRequest, "invalid group_by value: must be genero, faixa_etaria, or classe_social")
+		return
+	}
+
+	filters := parseGeoFilters(r)
+
+	ctx, cancel := context.WithTimeout(r.Context(), queryTimeout)
+	defer cancel()
+
+	result, err := h.BigQuery.QueryCompare(ctx, filters, groupBy)
+	if err != nil {
+		log.Printf("error querying compare: %v", err)
+		writeError(w, http.StatusInternalServerError, "failed to query compare")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
 func parseGeoFilters(r *http.Request) models.GeoFilters {
 	q := r.URL.Query()
 

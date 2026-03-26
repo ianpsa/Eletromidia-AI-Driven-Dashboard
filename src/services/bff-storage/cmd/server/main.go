@@ -50,6 +50,7 @@ func main() {
 	mux.HandleFunc("/geodata/points", h.GetGeoPoints)
 	mux.HandleFunc("/geodata/demographics", h.GetDemographics)
 	mux.HandleFunc("/geodata/filter-options", h.GetFilterOptions)
+	mux.HandleFunc("/geodata/compare", h.GetCompare)
 
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
