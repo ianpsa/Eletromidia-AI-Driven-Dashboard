@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import "./CompareChartsModal.css";
 
 type CompareMode = "gender" | "age" | "socialClass";
@@ -22,34 +22,15 @@ type CompareChartsModalProps = {
 };
 
 const initialFilters: CompareFilter[] = [
-  { key: "location", label: "Localização", enabled: true, value: "SP / São Paulo / Rua M.M.D.C" },
-  { key: "hour", label: "Hora", enabled: false, value: "08:00 - 18:00" },
+  { key: "location", label: "Localização", enabled: false, value: "SP / São Paulo / Rua M.M.D.C" },
+  { key: "hour", label: "Hora", enabled: false, value: "" },
   { key: "distance", label: "Distância", enabled: false, value: "10 km" },
   { key: "gender", label: "Gênero", enabled: false, value: "Todos" },
   { key: "age", label: "Idade", enabled: false, value: "Todos" },
   { key: "socialClass", label: "Classe social", enabled: false, value: "Todos" },
 ];
 
-const modeMeta: Record<
-  CompareMode,
-  { title: string; subtitle: string; labels: string[] }
-> = {
-  gender: {
-    title: "Comparar por gênero",
-    subtitle: "Gera um gráfico para feminino e outro para masculino.",
-    labels: ["Feminino", "Masculino"],
-  },
-  age: {
-    title: "Comparar por idade",
-    subtitle: "Gera gráficos separados por faixas etárias.",
-    labels: ["18-19", "20-29", "30-39", "40-49", "50+"],
-  },
-  socialClass: {
-    title: "Comparar por classe social",
-    subtitle: "Gera gráficos para cada classe social selecionada.",
-    labels: ["Classe A/B", "Classe C", "Classe D/E"],
-  },
-};
+
 
 export function CompareChartsModal({
   open,
@@ -59,9 +40,7 @@ export function CompareChartsModal({
   const [compareMode, setCompareMode] = useState<CompareMode>("gender");
   const [filters, setFilters] = useState<CompareFilter[]>(initialFilters);
 
-  const visibleFilters = useMemo(() => {
-    return filters.filter((item) => item.enabled);
-  }, [filters]);
+  
 
   if (!open) return null;
 
@@ -86,7 +65,7 @@ export function CompareChartsModal({
     onClose();
   }
 
-  const meta = modeMeta[compareMode];
+  
 
   return (
     <div className="compare-modal__backdrop" onClick={onClose}>
@@ -141,7 +120,9 @@ export function CompareChartsModal({
             </div>
 
             <div className="compare-modal__filters">
-              {filters.map((filter) => (
+              {filters
+                .filter((f) => f.key !== compareMode) // não mostrar o filtro que já está sendo usado na comparação
+                .map((filter) => (
                 <div key={filter.key} className="compare-modal__filter-card">
                   <label className="compare-modal__filter-toggle">
                     <input
@@ -201,10 +182,17 @@ export function CompareChartsModal({
                     )}
 
                     {filter.key === "hour" && (
-                      <div className="compare-modal__inline">
-                        <input type="time" defaultValue="08:00" />
-                        <span>até</span>
-                        <input type="time" defaultValue="18:00" />
+                      <div>
+                        <select
+                          value={filter.value}
+                          onChange={(e) => updateFilter(filter.key, { value: e.target.value })}
+                        >
+                          <option value="">Todos</option>
+                          <option value="0-6">00:00 - 06:00</option>
+                          <option value="6-12">06:00 - 12:00</option>
+                          <option value="12-18">12:00 - 18:00</option>
+                          <option value="18-24">18:00 - 24:00</option>
+                        </select>
                       </div>
                     )}
 

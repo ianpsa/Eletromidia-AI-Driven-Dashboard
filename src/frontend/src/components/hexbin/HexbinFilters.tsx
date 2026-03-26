@@ -7,32 +7,35 @@ export function HexbinFilters() {
 
       <label className="hexbin-filters__field">
         <span>Estado</span>
-        <select>
-          <option>SP</option>
-          <option>RJ</option>
-          <option>MG</option>
-          <option>PR</option>
+        <select defaultValue="">
+          <option value="">Todos</option>
+          <option value="SP">SP</option>
+          <option value="RJ">RJ</option>
+          <option value="MG">MG</option>
+          <option value="PR">PR</option>
         </select>
       </label>
 
       <label className="hexbin-filters__field">
         <span>Cidade</span>
-        <select>
-          <option>São Paulo</option>
-          <option>Campinas</option>
-          <option>Santos</option>
-          <option>Guarulhos</option>
-          <option>Osasco</option>
+        <select defaultValue="">
+          <option value="">Todos</option>
+          <option value="São Paulo">São Paulo</option>
+          <option value="Campinas">Campinas</option>
+          <option value="Santos">Santos</option>
+          <option value="Guarulhos">Guarulhos</option>
+          <option value="Osasco">Osasco</option>
         </select>
       </label>
 
       <label className="hexbin-filters__field">
         <span>Endereço</span>
-        <select>
-          <option>Rua M.M.D.C</option>
-          <option>Avenida Paulista</option>
-          <option>Rua da Consolação</option>
-          <option>Rua Vergueiro</option>
+        <select defaultValue="">
+          <option value="">Todos</option>
+          <option value="Rua M.M.D.C">Rua M.M.D.C</option>
+          <option value="Avenida Paulista">Avenida Paulista</option>
+          <option value="Rua da Consolação">Rua da Consolação</option>
+          <option value="Rua Vergueiro">Rua Vergueiro</option>
         </select>
       </label>
 
@@ -40,6 +43,17 @@ export function HexbinFilters() {
         <span>Distância máxima</span>
         <input type="range" min={2} max={15} defaultValue={10} />
         <strong>10 km</strong>
+      </label>
+
+      <label className="hexbin-filters__field">
+        <span>Horário</span>
+        <select defaultValue="">
+          <option value="">Todos</option>
+          <option value="0-6">00:00 - 06:00</option>
+          <option value="6-12">06:00 - 12:00</option>
+          <option value="12-18">12:00 - 18:00</option>
+          <option value="18-24">18:00 - 24:00</option>
+        </select>
       </label>
 
       <label className="hexbin-filters__field">
