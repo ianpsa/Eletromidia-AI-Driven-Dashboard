@@ -1,0 +1,8 @@
+.git
+*.md
+.env
+.env.*
+.venv
+.ruff_cache
+__pycache__
+*.pyc
