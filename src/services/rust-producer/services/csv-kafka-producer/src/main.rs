@@ -54,6 +54,7 @@ fn create_producer() -> ThreadedProducer<DefaultProducerContext> {
         .set("queue.buffering.max.messages", &queue_buffering_max)
         .set("acks", &acks)
         .set("request.timeout.ms", &request_timeout_ms)
+        .set("partitioner", "murmur2_random")
         .create()
         .expect("Falha ao criar producer")
 }

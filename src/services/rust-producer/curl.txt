@@ -1,8 +1,15 @@
-curl -X POST http://192.168.49.2:32073/csv \
+curl -X POST http://rust-producer-svc.dev.svc/csv \
   -H "Content-Type: application/json" \
   -d '{"mensagens_por_segundo": 100, "tempo_envio_segundos": 50, "log_mensagens": true}'
+  -d '{"mensagens_por_segundo": 100000, "tempo_envio_segundos": 20, "log_mensagens": false}'
 
 
-  curl -X POST http://rust-producer-svc.dev.svc/csv \
+  curl -X POST http://10.48.0.75:5000/csv \
   -H "Content-Type: application/json" \
-  -d '{"mensagens_por_segundo": 1, "tempo_envio_segundos": 1, "log_mensagens": true}'
+  -d '{"mensagens_por_segundo": 1, "tempo_envio_segundos": 1, "log_mensagens": false}'
+
+
+
+curl -X POST http://rust-producer-svc.dev.svc/csv -H "Content-Type: application/json" -d '{"mensagens_por_segundo": 100000, "tempo_envio_segundos": 20, "log_mensagens": false}' >> output.log 2>&1 & curl -X POST http://rust-producer-svc.dev.svc/csv -H "Content-Type: application/json" -d '{"mensagens_por_segundo": 100000, "tempo_envio_segundos": 20, "log_mensagens": false}' >> output.log 2>&1 & curl -X POST http://rust-producer-svc.dev.svc/csv -H "Content-Type: application/json" -d '{"mensagens_por_segundo": 100000, "tempo_envio_segundos": 20, "log_mensagens": false}' >> output.log 2>&1 & curl -X POST http://rust-producer-svc.dev.svc/csv -H "Content-Type: application/json" -d '{"mensagens_por_segundo": 100000, "tempo_envio_segundos": 20, "log_mensagens": false}' >> output.log 2>&1 & curl -X POST http://rust-producer-svc.dev.svc/csv -H "Content-Type: application/json" -d '{"mensagens_por_segundo": 100000, "tempo_envio_segundos": 20, "log_mensagens": false}' >> output.log 2>&1 &
+
+
