@@ -1,25 +1,20 @@
-import { useMemo, useState } from "react";
-import DeckGL from "@deck.gl/react";
 import { HexagonLayer } from "@deck.gl/aggregation-layers";
-import Map from "react-map-gl/maplibre";
+import type { MapViewState } from "@deck.gl/core";
+import DeckGL from "@deck.gl/react";
+import { useMemo, useState } from "react";
+import MapView from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { HexbinPoint } from "../../types/geo";
+import type { HexbinPoint } from "../../types/geo";
 import "./HexbinChart.css";
 
 type HexbinChartProps = {
   title: string;
   data: HexbinPoint[];
   height?: number;
-  initialViewState?: {
-    longitude: number;
-    latitude: number;
-    zoom: number;
-    pitch?: number;
-    bearing?: number;
-  };
+  initialViewState?: MapViewState;
 };
 
-const DEFAULT_VIEW_STATE = {
+const DEFAULT_VIEW_STATE: MapViewState = {
   longitude: -46.6333,
   latitude: -23.5505,
   zoom: 10.8,
@@ -27,7 +22,8 @@ const DEFAULT_VIEW_STATE = {
   bearing: 0,
 };
 
-const MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+const MAP_STYLE =
+  "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
 export function HexbinChart({
   title,
@@ -35,7 +31,7 @@ export function HexbinChart({
   height = 480,
   initialViewState = DEFAULT_VIEW_STATE,
 }: HexbinChartProps) {
-  const [viewState, setViewState] = useState(initialViewState);
+  const [viewState, setViewState] = useState<MapViewState>(initialViewState);
 
   const layers = useMemo(() => {
     return [
@@ -56,8 +52,7 @@ export function HexbinChart({
           [251, 106, 74],
           [222, 45, 38],
         ],
-        getPosition: (d) => [d.longitude, d.latitude],
-        getWeight: () => 1,
+        getPosition: (d: HexbinPoint) => [d.longitude, d.latitude],
       }),
     ];
   }, [data, title]);
@@ -71,17 +66,22 @@ export function HexbinChart({
       <div className="hexbin-card__stage" style={{ height }}>
         <div className="hexbin-map-wrap">
           <DeckGL
-            style={{ position: "absolute", inset: 0 }}
+            style={{ position: "absolute", inset: "0" }}
             viewState={viewState}
             controller
             layers={layers}
-            onViewStateChange={({ viewState: next }) => setViewState(next as any)}
+            onViewStateChange={({ viewState: next }) =>
+              setViewState(next as MapViewState)
+            }
             getTooltip={({ object }) => {
               if (!object) return null;
 
+              const points = (object as Record<string, unknown>).points as
+                | unknown[]
+                | undefined;
               const count =
-                (object as any).points?.length ??
-                (object as any).count ??
+                points?.length ??
+                ((object as Record<string, unknown>).count as number) ??
                 0;
 
               return {
@@ -89,11 +89,15 @@ export function HexbinChart({
               };
             }}
           >
-            <Map
+            <MapView
               reuseMaps
               mapStyle={MAP_STYLE}
-              preventStyleDiffing
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+              }}
             />
           </DeckGL>
         </div>

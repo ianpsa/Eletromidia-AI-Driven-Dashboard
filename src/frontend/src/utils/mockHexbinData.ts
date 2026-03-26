@@ -1,4 +1,4 @@
-import { HexbinPoint } from "./geo";
+import type { HexbinPoint } from "../types/geo";
 
 function randomBetween(min: number, max: number) {
   return min + Math.random() * (max - min);
@@ -23,10 +23,28 @@ type Cluster = {
 };
 
 const CLUSTERS: Cluster[] = [
-  { lng: -46.6333, lat: -23.5505, spreadLng: 0.035, spreadLat: 0.028, weight: 0.38 },
-  { lng: -46.69, lat: -23.58, spreadLng: 0.022, spreadLat: 0.018, weight: 0.22 },
-  { lng: -46.57, lat: -23.52, spreadLng: 0.018, spreadLat: 0.016, weight: 0.18 },
-  { lng: -46.61, lat: -23.61, spreadLng: 0.020, spreadLat: 0.020, weight: 0.22 },
+  {
+    lng: -46.6333,
+    lat: -23.5505,
+    spreadLng: 0.035,
+    spreadLat: 0.028,
+    weight: 0.38,
+  },
+  {
+    lng: -46.69,
+    lat: -23.58,
+    spreadLng: 0.022,
+    spreadLat: 0.018,
+    weight: 0.22,
+  },
+  {
+    lng: -46.57,
+    lat: -23.52,
+    spreadLng: 0.018,
+    spreadLat: 0.016,
+    weight: 0.18,
+  },
+  { lng: -46.61, lat: -23.61, spreadLng: 0.02, spreadLat: 0.02, weight: 0.22 },
 ];
 
 function pickClusterIndex() {

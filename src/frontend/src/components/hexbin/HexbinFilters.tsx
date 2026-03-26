@@ -75,8 +75,12 @@ export function HexbinFilters() {
       </label>
 
       <div className="hexbin-filters__actions">
-        <button className="hexbin-filters__primary">Aplicar filtros</button>
-        <button className="hexbin-filters__secondary">Exportar gráficos</button>
+        <button type="button" className="hexbin-filters__primary">
+          Aplicar filtros
+        </button>
+        <button type="button" className="hexbin-filters__secondary">
+          Exportar gráficos
+        </button>
       </div>
     </aside>
   );
