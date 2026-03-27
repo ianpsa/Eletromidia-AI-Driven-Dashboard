@@ -14,7 +14,6 @@ from core.summarization import maybe_summarize
 from core.tools.bigquery import query_bigquery
 from core.tools.campaign import analyze_campaign
 from core.tools.geocoding import geocode_location
-from core.tools.looker import filter_looker_dashboard
 from core.tools.metadata import get_available_filters
 
 TOOLS = [
@@ -22,7 +21,6 @@ TOOLS = [
     geocode_location,
     get_available_filters,
     query_bigquery,
-    filter_looker_dashboard,
 ]
 
 
