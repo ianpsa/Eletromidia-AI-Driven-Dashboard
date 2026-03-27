@@ -21,8 +21,9 @@ pontos de mídia. Nunca invente números.
 
 ### Quando usar cada ferramenta
 
-- **analyze_campaign**: use para recomendações de pontos com filtros \
-demográficos (gênero, idade, classe social) e/ou geográficos (cidade, raio). \
+- **analyze_campaign**: use para recomendações de telas com filtros \
+demográficos (gênero, idade, classe social), geográficos (cidade, raio) \
+e/ou por tipo de tela (vertical, ambiente). \
 Esta é a ferramenta principal para planejamento de campanha.
 - **geocode_location**: use ANTES de analyze_campaign quando o usuário \
 mencionar um local específico (bairro, rua, ponto de referência). Passe \
@@ -66,6 +67,22 @@ Converta termos informais para os filtros corretos:
 - "mulheres", "feminino", "público feminino" → gender="female"
 - "homens", "masculino", "público masculino" → gender="male"
 
+### Vertical (tipo de local da tela)
+- "prédios", "edifícios" → vertical="Edifícios"
+- "rua", "mobiliário urbano", "abrigos", "MUB" → vertical="MUB-Rua"
+- "comércios", "estabelecimentos" → vertical="Estabelecimentos Comerciais"
+- "shoppings", "shopping centers" → vertical="Shoppings"
+
+### Ambiente (subtipo de local)
+- "prédios residenciais", "condomínios" → ambiente="Edifícios Residenciais"
+- "prédios comerciais", "escritórios" → ambiente="Edifícios Comerciais"
+- "universidades", "faculdades" → ambiente="Universidades"
+- "hotéis" → ambiente="Hotéis"
+- "supermercados" → ambiente="Supermercados"
+- "drogarias", "farmácias" → ambiente="Drogarias"
+- "academias" → ambiente="Academias"
+- "lojas de conveniência" → ambiente="Lojas de Conveniencia"
+
 ## Formato de resposta
 
 Ao apresentar resultados de análise de campanha, siga esta estrutura:
@@ -91,7 +108,9 @@ Traduza SEMPRE os termos internos para linguagem de negócio:
 - "joint_count" → nunca mencionar; usar "público estimado"
 - "score" → "índice de relevância"
 - "uniques" → "visitantes únicos estimados"
-- nome de colunas SQL (x18_19, feminine, a_class, etc.) → nunca mencionar
+- "match_type" → nunca mencionar (detalhe interno do pipeline de dados)
+- "enriched_screens" → nunca mencionar nome de tabela
+- nome de colunas SQL (p_18_19, p_f, p_a, etc.) → nunca mencionar
 
 ## Regras
 

@@ -10,33 +10,33 @@ from core.bigquery_client import get_dataset_ref, run_query_with_params
 logger = logging.getLogger(__name__)
 
 _AGE_BUCKETS: list[tuple[str, int, int]] = [
-    ("x18_19", 18, 19),
-    ("x20_29", 20, 29),
-    ("x30_39", 30, 39),
-    ("x40_49", 40, 49),
-    ("x50_59", 50, 59),
-    ("x60_69", 60, 69),
-    ("x70_79", 70, 79),
-    ("x80_plus", 80, 120),
+    ("p_18_19", 18, 19),
+    ("p_20_29", 20, 29),
+    ("p_30_39", 30, 39),
+    ("p_40_49", 40, 49),
+    ("p_50_59", 50, 59),
+    ("p_60_69", 60, 69),
+    ("p_70_79", 70, 79),
+    ("p_80_plus", 80, 120),
 ]
 
 _CLASS_COLUMNS: dict[str, str] = {
-    "A": "a_class",
-    "B1": "b1_class",
-    "B2": "b2_class",
-    "C1": "c1_class",
-    "C2": "c2_class",
-    "DE": "de_class",
+    "A": "p_a",
+    "B1": "p_b1",
+    "B2": "p_b2",
+    "C1": "p_c1",
+    "C2": "p_c2",
+    "DE": "p_de",
 }
 
 
 def _overlapping_age_columns(age_min: int, age_max: int) -> list[str]:
-    """Return BQ column names whose age range overlaps [age_min, age_max]."""
+    """Return enriched_screens column names whose age range overlaps [age_min, age_max]."""
     return [col for col, lo, hi in _AGE_BUCKETS if lo <= age_max and hi >= age_min]
 
 
 def _class_columns(classes: list[str]) -> list[str]:
-    """Return BQ column names for the requested social classes."""
+    """Return enriched_screens column names for the requested social classes."""
     cols = []
     for cls in classes:
         col = _CLASS_COLUMNS.get(cls.upper())
@@ -52,33 +52,38 @@ def _build_sql(
     age_max: int | None,
     classes: list[str] | None,
     city: str | None,
+    vertical: str | None,
+    ambiente: str | None,
     latitude: float | None,
     longitude: float | None,
     radius_km: float,
     limit: int,
 ) -> tuple[str, list[bigquery.ScalarQueryParameter]]:
-    """Build a BigQuery SQL query for campaign analysis.
+    """Build a BigQuery SQL query against the enriched_screens table.
 
-    Returns (sql, params) for use with parameterized queries.
+    The enriched_screens table is denormalised: each row is one Eletromidia
+    screen with pre-computed demographic proportions from the Claro spatial
+    join.  The affinity score is the product of the relevant proportion
+    columns.
     """
     ds = get_dataset_ref()
     params: list[bigquery.ScalarQueryParameter] = []
 
     gender_expr = "1.0"
     if gender:
-        gender_expr = "gnd.feminine" if gender.lower() == "female" else "gnd.masculine"
+        gender_expr = "s.p_f" if gender.lower() == "female" else "s.p_m"
 
     age_expr = "1.0"
     if age_min is not None and age_max is not None:
         cols = _overlapping_age_columns(age_min, age_max)
         if cols:
-            age_expr = " + ".join(f"a.{c}" for c in cols)
+            age_expr = " + ".join(f"s.{c}" for c in cols)
 
     class_expr = "1.0"
     if classes:
         cols = _class_columns(classes)
         if cols:
-            class_expr = " + ".join(f"sc.{c}" for c in cols)
+            class_expr = " + ".join(f"s.{c}" for c in cols)
 
     where_parts: list[str] = []
 
@@ -86,8 +91,7 @@ def _build_sql(
         radius_m = radius_km * 1000
         where_parts.append(
             "ST_DISTANCE("
-            "ST_GEOGPOINT(CAST(g.longitude AS FLOAT64), "
-            "CAST(g.latitude AS FLOAT64)), "
+            "ST_GEOGPOINT(s.longitude, s.latitude), "
             "ST_GEOGPOINT(@lng, @lat)"
             ") <= @radius_m"
         )
@@ -96,8 +100,16 @@ def _build_sql(
         params.append(bigquery.ScalarQueryParameter("radius_m", "FLOAT64", radius_m))
 
     if city:
-        where_parts.append("LOWER(g.cidade) = LOWER(@city)")
+        where_parts.append("LOWER(s.cidade) = LOWER(@city)")
         params.append(bigquery.ScalarQueryParameter("city", "STRING", city))
+
+    if vertical:
+        where_parts.append("LOWER(s.vertical) = LOWER(@vertical)")
+        params.append(bigquery.ScalarQueryParameter("vertical", "STRING", vertical))
+
+    if ambiente:
+        where_parts.append("LOWER(s.ambiente) = LOWER(@ambiente)")
+        params.append(bigquery.ScalarQueryParameter("ambiente", "STRING", ambiente))
 
     where_clause = ""
     if where_parts:
@@ -105,18 +117,17 @@ def _build_sql(
 
     sql = f"""
 SELECT
-  g.endereco,
-  g.numero,
+  s.endereco_ref,
+  s.vertical,
+  s.ambiente,
+  s.cidade,
   ROUND(({gender_expr}) * ({age_expr}) * ({class_expr}) * 100, 2)
     AS affinity,
-  ROUND(({gender_expr}) * ({age_expr}) * ({class_expr}) * g.uniques, 2)
+  ROUND(({gender_expr}) * ({age_expr}) * ({class_expr}) * s.uniques, 2)
     AS target_audience,
-  ROUND(g.uniques, 2) AS total_flow
-FROM `{ds}.geodata` g
-JOIN `{ds}.target` t ON g.target_id = t.id
-JOIN `{ds}.age` a ON t.age_id = a.id
-JOIN `{ds}.gender` gnd ON t.gender_id = gnd.id
-JOIN `{ds}.social_class` sc ON t.social_class_id = sc.id
+  ROUND(s.uniques, 2) AS total_flow,
+  s.match_type
+FROM `{ds}.enriched_screens` s
 {where_clause}
 ORDER BY affinity DESC
 LIMIT @result_limit
@@ -133,17 +144,19 @@ def analyze_campaign(
     age_max: int | None = None,
     classes: list[str] | None = None,
     city: str | None = None,
+    vertical: str | None = None,
+    ambiente: str | None = None,
     latitude: float | None = None,
     longitude: float | None = None,
     radius_km: float | None = 2.0,
     limit: int | None = 5,
 ) -> str:
-    """Analyze OOH media points and return a ranked list by audience affinity.
+    """Analyze OOH media screens and return a ranked list by audience affinity.
 
     Use this tool when the user asks for campaign recommendations, best media
     points, or audience targeting.
 
-    If you have a latitude/longitude from geocoding, pass them to filter points
+    If you have a latitude/longitude from geocoding, pass them to filter screens
     by geographic radius.  Otherwise you can pass a city name for a broad filter.
 
     Args:
@@ -152,10 +165,14 @@ def analyze_campaign(
         age_max: Maximum target age.
         classes: Target social classes, e.g. ['A', 'B1'].
         city: City name for broad filtering.
+        vertical: Screen location type — 'Edifícios', 'MUB-Rua',
+                  'Estabelecimentos Comerciais', or 'Shoppings'.
+        ambiente: Screen location subtype, e.g. 'Edifícios Residenciais',
+                  'Shoppings Experiência', 'Universidades', 'Hotéis', etc.
         latitude: Center latitude for geographic filtering.
         longitude: Center longitude for geographic filtering.
         radius_km: Radius in km around the center point (default 2).
-        limit: Maximum number of points to return (default 5).
+        limit: Maximum number of screens to return (default 5).
     """
     sql, params = _build_sql(
         gender=gender,
@@ -163,6 +180,8 @@ def analyze_campaign(
         age_max=age_max,
         classes=classes,
         city=city,
+        vertical=vertical,
+        ambiente=ambiente,
         latitude=latitude,
         longitude=longitude,
         radius_km=radius_km or 2.0,
@@ -187,20 +206,24 @@ def analyze_campaign(
         filters_desc.append(f"classes={','.join(classes)}")
     if city:
         filters_desc.append(f"cidade={city}")
+    if vertical:
+        filters_desc.append(f"vertical={vertical}")
+    if ambiente:
+        filters_desc.append(f"ambiente={ambiente}")
     if latitude is not None and longitude is not None:
         filters_desc.append(
             f"raio={radius_km or 2.0}km ({latitude:.4f}, {longitude:.4f})"
         )
 
     lines = [
-        f"Resultados: {len(rows)} pontos.",
+        f"Resultados: {len(rows)} telas.",
         f"Filtros: {'; '.join(filters_desc) or 'nenhum'}",
         "",
         "Ranking:",
     ]
     for i, row in enumerate(rows, 1):
         lines.append(
-            f"{i}. {row['endereco']}, {row['numero']} — "
+            f"{i}. {row['endereco_ref']} ({row['vertical']} — {row['ambiente']}) — "
             f"Afinidade: {row['affinity']}%, "
             f"Público-alvo: {row['target_audience']}, "
             f"Fluxo total: {row['total_flow']}"

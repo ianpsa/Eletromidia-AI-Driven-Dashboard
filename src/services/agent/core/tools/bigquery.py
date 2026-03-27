@@ -40,6 +40,12 @@ def query_bigquery(sql_query: str) -> str:
     or questions that cannot be answered by the pre-built campaign tool.
 
     Tables (fully qualify with the dataset automatically):
+      - enriched_screens: cod_predio, latitude (FLOAT), longitude (FLOAT),
+                          vertical, ambiente, cidade, endereco_ref,
+                          uniques (FLOAT), match_type,
+                          p_18_19..p_80_plus, p_f, p_m,
+                          p_a, p_b1, p_b2, p_c1, p_c2, p_de
+                          (denormalised Eletromidia screens with Claro demographics)
       - geodata: id, impression_hour, location_id, uniques,
                  latitude (STRING), longitude (STRING),
                  uf_estado, cidade, endereco, numero, target_id
@@ -50,8 +56,11 @@ def query_bigquery(sql_query: str) -> str:
       - social_class: id, a_class, b1_class, b2_class,
                       c1_class, c2_class, de_class  (FLOAT percentages)
 
-    Geographic: use ST_DISTANCE(ST_GEOGPOINT(CAST(longitude AS FLOAT64),
-    CAST(latitude AS FLOAT64)), ST_GEOGPOINT(lon, lat)) for distance.
+    Prefer enriched_screens for screen-level analysis with demographics.
+    Use geodata+target+age+gender+social_class for raw Claro data analysis.
+
+    Geographic: use ST_DISTANCE(ST_GEOGPOINT(longitude, latitude),
+    ST_GEOGPOINT(lon, lat)) for enriched_screens (FLOAT columns).
 
     Args:
         sql_query: A BigQuery SQL query (SELECT only). Table names without
@@ -65,7 +74,7 @@ def query_bigquery(sql_query: str) -> str:
     if error:
         return error
 
-    tables = ["geodata", "target", "age", "gender", "social_class"]
+    tables = ["enriched_screens", "geodata", "target", "age", "gender", "social_class"]
     for table in tables:
         sql = re.sub(
             rf"\b{table}\b(?!\.)(?!`)",
