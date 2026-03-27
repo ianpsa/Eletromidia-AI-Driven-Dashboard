@@ -17,7 +17,9 @@ class GroqProvider:
 
         return ChatGroq(
             api_key=os.environ["GROQ_API_KEY"],
-            model_name=os.environ.get("LLM_MODEL", "llama3-groq-70b-8192-tool-use-preview"),
+            model_name=os.environ.get(
+                "LLM_MODEL", "llama3-groq-70b-8192-tool-use-preview"
+            ),
             temperature=float(os.environ.get("LLM_TEMPERATURE", "0.3")),
             streaming=False,
         )

@@ -68,8 +68,14 @@ def _build_sql(
     # Affinity = (target_count / total_uniques) * 100
     # We build each dimension as a SUM expression over the count columns.
 
-    gender_sum = "SUM(s.feminine_count)" if gender and gender.lower() == "female" else (
-        "SUM(s.masculine_count)" if gender and gender.lower() == "male" else "SUM(s.uniques)"
+    gender_sum = (
+        "SUM(s.feminine_count)"
+        if gender and gender.lower() == "female"
+        else (
+            "SUM(s.masculine_count)"
+            if gender and gender.lower() == "male"
+            else "SUM(s.uniques)"
+        )
     )
 
     if age_min is not None and age_max is not None:
@@ -80,7 +86,9 @@ def _build_sql(
 
     if classes:
         cols = _class_columns(classes)
-        class_sum = " + ".join(f"SUM(s.{c})" for c in cols) if cols else "SUM(s.uniques)"
+        class_sum = (
+            " + ".join(f"SUM(s.{c})" for c in cols) if cols else "SUM(s.uniques)"
+        )
     else:
         class_sum = "SUM(s.uniques)"
 

@@ -10,6 +10,7 @@ def _decode_unicode_escapes(s: str) -> str:
     """Decode literal \\uXXXX sequences that LLMs sometimes emit."""
     return re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), s)
 
+
 from langchain_core.tools import tool
 
 _DEFAULT_REPORT_ID = "1776f716-b7de-4268-99ef-8107f950868d"
@@ -48,9 +49,7 @@ def _build_url(
     """Build a Looker Studio embed URL with Linking API filter params."""
     report_id, page_id, ds_alias = _get_config()
 
-    base = (
-        f"https://lookerstudio.google.com/embed/reporting/{report_id}/page/{page_id}"
-    )
+    base = f"https://lookerstudio.google.com/embed/reporting/{report_id}/page/{page_id}"
 
     # Filter keys default to the field-name format "ds_alias.field".
     # If your report uses filter control IDs instead (df52, df53 …), override

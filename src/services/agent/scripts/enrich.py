@@ -24,16 +24,29 @@ import numpy as np
 import pandas as pd
 
 PROP_COLS: list[str] = [
-    "p_18_19", "p_20_29", "p_30_39", "p_40_49",
-    "p_50_59", "p_60_69", "p_70_79", "p_80_plus",
-    "p_f", "p_m",
-    "p_a", "p_b1", "p_b2", "p_c1", "p_c2", "p_de",
+    "p_18_19",
+    "p_20_29",
+    "p_30_39",
+    "p_40_49",
+    "p_50_59",
+    "p_60_69",
+    "p_70_79",
+    "p_80_plus",
+    "p_f",
+    "p_m",
+    "p_a",
+    "p_b1",
+    "p_b2",
+    "p_c1",
+    "p_c2",
+    "p_de",
 ]
 
 
 # ---------------------------------------------------------------------------
 # Haversine
 # ---------------------------------------------------------------------------
+
 
 def haversine_matrix(
     lat1: np.ndarray,
@@ -61,6 +74,7 @@ def haversine_matrix(
 # ---------------------------------------------------------------------------
 # Claro data loading
 # ---------------------------------------------------------------------------
+
 
 def parse_target(s: str) -> dict:
     """Parse the stringified ``target`` dict into flat proportion columns."""
@@ -101,8 +115,14 @@ def load_claro(path: str | Path) -> pd.DataFrame:
 
     grouped = df.groupby("location_id")
     result = grouped.agg(
-        {"uniques": "sum", "latitude": "first", "longitude": "first",
-         "cidade": "first", "endereco": "first", "numero": "first"},
+        {
+            "uniques": "sum",
+            "latitude": "first",
+            "longitude": "first",
+            "cidade": "first",
+            "endereco": "first",
+            "numero": "first",
+        },
     ).reset_index()
 
     props_wa = []
@@ -118,7 +138,8 @@ def load_claro(path: str | Path) -> pd.DataFrame:
         props_wa.append(row)
 
     result = pd.concat(
-        [result.reset_index(drop=True), pd.DataFrame(props_wa)], axis=1,
+        [result.reset_index(drop=True), pd.DataFrame(props_wa)],
+        axis=1,
     )
     return result
 
@@ -126,6 +147,7 @@ def load_claro(path: str | Path) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Global average fallback
 # ---------------------------------------------------------------------------
+
 
 def _global_averages(claro: pd.DataFrame, prop_cols: list[str]) -> dict:
     """Compute uniques-weighted global average of all Claro proportions."""
@@ -146,6 +168,7 @@ def _global_averages(claro: pd.DataFrame, prop_cols: list[str]) -> dict:
 # ---------------------------------------------------------------------------
 # Row builder
 # ---------------------------------------------------------------------------
+
 
 def _build_row(
     eletro_row: pd.Series,
@@ -201,6 +224,7 @@ def _build_row(
 # Main enrichment
 # ---------------------------------------------------------------------------
 
+
 def enrich(
     claro: pd.DataFrame,
     eletro: pd.DataFrame,
@@ -210,8 +234,10 @@ def enrich(
 ) -> pd.DataFrame:
     """Perform three-tier spatial join and return enriched DataFrame."""
     dist = haversine_matrix(
-        eletro["latitude"].values, eletro["longitude"].values,
-        claro["latitude"].values, claro["longitude"].values,
+        eletro["latitude"].values,
+        eletro["longitude"].values,
+        claro["latitude"].values,
+        claro["longitude"].values,
     )
 
     claro_uniques = claro["uniques"].values
@@ -234,18 +260,36 @@ def enrich(
 
         primary_mask = dists_i <= radius_m
         if primary_mask.any():
-            row = _build_row(eletro_row, claro_uniques, claro_props,
-                             claro_cidades, claro_enderecos, claro_numeros,
-                             prop_cols, primary_mask, dists_i, is_fallback=False)
+            row = _build_row(
+                eletro_row,
+                claro_uniques,
+                claro_props,
+                claro_cidades,
+                claro_enderecos,
+                claro_numeros,
+                prop_cols,
+                primary_mask,
+                dists_i,
+                is_fallback=False,
+            )
             if row:
                 rows.append(row)
                 continue
 
         fallback_mask = dists_i <= fallback_radius_m
         if fallback_mask.any():
-            row = _build_row(eletro_row, claro_uniques, claro_props,
-                             claro_cidades, claro_enderecos, claro_numeros,
-                             prop_cols, fallback_mask, dists_i, is_fallback=True)
+            row = _build_row(
+                eletro_row,
+                claro_uniques,
+                claro_props,
+                claro_cidades,
+                claro_enderecos,
+                claro_numeros,
+                prop_cols,
+                fallback_mask,
+                dists_i,
+                is_fallback=True,
+            )
             if row:
                 rows.append(row)
                 continue
@@ -272,6 +316,7 @@ def enrich(
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Enrich Eletromidia screens with Claro audience data",
@@ -280,11 +325,15 @@ def main() -> None:
     parser.add_argument("--eletro", required=True, help="Path to Eletromidia CSV")
     parser.add_argument("--output", required=True, help="Output path for enriched CSV")
     parser.add_argument(
-        "--radius", type=float, default=500,
+        "--radius",
+        type=float,
+        default=500,
         help="Primary match radius in metres (default 500)",
     )
     parser.add_argument(
-        "--fallback-radius", type=float, default=5000,
+        "--fallback-radius",
+        type=float,
+        default=5000,
         help="Fallback radius in metres (default 5000)",
     )
     args = parser.parse_args()
