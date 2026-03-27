@@ -95,6 +95,7 @@ export function HexbinChart({
     );
   }, [maxDistanceKm]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset when data or radius changes
   useEffect(() => {
     setDensityDomain([0, 0]);
   }, [data, hexbinRadiusMeters]);

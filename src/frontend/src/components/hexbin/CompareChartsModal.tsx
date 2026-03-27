@@ -60,7 +60,10 @@ export function CompareChartsModal({
   }
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop dismiss is mouse-only
+    // biome-ignore lint/a11y/noStaticElementInteractions: backdrop overlay
     <div className="compare-modal__backdrop" onClick={onClose}>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: stop propagation for backdrop */}
       <div
         className="compare-modal"
         onClick={(e) => e.stopPropagation()}
