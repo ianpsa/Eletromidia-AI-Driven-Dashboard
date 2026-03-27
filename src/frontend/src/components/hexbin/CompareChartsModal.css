@@ -236,6 +236,12 @@
   color: #fff;
 }
 
+.compare-modal__primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+}
+
 @media (max-width: 720px) {
   .compare-modal {
     max-height: 92vh;
@@ -256,6 +262,8 @@
 
 .hexbin-compare-bar {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 14px;
 }
@@ -268,4 +276,104 @@
   font-weight: 700;
   padding: 12px 18px;
   cursor: pointer;
+}
+
+.hexbin-compare-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hexbin-compare-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 81, 0, 0.22);
+  background: rgba(251, 81, 0, 0.08);
+  color: var(--orange-strong);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.hexbin-compare-tag__label {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.hexbin-compare-tag__label:hover {
+  text-decoration: underline;
+}
+
+.hexbin-compare-tag--mode {
+  border-color: transparent;
+  background: linear-gradient(
+    135deg,
+    rgba(251, 81, 0, 0.18),
+    rgba(247, 148, 31, 0.22)
+  );
+  color: #8a3300;
+}
+
+.hexbin-compare-tag__remove {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.75;
+}
+
+.hexbin-compare-tag__remove:hover {
+  opacity: 1;
+}
+
+.compare-tag-editor-modal {
+  max-width: 600px;
+}
+
+.compare-tag-editor__mode-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hexbin-compare-charts {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.hexbin-compare-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 14px;
+  width: 100%;
+}
+
+.hexbin-compare-chart {
+  flex: 1 1 420px;
+  min-width: min(360px, 100%);
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hexbin-compare-chart .hexbin-card {
+  height: auto;
+}
+
+.hexbin-compare-chart .hexbin-card__stage {
+  flex: none;
 }

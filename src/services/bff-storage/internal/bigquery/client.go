@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	bq "cloud.google.com/go/bigquery"
@@ -132,37 +133,93 @@ func buildFilters(filters models.GeoFilters) ([]string, []bq.QueryParameter) {
 	var conditions []string
 	var params []bq.QueryParameter
 
-	if filters.UfEstado != "" {
+	if len(filters.UfEstado) == 1 {
 		conditions = append(conditions, "g.uf_estado = @uf_estado")
+		params = append(params, bq.QueryParameter{Name: "uf_estado", Value: filters.UfEstado[0]})
+	} else if len(filters.UfEstado) > 1 {
+		conditions = append(conditions, "g.uf_estado IN UNNEST(@uf_estado)")
 		params = append(params, bq.QueryParameter{Name: "uf_estado", Value: filters.UfEstado})
 	}
-	if filters.Cidade != "" {
+
+	if len(filters.Cidade) == 1 {
 		conditions = append(conditions, "g.cidade = @cidade")
+		params = append(params, bq.QueryParameter{Name: "cidade", Value: filters.Cidade[0]})
+	} else if len(filters.Cidade) > 1 {
+		conditions = append(conditions, "g.cidade IN UNNEST(@cidade)")
 		params = append(params, bq.QueryParameter{Name: "cidade", Value: filters.Cidade})
 	}
-	if filters.Endereco != "" {
+
+	if len(filters.Endereco) == 1 {
 		conditions = append(conditions, "g.endereco = @endereco")
+		params = append(params, bq.QueryParameter{Name: "endereco", Value: filters.Endereco[0]})
+	} else if len(filters.Endereco) > 1 {
+		conditions = append(conditions, "g.endereco IN UNNEST(@endereco)")
 		params = append(params, bq.QueryParameter{Name: "endereco", Value: filters.Endereco})
 	}
 
-	switch filters.Genero {
-	case "feminino":
-		conditions = append(conditions, fmt.Sprintf("gen.feminine > %f", genderThreshold))
-	case "masculino":
-		conditions = append(conditions, fmt.Sprintf("gen.masculine > %f", genderThreshold))
+	if len(filters.Horario) > 0 {
+		hours := parseHours(filters.Horario)
+		if len(hours) == 1 {
+			conditions = append(conditions, "SAFE_CAST(g.impression_hour AS INT64) = @horario")
+			params = append(params, bq.QueryParameter{Name: "horario", Value: hours[0]})
+		} else if len(hours) > 1 {
+			conditions = append(conditions, "SAFE_CAST(g.impression_hour AS INT64) IN UNNEST(@horario)")
+			params = append(params, bq.QueryParameter{Name: "horario", Value: hours})
+		}
 	}
 
-	if col := ageColumn(filters.FaixaEtaria); col != "" {
-		conditions = append(conditions, fmt.Sprintf("%s > %f", col, ageThreshold))
+	if len(filters.Genero) > 0 {
+		var genderConds []string
+		for _, g := range filters.Genero {
+			switch g {
+			case "feminino":
+				genderConds = append(genderConds, fmt.Sprintf("gen.feminine > %f", genderThreshold))
+			case "masculino":
+				genderConds = append(genderConds, fmt.Sprintf("gen.masculine > %f", genderThreshold))
+			}
+		}
+		if len(genderConds) > 0 {
+			conditions = append(conditions, "("+strings.Join(genderConds, " OR ")+")")
+		}
 	}
 
-	switch filters.ClasseSocial {
-	case "ab":
-		conditions = append(conditions, fmt.Sprintf("(sc.a_class + sc.b1_class + sc.b2_class) > %f", socialClassThreshold))
-	case "c":
-		conditions = append(conditions, fmt.Sprintf("(sc.c1_class + sc.c2_class) > %f", socialClassThreshold))
-	case "de":
-		conditions = append(conditions, fmt.Sprintf("sc.de_class > %f", socialClassThreshold))
+	if len(filters.FaixaEtaria) > 0 {
+		var ageConds []string
+		for _, faixa := range filters.FaixaEtaria {
+			if col := ageColumn(faixa); col != "" {
+				ageConds = append(ageConds, fmt.Sprintf("%s > %f", col, ageThreshold))
+			}
+		}
+		if len(ageConds) > 0 {
+			conditions = append(conditions, "("+strings.Join(ageConds, " OR ")+")")
+		}
+	}
+
+	if len(filters.ClasseSocial) > 0 {
+		var classConds []string
+		for _, cs := range filters.ClasseSocial {
+			switch cs {
+			case "a":
+				classConds = append(classConds, fmt.Sprintf("sc.a_class > %f", socialClassThreshold))
+			case "b1":
+				classConds = append(classConds, fmt.Sprintf("sc.b1_class > %f", socialClassThreshold))
+			case "b2":
+				classConds = append(classConds, fmt.Sprintf("sc.b2_class > %f", socialClassThreshold))
+			case "c1":
+				classConds = append(classConds, fmt.Sprintf("sc.c1_class > %f", socialClassThreshold))
+			case "c2":
+				classConds = append(classConds, fmt.Sprintf("sc.c2_class > %f", socialClassThreshold))
+			case "de":
+				classConds = append(classConds, fmt.Sprintf("sc.de_class > %f", socialClassThreshold))
+			case "ab":
+				classConds = append(classConds, fmt.Sprintf("(sc.a_class + sc.b1_class + sc.b2_class) > %f", socialClassThreshold))
+			case "c":
+				classConds = append(classConds, fmt.Sprintf("(sc.c1_class + sc.c2_class) > %f", socialClassThreshold))
+			}
+		}
+		if len(classConds) > 0 {
+			conditions = append(conditions, "("+strings.Join(classConds, " OR ")+")")
+		}
 	}
 
 	return conditions, params
@@ -346,14 +403,20 @@ func groupByCase(groupBy string) (string, error) {
 			WHEN a.x20_29 >= GREATEST(a.x18_19, a.x30_39, a.x40_49, a.x50_59, a.x60_69, a.x70_79, a.x80_plus) THEN '20-29'
 			WHEN a.x30_39 >= GREATEST(a.x18_19, a.x20_29, a.x40_49, a.x50_59, a.x60_69, a.x70_79, a.x80_plus) THEN '30-39'
 			WHEN a.x40_49 >= GREATEST(a.x18_19, a.x20_29, a.x30_39, a.x50_59, a.x60_69, a.x70_79, a.x80_plus) THEN '40-49'
-			ELSE '50+'
+			WHEN a.x50_59 >= GREATEST(a.x18_19, a.x20_29, a.x30_39, a.x40_49, a.x60_69, a.x70_79, a.x80_plus) THEN '50-59'
+			WHEN a.x60_69 >= GREATEST(a.x18_19, a.x20_29, a.x30_39, a.x40_49, a.x50_59, a.x70_79, a.x80_plus) THEN '60-69'
+			WHEN a.x70_79 >= GREATEST(a.x18_19, a.x20_29, a.x30_39, a.x40_49, a.x50_59, a.x60_69, a.x80_plus) THEN '70-79'
+			ELSE '80+'
 		END`, nil
 	case "classe_social":
-		return fmt.Sprintf(`CASE
-			WHEN (sc.a_class + sc.b1_class + sc.b2_class) > %f THEN 'ab'
-			WHEN (sc.c1_class + sc.c2_class) > %f THEN 'c'
+		return `CASE
+			WHEN sc.a_class >= GREATEST(sc.b1_class, sc.b2_class, sc.c1_class, sc.c2_class, sc.de_class) THEN 'a'
+			WHEN sc.b1_class >= GREATEST(sc.a_class, sc.b2_class, sc.c1_class, sc.c2_class, sc.de_class) THEN 'b1'
+			WHEN sc.b2_class >= GREATEST(sc.a_class, sc.b1_class, sc.c1_class, sc.c2_class, sc.de_class) THEN 'b2'
+			WHEN sc.c1_class >= GREATEST(sc.a_class, sc.b1_class, sc.b2_class, sc.c2_class, sc.de_class) THEN 'c1'
+			WHEN sc.c2_class >= GREATEST(sc.a_class, sc.b1_class, sc.b2_class, sc.c1_class, sc.de_class) THEN 'c2'
 			ELSE 'de'
-		END`, socialClassThreshold, socialClassThreshold), nil
+		END`, nil
 	default:
 		return "", fmt.Errorf("invalid group_by value: %s", groupBy)
 	}
@@ -370,8 +433,11 @@ func (c *Client) QueryFilterOptions(ctx context.Context, filters models.GeoFilte
 
 	var cidadeCondition string
 	var cidadeParams []bq.QueryParameter
-	if filters.UfEstado != "" {
+	if len(filters.UfEstado) == 1 {
 		cidadeCondition = "uf_estado = @uf_estado"
+		cidadeParams = []bq.QueryParameter{{Name: "uf_estado", Value: filters.UfEstado[0]}}
+	} else if len(filters.UfEstado) > 1 {
+		cidadeCondition = "uf_estado IN UNNEST(@uf_estado)"
 		cidadeParams = []bq.QueryParameter{{Name: "uf_estado", Value: filters.UfEstado}}
 	}
 	cidades, err := c.queryDistinct(ctx, "cidade", cidadeCondition, "", cidadeParams)
@@ -382,8 +448,11 @@ func (c *Client) QueryFilterOptions(ctx context.Context, filters models.GeoFilte
 
 	var enderecoCondition string
 	var enderecoParams []bq.QueryParameter
-	if filters.Cidade != "" {
+	if len(filters.Cidade) == 1 {
 		enderecoCondition = "cidade = @cidade"
+		enderecoParams = []bq.QueryParameter{{Name: "cidade", Value: filters.Cidade[0]}}
+	} else if len(filters.Cidade) > 1 {
+		enderecoCondition = "cidade IN UNNEST(@cidade)"
 		enderecoParams = []bq.QueryParameter{{Name: "cidade", Value: filters.Cidade}}
 	}
 	enderecos, err := c.queryDistinct(ctx, "endereco", enderecoCondition, "", enderecoParams)
@@ -391,6 +460,37 @@ func (c *Client) QueryFilterOptions(ctx context.Context, filters models.GeoFilte
 		return nil, fmt.Errorf("querying enderecos: %w", err)
 	}
 	result.Enderecos = enderecos
+
+	result.Horarios = []string{
+		"00", "01", "02", "03", "04", "05",
+		"06", "07", "08", "09", "10", "11",
+		"12", "13", "14", "15", "16", "17",
+		"18", "19", "20", "21", "22", "23",
+	}
+
+	ageCols, err := c.queryTableColumns(ctx, "age")
+	if err != nil {
+		return nil, fmt.Errorf("querying age columns: %w", err)
+	}
+	for _, col := range ageCols {
+		result.FaixasEtarias = append(result.FaixasEtarias, ageColumnToLabel(col))
+	}
+
+	genderCols, err := c.queryTableColumns(ctx, "gender")
+	if err != nil {
+		return nil, fmt.Errorf("querying gender columns: %w", err)
+	}
+	for _, col := range genderCols {
+		result.Generos = append(result.Generos, genderColumnToLabel(col))
+	}
+
+	socialClassCols, err := c.queryTableColumns(ctx, "social_class")
+	if err != nil {
+		return nil, fmt.Errorf("querying social_class columns: %w", err)
+	}
+	for _, col := range socialClassCols {
+		result.ClassesSociais = append(result.ClassesSociais, socialClassColumnToLabel(col))
+	}
 
 	return result, nil
 }
@@ -432,6 +532,16 @@ func (c *Client) queryDistinct(ctx context.Context, column, condition, _ string,
 	return values, nil
 }
 
+func parseHours(raw []string) []int64 {
+	var hours []int64
+	for _, h := range raw {
+		if v, err := strconv.ParseInt(h, 10, 64); err == nil && v >= 0 && v <= 23 {
+			hours = append(hours, v)
+		}
+	}
+	return hours
+}
+
 func ageColumn(faixa string) string {
 	switch faixa {
 	case "18-19":
@@ -442,9 +552,71 @@ func ageColumn(faixa string) string {
 		return "a.x30_39"
 	case "40-49":
 		return "a.x40_49"
+	case "50-59":
+		return "a.x50_59"
+	case "60-69":
+		return "a.x60_69"
+	case "70-79":
+		return "a.x70_79"
+	case "80+":
+		return "a.x80_plus"
 	case "50+":
 		return "(a.x50_59 + a.x60_69 + a.x70_79 + a.x80_plus)"
 	default:
 		return ""
 	}
+}
+
+func (c *Client) queryTableColumns(ctx context.Context, tableName string) ([]string, error) {
+	sql := fmt.Sprintf(
+		"SELECT column_name FROM `%s.%s.INFORMATION_SCHEMA.COLUMNS` WHERE table_name = @table AND column_name != 'id' ORDER BY ordinal_position",
+		c.ProjectID, c.DatasetID,
+	)
+
+	q := c.client.Query(sql)
+	q.Parameters = []bq.QueryParameter{{Name: "table", Value: tableName}}
+
+	it, err := q.Read(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var columns []string
+	for {
+		var row []bq.Value
+		err := it.Next(&row)
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if len(row) > 0 && row[0] != nil {
+			columns = append(columns, fmt.Sprintf("%v", row[0]))
+		}
+	}
+
+	return columns, nil
+}
+
+func ageColumnToLabel(col string) string {
+	s := strings.TrimPrefix(col, "x")
+	s = strings.Replace(s, "_plus", "+", 1)
+	s = strings.Replace(s, "_", "-", 1)
+	return s
+}
+
+func genderColumnToLabel(col string) string {
+	switch col {
+	case "feminine":
+		return "feminino"
+	case "masculine":
+		return "masculino"
+	default:
+		return col
+	}
+}
+
+func socialClassColumnToLabel(col string) string {
+	return strings.TrimSuffix(col, "_class")
 }

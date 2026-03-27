@@ -818,6 +818,16 @@ tbody tr:hover {
   gap: 14px;
 }
 
+.hexbin-map-feedback {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.hexbin-map-feedback--error {
+  color: #b42318;
+}
+
 /* Chat sidebar overrides */
 .chat-sidebar .agent-messages {
   padding: 16px;

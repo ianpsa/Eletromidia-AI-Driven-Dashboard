@@ -24,7 +24,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .multi-select__control:hover {
@@ -47,17 +49,15 @@
 }
 
 .multi-select__dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  width: 100%;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: var(--card-shadow);
   padding: 8px;
-  z-index: 20;
-  max-height: 220px;
+  overflow-y: visible;
+}
+
+.multi-select__dropdown--scrollable {
   overflow-y: auto;
 }
 

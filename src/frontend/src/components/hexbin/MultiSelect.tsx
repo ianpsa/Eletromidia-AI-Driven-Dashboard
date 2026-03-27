@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import "./MultiSelect.css";
-
-type MultiSelectProps = {
-  label: string;
-  options: string[];
-  selected: string[];
-  onChange: (values: string[]) => void;
-  placeholder?: string;
-};
+import { useDropdownPosition } from "../../hooks/useDropdownPosition";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import type { MultiSelectProps } from "../../types/hexbin";
+import {
+  DEFAULT_MULTISELECT_MAX_VISIBLE_OPTIONS,
+  formatMultiSelectDisplay,
+  getMultiSelectDropdownMaxHeight,
+  shouldEnableMultiSelectScroll,
+} from "../../utils/multiSelect";
+import { MultiSelectDropdown } from "./MultiSelectDropdown";
 
 export function MultiSelect({
   label,
@@ -15,26 +17,33 @@ export function MultiSelect({
   selected,
   onChange,
   placeholder = "Todos",
+  maxVisibleOptions = DEFAULT_MULTISELECT_MAX_VISIBLE_OPTIONS,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
+  useOutsideClick(rootRef, () => setOpen(false), { ignoreRefs: [dropdownRef] });
 
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
+  const displayValue = useMemo(
+    () => formatMultiSelectDisplay(selected, placeholder),
+    [selected, placeholder],
+  );
 
-  const displayValue = useMemo(() => {
-    if (selected.length === 0) return placeholder;
-    if (selected.length <= 2) return selected.join(", ");
-    return `${selected.slice(0, 2).join(", ")} (+${selected.length - 2})`;
-  }, [selected, placeholder]);
+  const dropdownPosition = useDropdownPosition({
+    open,
+    anchorRef: rootRef,
+  });
+
+  const isScrollable = useMemo(
+    () => shouldEnableMultiSelectScroll(options.length, maxVisibleOptions),
+    [options.length, maxVisibleOptions],
+  );
+
+  const dropdownMaxHeight = useMemo(
+    () => getMultiSelectDropdownMaxHeight(options.length, maxVisibleOptions),
+    [options.length, maxVisibleOptions],
+  );
 
   const toggleOption = (value: string) => {
     onChange(
@@ -59,27 +68,16 @@ export function MultiSelect({
         <span className="multi-select__arrow">▾</span>
       </button>
 
-      {open && (
-        <div className="multi-select__dropdown">
-          {options.map((option) => {
-            const checked = selected.includes(option);
-
-            return (
-              <label
-                key={option}
-                className={`multi-select__option ${checked ? "is-checked" : ""}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleOption(option)}
-                />
-                <span>{option}</span>
-              </label>
-            );
-          })}
-        </div>
-      )}
+      <MultiSelectDropdown
+        open={open}
+        options={options}
+        selected={selected}
+        onToggleOption={toggleOption}
+        dropdownRef={dropdownRef}
+        positionStyle={dropdownPosition}
+        maxHeight={dropdownMaxHeight}
+        isScrollable={isScrollable}
+      />
     </div>
   );
 }
