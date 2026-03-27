@@ -248,6 +248,10 @@ export function DashboardPage() {
 
   return (
     <>
+      <div className="looker-header">
+        <h1 className="looker-title">Dashboard</h1>
+        <p className="looker-subtitle">Visão geral de indicadores</p>
+      </div>
       <div className="dashboard-grid dashboard-grid--hexbin">
         <div className="main-column">
           <HexbinChart

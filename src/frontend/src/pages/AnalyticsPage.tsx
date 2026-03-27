@@ -2,8 +2,8 @@ export function AnalyticsPage() {
   return (
     <>
       <div className="looker-header">
-        <h1 className="looker-title">Dashboard</h1>
-        <p className="looker-subtitle">Visão geral de indicadores</p>
+        <h1 className="looker-title">Analytics</h1>
+        <p className="looker-subtitle">Relatórios e métricas detalhadas</p>
       </div>
       <div className="looker-embed-wrap">
         <iframe
