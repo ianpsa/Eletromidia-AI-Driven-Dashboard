@@ -145,7 +145,7 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
           break;
       }
     },
-    [appendTextToken, appendToAgentMessage],
+    [appendTextToken, appendToAgentMessage, onLookerUrl],
   );
 
   async function handleSend() {
