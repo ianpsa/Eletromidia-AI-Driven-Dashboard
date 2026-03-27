@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { HexbinFiltersState } from "../types/hexbin";
+import { areHexbinFiltersEqual, cloneHexbinFilters } from "../utils/hexbinFilters";
 
 export const DEFAULT_HEXBIN_FILTERS_STATE: HexbinFiltersState = {
   states: [],
@@ -13,10 +14,15 @@ export const DEFAULT_HEXBIN_FILTERS_STATE: HexbinFiltersState = {
 };
 
 export function useHexbinFilters(initialFilters?: Partial<HexbinFiltersState>) {
-  const [filters, setFilters] = useState<HexbinFiltersState>({
+  const initialState: HexbinFiltersState = {
     ...DEFAULT_HEXBIN_FILTERS_STATE,
     ...initialFilters,
-  });
+  };
+
+  const [filters, setFilters] = useState<HexbinFiltersState>(initialState);
+  const [appliedFilters, setAppliedFilters] = useState<HexbinFiltersState>(
+    cloneHexbinFilters(initialState),
+  );
 
   const hasAnySelection = useMemo(
     () =>
@@ -36,9 +42,18 @@ export function useHexbinFilters(initialFilters?: Partial<HexbinFiltersState>) {
   };
 
   const clearFilters = () => {
-    const cleared = { ...DEFAULT_HEXBIN_FILTERS_STATE };
+    const cleared = cloneHexbinFilters(DEFAULT_HEXBIN_FILTERS_STATE);
     setFilters(cleared);
     return cleared;
+  };
+
+  const hasChangesSinceLastApply = useMemo(
+    () => !areHexbinFiltersEqual(filters, appliedFilters),
+    [filters, appliedFilters],
+  );
+
+  const markFiltersAsApplied = () => {
+    setAppliedFilters(cloneHexbinFilters(filters));
   };
 
   return {
@@ -46,5 +61,7 @@ export function useHexbinFilters(initialFilters?: Partial<HexbinFiltersState>) {
     setField,
     hasAnySelection,
     clearFilters,
+    hasChangesSinceLastApply,
+    markFiltersAsApplied,
   };
 }

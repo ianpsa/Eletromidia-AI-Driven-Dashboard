@@ -23,9 +23,20 @@ export function HexbinFilters({
   onClearFilters,
   initialFilters,
 }: HexbinFiltersProps) {
-  const { filters, setField, hasAnySelection, clearFilters } = useHexbinFilters(initialFilters);
+  const {
+    filters,
+    setField,
+    hasAnySelection,
+    clearFilters,
+    hasChangesSinceLastApply,
+    markFiltersAsApplied,
+  } = useHexbinFilters(initialFilters);
 
   const handleApply = () => {
+    if (!hasChangesSinceLastApply) return;
+
+    markFiltersAsApplied();
+
     if (onApplyFilters) {
       onApplyFilters(filters);
       return;
@@ -111,7 +122,12 @@ export function HexbinFilters({
       />
 
       <div className="hexbin-filters__actions">
-        <button type="button" className="hexbin-filters__primary" onClick={handleApply}>
+        <button
+          type="button"
+          className="hexbin-filters__primary"
+          onClick={handleApply}
+          disabled={!hasChangesSinceLastApply}
+        >
           Aplicar filtros
         </button>
         <button

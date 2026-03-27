@@ -1,5 +1,10 @@
-import { useMemo, useState } from "react";
-import type { CompareFilter, CompareFilterKey, CompareMode } from "../types/hexbin";
+import { useEffect, useMemo, useState } from "react";
+import type {
+  CompareChartsConfig,
+  CompareFilter,
+  CompareFilterKey,
+  CompareMode,
+} from "../types/hexbin";
 
 export const INITIAL_COMPARE_FILTERS: CompareFilter[] = [
   {
@@ -19,9 +24,58 @@ export const INITIAL_COMPARE_FILTERS: CompareFilter[] = [
   { key: "socialClass", label: "Classe social", enabled: false, value: [] },
 ];
 
-export function useHexbinCompareModal() {
+function cloneCompareFilter(filter: CompareFilter): CompareFilter {
+  if (filter.key === "location") {
+    return {
+      ...filter,
+      value: {
+        state: [...filter.value.state],
+        city: [...filter.value.city],
+        address: [...filter.value.address],
+      },
+    };
+  }
+
+  if (Array.isArray(filter.value)) {
+    return {
+      ...filter,
+      value: [...filter.value],
+    } as CompareFilter;
+  }
+
+  return {
+    ...filter,
+  };
+}
+
+export function getEmptyCompareConfig(): CompareChartsConfig {
+  return {
+    compareMode: null,
+    filters: INITIAL_COMPARE_FILTERS.map(cloneCompareFilter),
+  };
+}
+
+type UseHexbinCompareModalParams = {
+  open: boolean;
+  initialConfig?: CompareChartsConfig | null;
+};
+
+export function useHexbinCompareModal({
+  open,
+  initialConfig,
+}: UseHexbinCompareModalParams) {
   const [compareMode, setCompareMode] = useState<CompareMode | null>(null);
-  const [filters, setFilters] = useState<CompareFilter[]>(INITIAL_COMPARE_FILTERS);
+  const [filters, setFilters] = useState<CompareFilter[]>(
+    getEmptyCompareConfig().filters,
+  );
+
+  useEffect(() => {
+    if (!open) return;
+
+    const source = initialConfig ?? getEmptyCompareConfig();
+    setCompareMode(source.compareMode);
+    setFilters(source.filters.map(cloneCompareFilter));
+  }, [open, initialConfig]);
 
   const visibleFilters = useMemo(() => {
     if (!compareMode) return filters;

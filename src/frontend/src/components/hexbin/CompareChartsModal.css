@@ -236,6 +236,12 @@
   color: #fff;
 }
 
+.compare-modal__primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+}
+
 @media (max-width: 720px) {
   .compare-modal {
     max-height: 92vh;

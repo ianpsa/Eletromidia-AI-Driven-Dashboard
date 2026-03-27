@@ -9,6 +9,7 @@ import {
   type CompareTagItem,
 } from "../utils/hexbinCompareTags";
 import type { CompareChartsConfig } from "../types/hexbin";
+import { getEmptyCompareConfig } from "../hooks/useHexbinCompareModal";
 
 const data = generateMockHexbinData(4500);
 
@@ -18,7 +19,7 @@ export function DashboardPage() {
   const [editingTag, setEditingTag] = useState<CompareTagItem | null>(null);
 
   const handleCompareConfirm = (config: CompareChartsConfig) => {
-    setCompareConfig(config);
+    setCompareConfig(config.compareMode ? config : null);
     console.log("config de comparação:", config);
   };
 
@@ -38,14 +39,8 @@ export function DashboardPage() {
   };
 
   const handleRemoveCompareModeTag = () => {
-    setCompareConfig((current) =>
-      current
-        ? {
-            ...current,
-            compareMode: null,
-          }
-        : current,
-    );
+    setCompareConfig(null);
+    setEditingTag(null);
   };
 
   const { filterTags, compareTag } = compareConfig
@@ -61,7 +56,7 @@ export function DashboardPage() {
   };
 
   const handleSaveEditedTag = (nextConfig: CompareChartsConfig) => {
-    setCompareConfig(nextConfig);
+    setCompareConfig(nextConfig.compareMode ? nextConfig : null);
   };
 
   return (
@@ -130,6 +125,7 @@ export function DashboardPage() {
 
       <CompareChartsModal
         open={compareOpen}
+        initialConfig={compareConfig ?? getEmptyCompareConfig()}
         onClose={() => setCompareOpen(false)}
         onConfirm={handleCompareConfirm}
       />

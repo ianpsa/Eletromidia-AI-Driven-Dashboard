@@ -11,15 +11,18 @@ import {
   AGE_OPTIONS,
   CLASS_OPTIONS,
 } from "../../utils/hexbinOptions";
+import { canConfirmCompareConfig } from "../../utils/compareValidation";
 
 type CompareChartsModalProps = {
   open: boolean;
+  initialConfig?: CompareChartsConfig | null;
   onClose: () => void;
   onConfirm?: (config: CompareChartsConfig) => void;
 };
 
 export function CompareChartsModal({
   open,
+  initialConfig,
   onClose,
   onConfirm,
 }: CompareChartsModalProps) {
@@ -30,11 +33,14 @@ export function CompareChartsModal({
     visibleFilters,
     updateFilter,
     toggleFilter,
-  } = useHexbinCompareModal();
+  } = useHexbinCompareModal({ open, initialConfig });
+
+  const isConfirmDisabled = !canConfirmCompareConfig(compareMode, visibleFilters);
 
   if (!open) return null;
 
   function handleConfirm() {
+    if (isConfirmDisabled) return;
     onConfirm?.({ compareMode, filters });
     onClose();
   }
@@ -211,7 +217,12 @@ export function CompareChartsModal({
           <button className="compare-modal__ghost" onClick={onClose} type="button">
             Cancelar
           </button>
-          <button className="compare-modal__primary" onClick={handleConfirm} type="button">
+          <button
+            className="compare-modal__primary"
+            onClick={handleConfirm}
+            type="button"
+            disabled={isConfirmDisabled}
+          >
             Confirmar comparação
           </button>
         </div>

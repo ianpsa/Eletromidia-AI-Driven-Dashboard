@@ -59,6 +59,11 @@
   color: #fff;
 }
 
+.hexbin-filters__primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .hexbin-filters__secondary {
   background: #fff;
   color: var(--orange-strong);
