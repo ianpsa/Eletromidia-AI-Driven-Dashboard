@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from google.cloud import bigquery
-
-from core.tools.campaign import _build_sql, _class_columns, _overlapping_age_columns
-
+from core.tools.campaign import (
+    _build_sql,
+    _class_columns,
+    _overlapping_age_columns,
+)
 
 # ── _overlapping_age_columns ──────────────────────────────────────────
 
