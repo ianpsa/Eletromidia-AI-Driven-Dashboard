@@ -1,79 +1,90 @@
+from __future__ import annotations
+
+import json
+import logging
 import os
-import numpy as np
-import pandas as pd
-from core.answer import generate_final_answer
-from core.llm import parse_prompt
-from core.report import build_report
+import uuid
+
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from langchain_core.messages import AIMessageChunk, HumanMessage, ToolMessage
+from pydantic import BaseModel, Field
+
+from core.agent import get_agent
 
 load_dotenv()
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s %(levelname)s %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 app = FastAPI()
 
-DATA_PATH = "../../../data/claro.csv"
+_cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_methods=["POST"],
+    allow_headers=["Content-Type"],
+)
 
 
-class CampaignRequest(BaseModel):
-    prompt: str
-    limit: int = 5
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
 
 
-def convert_types(obj):
-    if isinstance(obj, np.integer):
-        return int(obj)
-    if isinstance(obj, np.floating):
-        return float(obj)
-    return obj
+class ChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=10_000)
+    thread_id: str | None = Field(
+        default=None, max_length=100, pattern=r"^[a-zA-Z0-9_\-]+$"
+    )
 
 
-@app.post("/analyze")
-def analyze_campaign(request: CampaignRequest):
-    token = os.getenv("GROQ_API_KEY")
-    if not token:
-        raise HTTPException(status_code=500, detail="GROQ_API_KEY not set")
+@app.post("/chat")
+async def chat(request: ChatRequest):
+    thread_id = request.thread_id or str(uuid.uuid4())
+    agent = get_agent()
 
-    try:
-        filters = parse_prompt(request.prompt, token)
+    async def event_stream():
+        yield f"event: metadata\ndata: {json.dumps({'thread_id': thread_id})}\n\n"
 
-        df = pd.read_csv(DATA_PATH)
+        config = {"configurable": {"thread_id": thread_id}}
+        input_msg = {"messages": [HumanMessage(content=request.message)]}
 
-        rows, used_range = build_report(df, filters)
+        try:
+            async for event, _metadata in agent.astream(
+                input_msg, config, stream_mode="messages"
+            ):
+                if isinstance(event, AIMessageChunk):
+                    if event.tool_call_chunks:
+                        for chunk in event.tool_call_chunks:
+                            if chunk.get("name"):
+                                payload = json.dumps({"tool": chunk["name"]})
+                                yield f"event: tool_start\ndata: {payload}\n\n"
+                    elif event.content:
+                        payload = json.dumps({"content": event.content})
+                        yield f"event: token\ndata: {payload}\n\n"
 
-        city_fallback = False
+                if isinstance(event, ToolMessage):
+                    payload = json.dumps({"tool": event.name, "content": event.content})
+                    yield f"event: tool_result\ndata: {payload}\n\n"
+        except Exception:
+            logger.exception("SSE stream error for thread_id=%s", thread_id)
+            payload = json.dumps({"error": "Erro interno. Tente novamente."})
+            yield f"event: error\ndata: {payload}\n\n"
 
-        if not rows and "city" in filters:
-            del filters["city"]
-            rows, used_range = build_report(df, filters)
-            city_fallback = True
+        yield "event: done\ndata: {}\n\n"
 
-        if not rows:
-            return {
-                "success": False,
-                "message": "Nenhum dado encontrado para os critérios informados.",
-            }
-
-        top_points = [
-            {k: convert_types(v) for k, v in row.items()}
-            for row in rows[: request.limit]
-        ]
-
-        final_answer = generate_final_answer(
-            user_prompt=request.prompt,
-            filters=filters,
-            ranking=top_points,
-            api_key=token,
-            city_fallback=city_fallback,
-            used_age_range=used_range
-        )
-
-        return {
-            "success": True,
-            "analysis": final_answer,
-            "top_points": top_points
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )

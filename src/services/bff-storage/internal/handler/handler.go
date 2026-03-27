@@ -139,7 +139,11 @@ func (h *Handler) GetFileByID(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "error reading file")
 		return
 	}
-	defer file.Reader.Close()
+	defer func() {
+		if err := file.Reader.Close(); err != nil {
+			log.Printf("error closing file reader: %v", err)
+		}
+	}()
 
 	w.Header().Set("Content-Type", file.ContentType)
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+path.Base(id)+"\"")

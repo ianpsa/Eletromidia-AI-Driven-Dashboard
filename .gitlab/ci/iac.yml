@@ -1,0 +1,17 @@
+iac:lint:
+  stage: test
+  image:
+    name: hashicorp/terraform:latest
+    entrypoint: [""]
+  extends:
+    - .actions-rules:iac
+  before_script:
+    - apk add --no-cache curl bash
+    - curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+  script:
+    - cd src/iac/terraform
+    - terraform fmt -check -recursive
+    - terraform init -backend=false
+    - terraform validate
+    - tflint --init
+    - tflint

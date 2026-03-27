@@ -58,7 +58,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create writer: %v", err)
 	}
-	defer w.Close()
+	defer func() {
+		if err := w.Close(); err != nil {
+			log.Printf("error closing writer: %v", err)
+		}
+	}()
 
 	c := consumer.New(cfg, w)
 

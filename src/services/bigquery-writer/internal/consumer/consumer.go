@@ -42,7 +42,11 @@ func (c *Consumer) Run(ctx context.Context) {
 		MaxBytes: c.Cfg.KafkaMaxBytes,
 		MaxWait:  c.Cfg.KafkaMaxWait,
 	})
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			log.Printf("error closing kafka reader: %v", err)
+		}
+	}()
 
 	log.Printf("consumer started | brokers=%v topic=%s group=%s",
 		c.Cfg.KafkaBrokers, c.Cfg.KafkaTopic, c.Cfg.KafkaGroupID)
@@ -108,9 +112,15 @@ func KafkaReadinessProbe(brokerAddress string, timeout time.Duration) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to kafka broker: %w", err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("error closing kafka connection: %v", err)
+		}
+	}()
 
-	conn.SetDeadline(time.Now().Add(timeout))
+	if err := conn.SetDeadline(time.Now().Add(timeout)); err != nil {
+		return fmt.Errorf("failed to set kafka connection deadline: %w", err)
+	}
 
 	_, err = conn.ReadPartitions()
 	if err != nil {
