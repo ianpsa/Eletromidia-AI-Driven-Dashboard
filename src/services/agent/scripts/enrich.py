@@ -213,8 +213,7 @@ def _build_row(
         "ambiente": eletro_row["ambiente"],
         "cidade": str(claro_cidades[nearest_global]),
         "endereco_ref": (
-            f"{claro_enderecos[nearest_global]}"
-            f", {claro_numeros[nearest_global]}"
+            f"{claro_enderecos[nearest_global]}, {claro_numeros[nearest_global]}"
         ),
         "uniques": total_uniques,
         "match_type": "fallback" if is_fallback else "exact",
