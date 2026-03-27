@@ -23,8 +23,4 @@ tables = {
         table_id = "social_class"
         schema = "schemas/social_class.json"
     }
-    enriched_screens = {
-        table_id = "enriched_screens"
-        schema = "schemas/enriched_screens.json"
-    }
 }

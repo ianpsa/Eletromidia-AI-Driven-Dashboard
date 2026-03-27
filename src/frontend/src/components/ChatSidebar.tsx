@@ -117,15 +117,21 @@ export function ChatSidebar({ open, onClose }: ChatSidebarProps) {
             const ranking = parseRankingFromToolResult(content);
             if (ranking.length > 0) {
               appendToAgentMessage(msgId, { type: "ranking", items: ranking });
+            } else {
+              appendToAgentMessage(msgId, { type: "text", text: content });
             }
           } else if (toolName === "filter_looker_dashboard") {
-            const urlMatch = content.match(/https:\/\/lookerstudio[^\s"]+/);
+            const urlMatch = content.match(/https?:\/\/\S+/);
             if (urlMatch) {
               appendToAgentMessage(msgId, {
                 type: "dashboard",
                 url: urlMatch[0],
               });
+            } else {
+              appendToAgentMessage(msgId, { type: "text", text: content });
             }
+          } else {
+            appendToAgentMessage(msgId, { type: "text", text: content });
           }
           break;
         }

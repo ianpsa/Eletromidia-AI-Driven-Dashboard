@@ -46,9 +46,11 @@ def query_bigquery(sql_query: str) -> str:
                           p_18_19..p_80_plus, p_f, p_m,
                           p_a, p_b1, p_b2, p_c1, p_c2, p_de
                           (denormalised Eletromidia screens with Claro demographics)
-      - geodata: id, impression_hour, location_id, uniques,
+      - geodata: id, impression_hour (INT64, hour of day 0-23 — NOT a date),
+                 location_id, uniques,
                  latitude (STRING), longitude (STRING),
                  uf_estado, cidade, endereco, numero, target_id
+                 NOTE: geodata has NO date column; do NOT filter by date here.
       - target: id, age_id, gender_id, social_class_id
       - age: id, x18_19, x20_29, x30_39, x40_49, x50_59,
              x60_69, x70_79, x80_plus  (FLOAT percentages)

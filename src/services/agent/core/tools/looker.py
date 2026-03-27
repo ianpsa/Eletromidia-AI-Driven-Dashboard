@@ -2,13 +2,35 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from urllib.parse import quote
+
+
+def _decode_unicode_escapes(s: str) -> str:
+    """Decode literal \\uXXXX sequences that LLMs sometimes emit."""
+    return re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), s)
 
 from langchain_core.tools import tool
 
 _DEFAULT_REPORT_ID = "1776f716-b7de-4268-99ef-8107f950868d"
-_DEFAULT_PAGE_ID = "p0"
+_DEFAULT_PAGE_ID = "DEQqF"
 _DEFAULT_DS_ALIAS = "ds0"
+
+# Looker Studio Linking API separator.
+# The filter value inside the JSON must contain the literal string "%EE%80%80"
+# (percent-encoded form of U+E000).  When quote() encodes the JSON string,
+# these % signs get double-encoded to %25EE%2580%2580 — which is exactly the
+# format Looker Studio expects in the URL.
+_SEP = "%EE%80%80"
+
+
+def _filter_value(value: str) -> str:
+    """Encode a single value for the Looker Studio Linking API.
+
+    Resulting format inside the JSON: include{SEP}0{SEP}IN{SEP}{url_encoded_value}
+    Verified against real Looker Studio filter URLs.
+    """
+    return f"include{_SEP}0{_SEP}IN{_SEP}{quote(value, safe='')}"
 
 
 def _get_config() -> tuple[str, str, str]:
@@ -31,20 +53,24 @@ def _build_url(
         f"https://lookerstudio.google.com/embed/reporting/{report_id}/page/{page_id}"
     )
 
+    # Filter keys default to the field-name format "ds_alias.field".
+    # If your report uses filter control IDs instead (df52, df53 …), override
+    # via env vars LOOKER_KEY_CIDADE / LOOKER_KEY_VERTICAL / LOOKER_KEY_AMBIENTE.
     filters: dict[str, str] = {}
     if city:
-        filters[f"{ds_alias}.cidade"] = f"include\x00{city}"
+        key = os.environ.get("LOOKER_KEY_CIDADE", f"{ds_alias}.cidade")
+        filters[key] = _filter_value(_decode_unicode_escapes(city))
     if vertical:
-        filters[f"{ds_alias}.vertical"] = f"include\x00{vertical}"
+        key = os.environ.get("LOOKER_KEY_VERTICAL", f"{ds_alias}.vertical")
+        filters[key] = _filter_value(_decode_unicode_escapes(vertical))
     if ambiente:
-        filters[f"{ds_alias}.ambiente"] = f"include\x00{ambiente}"
+        key = os.environ.get("LOOKER_KEY_AMBIENTE", f"{ds_alias}.ambiente")
+        filters[key] = _filter_value(_decode_unicode_escapes(ambiente))
 
     if not filters:
         return base
 
-    params_json = json.dumps(filters, ensure_ascii=False)
-    params_json = params_json.replace("\\u0000", "\x00")
-    return f"{base}?params={quote(params_json)}"
+    return f"{base}?params={quote(json.dumps(filters, ensure_ascii=False))}"
 
 
 @tool

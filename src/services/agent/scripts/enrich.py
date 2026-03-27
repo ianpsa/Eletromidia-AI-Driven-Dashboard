@@ -11,28 +11,17 @@ Usage::
         --claro  ../../data/fluxo_claro.csv \\
         --eletro ../../data/eletromidia_pontos.csv \\
         --output ../../data/eletromidia_enriched.csv
-
-    # With BigQuery upload:
-    python scripts/enrich.py \\
-        --claro  ../../data/fluxo_claro.csv \\
-        --eletro ../../data/eletromidia_pontos.csv \\
-        --output ../../data/eletromidia_enriched.csv \\
-        --upload-bq
 """
 
 from __future__ import annotations
 
 import argparse
 import ast
-import os
 import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
-
-load_dotenv()
 
 PROP_COLS: list[str] = [
     "p_18_19", "p_20_29", "p_30_39", "p_40_49",
@@ -40,8 +29,6 @@ PROP_COLS: list[str] = [
     "p_f", "p_m",
     "p_a", "p_b1", "p_b2", "p_c1", "p_c2", "p_de",
 ]
-
-BQ_TABLE_ID = "enriched_screens"
 
 
 # ---------------------------------------------------------------------------
@@ -263,7 +250,6 @@ def enrich(
                 rows.append(row)
                 continue
 
-        nearest_idx = int(np.argmin(dists_i))
         row = {
             "cod_predio": eletro_row["cod_predio"],
             "latitude": eletro_row["latitude"],
@@ -271,7 +257,7 @@ def enrich(
             "vertical": eletro_row["vertical"],
             "ambiente": eletro_row["ambiente"],
             "cidade": global_avg["cidade"],
-            "endereco_ref": f"{claro_enderecos[nearest_idx]}, {claro_numeros[nearest_idx]}",
+            "endereco_ref": str(eletro_row["cod_predio"]),
             "uniques": global_avg["uniques"],
             "match_type": "global_avg",
         }
@@ -280,53 +266,6 @@ def enrich(
         rows.append(row)
 
     return pd.DataFrame(rows)
-
-
-# ---------------------------------------------------------------------------
-# BigQuery upload
-# ---------------------------------------------------------------------------
-
-def upload_to_bigquery(df: pd.DataFrame) -> None:
-    """Upload the enriched DataFrame to BigQuery, replacing the table."""
-    from google.cloud import bigquery
-    from google.oauth2 import service_account
-
-    project = os.environ.get("BQ_PROJECT_ID", "")
-    dataset = os.environ.get("BQ_DATASET_ID", "")
-    creds_path = os.environ.get("BQ_SA_CREDENTIALS", "")
-
-    if not project or not dataset or not creds_path:
-        print(
-            "ERROR: Set BQ_PROJECT_ID, BQ_DATASET_ID, and BQ_SA_CREDENTIALS "
-            "to upload to BigQuery.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    credentials = service_account.Credentials.from_service_account_file(creds_path)
-    client = bigquery.Client(project=project, credentials=credentials)
-    table_ref = f"{project}.{dataset}.{BQ_TABLE_ID}"
-
-    job_config = bigquery.LoadJobConfig(
-        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-        schema=[
-            bigquery.SchemaField("cod_predio", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("latitude", "FLOAT", mode="REQUIRED"),
-            bigquery.SchemaField("longitude", "FLOAT", mode="REQUIRED"),
-            bigquery.SchemaField("vertical", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("ambiente", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("cidade", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("endereco_ref", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("uniques", "FLOAT", mode="NULLABLE"),
-            bigquery.SchemaField("match_type", "STRING", mode="NULLABLE"),
-            *[bigquery.SchemaField(c, "FLOAT", mode="NULLABLE") for c in PROP_COLS],
-        ],
-    )
-
-    print(f"Uploading {len(df)} rows to {table_ref} …", file=sys.stderr)
-    job = client.load_table_from_dataframe(df, table_ref, job_config=job_config)
-    job.result()
-    print(f"Upload complete: {job.output_rows} rows written.", file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
@@ -347,10 +286,6 @@ def main() -> None:
     parser.add_argument(
         "--fallback-radius", type=float, default=5000,
         help="Fallback radius in metres (default 5000)",
-    )
-    parser.add_argument(
-        "--upload-bq", action="store_true",
-        help="Also upload the enriched data to BigQuery (requires BQ_* env vars)",
     )
     args = parser.parse_args()
 
@@ -377,9 +312,6 @@ def main() -> None:
 
     result.to_csv(args.output, index=False)
     print(f"Saved to {args.output}", file=sys.stderr)
-
-    if args.upload_bq:
-        upload_to_bigquery(result)
 
 
 if __name__ == "__main__":
