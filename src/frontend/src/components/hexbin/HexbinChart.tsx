@@ -1,8 +1,8 @@
 import { HexagonLayer } from "@deck.gl/aggregation-layers";
 import type { MapViewState } from "@deck.gl/core";
 import DeckGL from "@deck.gl/react";
-import { useEffect, useMemo, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
+import { useEffect, useMemo, useState } from "react";
 import MapView from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { HexbinPoint } from "../../types/geo";
@@ -73,7 +73,9 @@ export function HexbinChart({
 }: HexbinChartProps) {
   const [viewState, setViewState] = useState<MapViewState>(initialViewState);
   const [densityDomain, setDensityDomain] = useState<[number, number]>([0, 0]);
-  const [mapStyle, setMapStyle] = useState<string | StyleSpecification>(MAP_STYLE);
+  const [mapStyle, setMapStyle] = useState<string | StyleSpecification>(
+    MAP_STYLE,
+  );
 
   const hexbinRadiusMeters = useMemo(() => {
     const boundedDistanceKm = Math.max(
@@ -85,7 +87,7 @@ export function HexbinChart({
       (boundedDistanceKm - HEXBIN_DISTANCE_MIN) /
       Math.max(1, HEXBIN_DISTANCE_MAX - HEXBIN_DISTANCE_MIN);
 
-    const easedDistance = Math.pow(normalizedDistance, GRANULARITY_CURVE_EXPONENT);
+    const easedDistance = normalizedDistance ** GRANULARITY_CURVE_EXPONENT;
 
     return (
       MIN_HEXBIN_RADIUS_METERS +
@@ -127,7 +129,7 @@ export function HexbinChart({
         coverage: 0.82,
         upperPercentile: 100,
         opacity: 0.55,
-  colorDomain: densityDomainOverride,
+        colorDomain: densityDomainOverride,
         colorRange: [
           [252, 187, 161],
           [252, 146, 114],
@@ -150,7 +152,13 @@ export function HexbinChart({
         },
       }),
     ];
-  }, [data, hexbinRadiusMeters, title, densityDomainOverride, onDensityDomainChange]);
+  }, [
+    data,
+    hexbinRadiusMeters,
+    title,
+    densityDomainOverride,
+    onDensityDomainChange,
+  ]);
 
   return (
     <section className="hexbin-card">

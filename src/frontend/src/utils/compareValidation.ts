@@ -26,7 +26,10 @@ export function hasCompareExtraFilterValue(filter: CompareFilter) {
   }
 }
 
-export function canConfirmCompareConfig(compareMode: CompareMode | null, filtersToValidate: CompareFilter[]) {
+export function canConfirmCompareConfig(
+  compareMode: CompareMode | null,
+  filtersToValidate: CompareFilter[],
+) {
   if (!compareMode) return false;
   return filtersToValidate.every(hasCompareExtraFilterValue);
 }

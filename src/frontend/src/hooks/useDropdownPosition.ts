@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { type CSSProperties, useCallback, useEffect, useState } from "react";
 import type { MultiSelectDropdownPositionParams } from "../types/multiSelect";
 
 export function useDropdownPosition({

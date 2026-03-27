@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import type { HexbinFiltersState } from "../types/hexbin";
-import { areHexbinFiltersEqual, cloneHexbinFilters } from "../utils/hexbinFilters";
+import {
+  areHexbinFiltersEqual,
+  cloneHexbinFilters,
+} from "../utils/hexbinFilters";
 import { HEXBIN_DISTANCE_DEFAULT } from "../utils/hexbinOptions";
 
 export const DEFAULT_HEXBIN_FILTERS_STATE: HexbinFiltersState = {
@@ -38,7 +41,10 @@ export function useHexbinFilters(initialFilters?: Partial<HexbinFiltersState>) {
     [filters],
   );
 
-  const setField = <K extends keyof HexbinFiltersState>(key: K, value: HexbinFiltersState[K]) => {
+  const setField = <K extends keyof HexbinFiltersState>(
+    key: K,
+    value: HexbinFiltersState[K],
+  ) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 

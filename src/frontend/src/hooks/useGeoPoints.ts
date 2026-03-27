@@ -20,7 +20,7 @@ export function useGeoPoints({ filters, limit }: UseGeoPointsParams) {
     setError("");
 
     try {
-  const query = buildGeoPointsQuery(filters, limit);
+      const query = buildGeoPointsQuery(filters, limit);
       const response = await fetch(buildApiUrl("/geodata/points", query));
 
       if (!response.ok) {
@@ -31,7 +31,9 @@ export function useGeoPoints({ filters, limit }: UseGeoPointsParams) {
       setPoints(toHexbinPoints(payload));
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Erro ao buscar dados de densidade.";
+        err instanceof Error
+          ? err.message
+          : "Erro ao buscar dados de densidade.";
       setError(message);
       setPoints([]);
     } finally {

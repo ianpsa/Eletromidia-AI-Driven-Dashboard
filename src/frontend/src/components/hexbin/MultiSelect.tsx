@@ -2,13 +2,13 @@ import { useMemo, useRef, useState } from "react";
 import "./MultiSelect.css";
 import { useDropdownPosition } from "../../hooks/useDropdownPosition";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import { formatMultiSelectDisplay } from "../../utils/multiSelect";
+import type { MultiSelectProps } from "../../types/hexbin";
 import {
   DEFAULT_MULTISELECT_MAX_VISIBLE_OPTIONS,
+  formatMultiSelectDisplay,
   getMultiSelectDropdownMaxHeight,
   shouldEnableMultiSelectScroll,
 } from "../../utils/multiSelect";
-import type { MultiSelectProps } from "../../types/hexbin";
 import { MultiSelectDropdown } from "./MultiSelectDropdown";
 
 export function MultiSelect({
@@ -47,7 +47,9 @@ export function MultiSelect({
 
   const toggleOption = (value: string) => {
     onChange(
-      selected.includes(value) ? selected.filter((item) => item !== value) : [...selected, value],
+      selected.includes(value)
+        ? selected.filter((item) => item !== value)
+        : [...selected, value],
     );
   };
 
@@ -60,7 +62,9 @@ export function MultiSelect({
         className={`multi-select__control ${open ? "is-open" : ""}`}
         onClick={() => setOpen((prev) => !prev)}
       >
-        <span className={selected.length === 0 ? "is-placeholder" : ""}>{displayValue}</span>
+        <span className={selected.length === 0 ? "is-placeholder" : ""}>
+          {displayValue}
+        </span>
         <span className="multi-select__arrow">▾</span>
       </button>
 

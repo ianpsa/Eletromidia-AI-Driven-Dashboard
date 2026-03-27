@@ -4,7 +4,10 @@ import { useGeoFilterOptions } from "../../hooks/useGeoFilterOptions";
 import { useHexbinCompareModal } from "../../hooks/useHexbinCompareModal";
 import type { CompareChartsConfig } from "../../types/hexbin";
 import { canConfirmCompareConfig } from "../../utils/compareValidation";
-import { HEXBIN_DISTANCE_MAX, HEXBIN_DISTANCE_MIN } from "../../utils/hexbinOptions";
+import {
+  HEXBIN_DISTANCE_MAX,
+  HEXBIN_DISTANCE_MIN,
+} from "../../utils/hexbinOptions";
 
 type CompareChartsModalProps = {
   open: boolean;
@@ -43,7 +46,10 @@ export function CompareChartsModal({
     selectedCity,
   });
 
-  const isConfirmDisabled = !canConfirmCompareConfig(compareMode, visibleFilters);
+  const isConfirmDisabled = !canConfirmCompareConfig(
+    compareMode,
+    visibleFilters,
+  );
 
   if (!open) return null;
 
@@ -67,7 +73,11 @@ export function CompareChartsModal({
             <h2 id="compare-modal-title">Comparar gráficos</h2>
           </div>
 
-          <button className="compare-modal__close" onClick={onClose} type="button">
+          <button
+            className="compare-modal__close"
+            onClick={onClose}
+            type="button"
+          >
             ×
           </button>
         </div>
@@ -177,7 +187,9 @@ export function CompareChartsModal({
                           label="Horários"
                           options={remoteOptions.hours}
                           selected={filter.value}
-                          onChange={(values) => updateFilter("hour", { value: values })}
+                          onChange={(values) =>
+                            updateFilter("hour", { value: values })
+                          }
                           placeholder="Todos"
                         />
                       </div>
@@ -192,7 +204,9 @@ export function CompareChartsModal({
                           step={1}
                           value={filter.value}
                           onChange={(e) =>
-                            updateFilter("distance", { value: Number(e.target.value) })
+                            updateFilter("distance", {
+                              value: Number(e.target.value),
+                            })
                           }
                         />
                         <strong>{filter.value} km</strong>
@@ -204,7 +218,9 @@ export function CompareChartsModal({
                         label="Selecionar gêneros"
                         options={remoteOptions.genders}
                         selected={filter.value}
-                        onChange={(values) => updateFilter("gender", { value: values })}
+                        onChange={(values) =>
+                          updateFilter("gender", { value: values })
+                        }
                         placeholder="Todos"
                       />
                     )}
@@ -214,7 +230,9 @@ export function CompareChartsModal({
                         label="Selecionar faixas etárias"
                         options={remoteOptions.ages}
                         selected={filter.value}
-                        onChange={(values) => updateFilter("age", { value: values })}
+                        onChange={(values) =>
+                          updateFilter("age", { value: values })
+                        }
                         placeholder="Todos"
                       />
                     )}
@@ -224,7 +242,9 @@ export function CompareChartsModal({
                         label="Selecionar classes sociais"
                         options={remoteOptions.socialClasses}
                         selected={filter.value}
-                        onChange={(values) => updateFilter("socialClass", { value: values })}
+                        onChange={(values) =>
+                          updateFilter("socialClass", { value: values })
+                        }
                         placeholder="Todos"
                       />
                     )}
@@ -236,7 +256,11 @@ export function CompareChartsModal({
         </div>
 
         <div className="compare-modal__footer">
-          <button className="compare-modal__ghost" onClick={onClose} type="button">
+          <button
+            className="compare-modal__ghost"
+            onClick={onClose}
+            type="button"
+          >
             Cancelar
           </button>
           <button

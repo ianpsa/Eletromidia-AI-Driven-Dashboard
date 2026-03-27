@@ -1,6 +1,8 @@
 import type { HexbinFiltersState } from "../types/hexbin";
 
-export function cloneHexbinFilters(filters: HexbinFiltersState): HexbinFiltersState {
+export function cloneHexbinFilters(
+  filters: HexbinFiltersState,
+): HexbinFiltersState {
   return {
     states: [...filters.states],
     cities: [...filters.cities],
@@ -14,10 +16,16 @@ export function cloneHexbinFilters(filters: HexbinFiltersState): HexbinFiltersSt
 }
 
 function sameStringArray(left: string[], right: string[]) {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  );
 }
 
-export function areHexbinFiltersEqual(left: HexbinFiltersState, right: HexbinFiltersState) {
+export function areHexbinFiltersEqual(
+  left: HexbinFiltersState,
+  right: HexbinFiltersState,
+) {
   return (
     sameStringArray(left.states, right.states) &&
     sameStringArray(left.cities, right.cities) &&

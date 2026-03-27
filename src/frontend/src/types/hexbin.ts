@@ -1,6 +1,12 @@
 export type CompareMode = "gender" | "age" | "socialClass";
 
-export type CompareFilterKey = "location" | "hour" | "distance" | "gender" | "age" | "socialClass";
+export type CompareFilterKey =
+  | "location"
+  | "hour"
+  | "distance"
+  | "gender"
+  | "age"
+  | "socialClass";
 
 export type LocationValue = {
   state: string[];

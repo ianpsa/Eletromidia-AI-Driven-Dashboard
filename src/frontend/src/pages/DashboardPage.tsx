@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CompareChartsModal } from "../components/hexbin/CompareChartsModal";
 import { CompareTagEditorModal } from "../components/hexbin/CompareTagEditorModal";
 import { HexbinChart } from "../components/hexbin/HexbinChart";
@@ -76,47 +76,50 @@ export function DashboardPage() {
     Record<string, [number, number]>
   >({});
 
-  function buildFiltersForGroup(groupValue: string) {
-    const next = cloneHexbinFilters(DEFAULT_HEXBIN_FILTERS_STATE);
+  const buildFiltersForGroup = useCallback(
+    (groupValue: string) => {
+      const next = cloneHexbinFilters(DEFAULT_HEXBIN_FILTERS_STATE);
 
-    if (!compareConfig) return next;
+      if (!compareConfig) return next;
 
-    const compareMode = compareConfig.compareMode;
+      const compareMode = compareConfig.compareMode;
 
-    for (const filter of compareConfig.filters) {
-      if (!filter.enabled) continue;
+      for (const filter of compareConfig.filters) {
+        if (!filter.enabled) continue;
 
-      switch (filter.key) {
-        case "location":
-          next.states = [...filter.value.state];
-          next.cities = [...filter.value.city];
-          next.addresses = [...filter.value.address];
-          break;
-        case "hour":
-          next.hours = [...filter.value];
-          break;
-        case "distance":
-          next.maxDistance = filter.value;
-          break;
-        case "gender":
-          if (compareMode !== "gender") next.genders = [...filter.value];
-          break;
-        case "age":
-          if (compareMode !== "age") next.ages = [...filter.value];
-          break;
-        case "socialClass":
-          if (compareMode !== "socialClass")
-            next.socialClasses = [...filter.value];
-          break;
+        switch (filter.key) {
+          case "location":
+            next.states = [...filter.value.state];
+            next.cities = [...filter.value.city];
+            next.addresses = [...filter.value.address];
+            break;
+          case "hour":
+            next.hours = [...filter.value];
+            break;
+          case "distance":
+            next.maxDistance = filter.value;
+            break;
+          case "gender":
+            if (compareMode !== "gender") next.genders = [...filter.value];
+            break;
+          case "age":
+            if (compareMode !== "age") next.ages = [...filter.value];
+            break;
+          case "socialClass":
+            if (compareMode !== "socialClass")
+              next.socialClasses = [...filter.value];
+            break;
+        }
       }
-    }
 
-    if (compareMode === "gender") next.genders = [groupValue];
-    if (compareMode === "age") next.ages = [groupValue];
-    if (compareMode === "socialClass") next.socialClasses = [groupValue];
+      if (compareMode === "gender") next.genders = [groupValue];
+      if (compareMode === "age") next.ages = [groupValue];
+      if (compareMode === "socialClass") next.socialClasses = [groupValue];
 
-    return next;
-  }
+      return next;
+    },
+    [compareConfig],
+  );
 
   const compareValues = useMemo(() => {
     const compareMode = compareConfig?.compareMode;
@@ -159,7 +162,7 @@ export function DashboardPage() {
       title: group,
       filters: buildFiltersForGroup(group),
     }));
-  }, [compareConfig, compareValues]);
+  }, [compareConfig, compareValues, buildFiltersForGroup]);
 
   useEffect(() => {
     const activeIds = new Set(compareCards.map((card) => card.id));
@@ -171,7 +174,9 @@ export function DashboardPage() {
     });
   }, [compareCards]);
 
-  const sharedCompareDensityDomain = useMemo<[number, number] | undefined>(() => {
+  const sharedCompareDensityDomain = useMemo<
+    [number, number] | undefined
+  >(() => {
     const activeDomains = compareCards
       .map((card) => compareDomains[card.id])
       .filter(
@@ -284,6 +289,7 @@ export function DashboardPage() {
 
       <div className="hexbin-compare-bar">
         <button
+          type="button"
           className="hexbin-compare-button"
           onClick={() => setCompareOpen(true)}
         >

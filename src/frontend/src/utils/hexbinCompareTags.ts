@@ -13,7 +13,10 @@ export type CompareTagItem =
       label: string;
     };
 
-const COMPARE_MODE_LABEL: Record<NonNullable<CompareChartsConfig["compareMode"]>, string> = {
+const COMPARE_MODE_LABEL: Record<
+  NonNullable<CompareChartsConfig["compareMode"]>,
+  string
+> = {
   gender: "Comparar por gênero",
   age: "Comparar por idade",
   socialClass: "Comparar por classe social",

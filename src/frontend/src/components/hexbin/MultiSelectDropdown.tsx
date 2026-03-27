@@ -26,8 +26,15 @@ export function MultiSelectDropdown({
         const checked = selected.includes(option);
 
         return (
-          <label key={option} className={`multi-select__option ${checked ? "is-checked" : ""}`}>
-            <input type="checkbox" checked={checked} onChange={() => onToggleOption(option)} />
+          <label
+            key={option}
+            className={`multi-select__option ${checked ? "is-checked" : ""}`}
+          >
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={() => onToggleOption(option)}
+            />
             <span>{option}</span>
           </label>
         );

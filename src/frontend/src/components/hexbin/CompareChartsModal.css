@@ -314,7 +314,11 @@
 
 .hexbin-compare-tag--mode {
   border-color: transparent;
-  background: linear-gradient(135deg, rgba(251, 81, 0, 0.18), rgba(247, 148, 31, 0.22));
+  background: linear-gradient(
+    135deg,
+    rgba(251, 81, 0, 0.18),
+    rgba(247, 148, 31, 0.22)
+  );
   color: #8a3300;
 }
 
