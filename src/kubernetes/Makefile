@@ -1,6 +1,9 @@
 include .env
 export
 
+include .env
+export
+
 .PHONY: curl-pod
 curl-pod:
 	kubectl run mycurlpod --image=curlimages/curl -i --tty -- sh
