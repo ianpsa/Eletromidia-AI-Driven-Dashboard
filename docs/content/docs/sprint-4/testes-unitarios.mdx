@@ -1,0 +1,274 @@
+---
+title: Testes Unitários
+description: Documentação dos testes unitários criados na Sprint 4 para os serviços bff-storage, bigquery-writer, bucket-consumer e agent
+---
+
+## Visão geral
+
+Na Sprint 4, foram implementados testes unitários para **4 serviços** do projeto, totalizando aproximadamente **100 casos de teste**. O objetivo é garantir a corretude das funções internas de cada serviço, cobrindo caminhos felizes, erros esperados e casos de borda.
+
+## Resumo geral
+
+| Serviço | Linguagem | Arquivo | Casos |
+|---|---|---|---|
+| bff-storage | Go | `internal/handler/handler_test.go` | 37 |
+| bff-storage | Go | `internal/handler/mock_storage_test.go` | — (mock) |
+| bigquery-writer | Go | `internal/writer/writer_test.go` | 13 |
+| bucket-consumer | Go | `internal/storage/writer_test.go` | 18 |
+| agent | Python | `tests/test_campaign.py` | 17 |
+| agent | Python | `tests/test_bigquery_tool.py` | 9 |
+| agent | Python | `tests/test_summarization.py` | 7 |
+
+---
+
+## bff-storage (Go)
+
+### handler_test.go — 37 casos
+
+Testa os handlers HTTP do BFF de storage e funções auxiliares.
+
+#### TestHealth
+
+| Cenário | Resultado esperado |
+|---|---|
+| GET retorna 200 | `{"status":"ok"}` |
+| POST retorna 405 | Method Not Allowed |
+
+#### TestStartUpProbe
+
+| Cenário | Resultado esperado |
+|---|---|
+| Bucket conectado | 200 |
+| Erro no bucket | 500 |
+| POST | 405 |
+
+#### TestListItems
+
+| Cenário | Resultado esperado |
+|---|---|
+| Retorna 2 itens | Lista com 2 objetos |
+| Lista vazia | Lista vazia `[]` |
+| Erro no storage | 500 |
+| POST | 405 |
+
+#### TestListItemsByFolder
+
+| Cenário | Resultado esperado |
+|---|---|
+| `folder=data/images` | Retorna pastas e itens |
+| Folder vazio normaliza para string vazia | Normalização correta |
+| Folder com barra inicial é normalizado | Barra removida |
+| Erro no storage | 500 |
+| POST | 405 |
+
+#### TestGetFileByID
+
+| Cenário | Resultado esperado |
+|---|---|
+| Arquivo existente | Conteúdo com headers corretos |
+| ID vazio | 400 |
+| Arquivo não encontrado | 404 |
+| Erro genérico no storage | 500 |
+| ID com barra inicial é trimado | Barra removida |
+| Arquivo com tamanho negativo | Omite Content-Length |
+| POST | 405 |
+
+#### TestNormalizeFolderPrefix
+
+Testa 7 combinações de entrada para normalização de prefixo de pasta (barras iniciais, barras finais, strings vazias).
+
+#### TestWriteJSON
+
+Verifica que o helper escreve o status code e `Content-Type: application/json` corretamente.
+
+#### TestWriteError
+
+Verifica que o helper escreve o status code de erro e o formato de resposta correto.
+
+### mock_storage_test.go
+
+Implementação de mock da interface `Storage` usada pelos testes do handler. Permite configurar o comportamento de cada método via campos de função.
+
+---
+
+## bigquery-writer (Go)
+
+### writer_test.go — 13 casos
+
+Testa a geração de IDs determinísticos, validação de chaves de mapa e o buffer de mensagens.
+
+#### TestDeterministicID
+
+| Cenário | Resultado esperado |
+|---|---|
+| Mesmas entradas produzem mesmo UUID | Determinístico |
+| Topic diferente muda UUID | UUID diferente |
+| Partition diferente muda UUID | UUID diferente |
+| Offset diferente muda UUID | UUID diferente |
+| Table diferente muda UUID | UUID diferente |
+| Saída é UUID v5 válido | Formato correto |
+| Strings vazias não causam panic | Sem erro |
+
+#### TestValidateMapKeys
+
+| Cenário | Resultado esperado |
+|---|---|
+| Todas as chaves presentes | `nil` |
+| Chaves extras ainda válidas | `nil` |
+| Valores zero ainda válidos | `nil` |
+| Chave de idade ausente (4 casos) | Erro |
+| Chave `genero` F ausente | Erro |
+| Chave `genero` M ausente | Erro |
+| Chave `classe_social` A ausente | Erro |
+| Chave `classe_social` DE ausente | Erro |
+| Mapa `idade` nil | Erro |
+| Todos os mapas vazios | Erro |
+
+#### TestAddAndPending
+
+| Cenário | Resultado esperado |
+|---|---|
+| Add sequencial e pending tracking | Contagem correta |
+| Flush size 1 dispara imediatamente | Buffer esvaziado |
+| 100 adds concorrentes são seguros | Sem race condition |
+
+---
+
+## bucket-consumer (Go)
+
+### writer_test.go — 18 casos
+
+Testa a normalização do campo target, adição de mensagens ao buffer e contagem de pendentes.
+
+#### TestNormalizeTarget
+
+| Cenário | Resultado esperado |
+|---|---|
+| Aspas simples viram aspas duplas | Normalizado |
+| Múltiplos pares com aspas simples | Normalizado |
+| Já com aspas duplas | Inalterado |
+| Sem aspas | Inalterado |
+| String vazia | Inalterado |
+| Chaves aninhadas com aspas simples | Normalizado |
+| Valor com espaços em aspas simples | Normalizado |
+
+#### TestAdd
+
+| Cenário | Resultado esperado |
+|---|---|
+| Target string com aspas simples normaliza para map | Map correto |
+| Target já é map | Inalterado |
+| JSON sem campo target adiciona metadata sem panic | Sem erro |
+| JSON inválido | Retorna erro |
+| Objeto JSON vazio adiciona apenas metadata | Metadata presente |
+| Enriquecimento de metadata Kafka (partition, offset, timestamp) | Valores corretos |
+| Timestamp zero usa fallback para data do registro | Data padrão |
+| Buffer cheio no threshold (`flushSz=2`) | Sinaliza flush |
+| Buffer não cheio abaixo do threshold | Sem flush |
+| Flush size 1 dispara imediatamente | Buffer esvaziado |
+| Target string que falha parse após normalização permanece string | String mantida |
+| Campos do registro buffered corretos | Valores esperados |
+
+#### TestPending
+
+| Cenário | Resultado esperado |
+|---|---|
+| Buffer vazio | Retorna 0 |
+| Após 3 adds | Retorna 3 |
+
+---
+
+## agent (Python)
+
+### test_campaign.py — 17 casos
+
+Testa funções puras da ferramenta de campanha: mapeamento de faixas etárias, classes sociais e geração de SQL.
+
+#### TestOverlappingAgeColumns
+
+| Cenário | Resultado esperado |
+|---|---|
+| Faixa etária exata de um bucket | 1 coluna |
+| Faixa completa (18–120) retorna todos os 8 buckets | 8 colunas |
+| Faixa parcial (25–45) | Subconjunto correto |
+| Overlap no limite (19–20) | Colunas de fronteira |
+| Min maior que max | Lista vazia |
+| Faixa fora dos buckets | Lista vazia |
+
+#### TestClassColumns
+
+| Cenário | Resultado esperado |
+|---|---|
+| Classes válidas | Colunas corretas |
+| Todas as 6 classes (A, B1, B2, C1, C2, DE) | 6 colunas |
+| Classe inválida | Lista vazia |
+| Mix de válidas e inválidas | Apenas válidas |
+| Case insensitive (lowercase) | Funciona |
+
+#### TestBuildSql
+
+| Cenário | Resultado esperado |
+|---|---|
+| Sem filtros | SQL base |
+| Filtro gênero feminino | WHERE com gênero F |
+| Filtro gênero masculino | WHERE com gênero M |
+| Filtro geográfico (distância) | WHERE com ST_DISTANCE |
+| Filtro por cidade | WHERE com cidade |
+| Filtros combinados | WHERE com múltiplas condições |
+
+### test_bigquery_tool.py — 9 casos
+
+Testa a validação de SQL para garantir que apenas queries SELECT são permitidas.
+
+#### TestValidateSql
+
+| Cenário | Resultado esperado |
+|---|---|
+| SELECT simples | Permitido |
+| CTE (WITH) | Permitido |
+| INSERT | Rejeitado |
+| DROP | Rejeitado |
+| Múltiplos statements (`;`) | Rejeitado |
+| String vazia | Rejeitado |
+| Apenas espaços em branco | Rejeitado |
+| Keyword perigosa dentro de string literal | Permitido |
+| SELECT em lowercase | Permitido |
+
+### test_summarization.py — 7 casos
+
+Testa a estimativa de tokens e a determinação da janela de contexto por modelo.
+
+#### TestEstimateTokens
+
+| Cenário | Resultado esperado |
+|---|---|
+| String simples (40 chars) | 10 tokens |
+| Content com lista de dicts | Contagem proporcional |
+| Lista de mensagens vazia | 0 |
+| Content com string vazia | 0 |
+
+#### TestGetContextWindow
+
+| Cenário | Resultado esperado |
+|---|---|
+| Modelo Groq Llama 3.3 | 128.000 tokens |
+| Modelo Google Gemini 2.0 | 1.048.576 tokens |
+| Modelo desconhecido | Fallback 128.000 tokens |
+
+---
+
+## Como executar
+
+### Serviços Go (bff-storage, bigquery-writer, bucket-consumer)
+
+```bash
+cd services/<nome-do-servico>
+go test ./... -v
+```
+
+### Serviço Python (agent)
+
+```bash
+cd services/agent
+python -m pytest tests/ -v
+```
