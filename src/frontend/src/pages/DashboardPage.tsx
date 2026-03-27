@@ -1,22 +1,20 @@
 import { useMemo, useState } from "react";
-import { HexbinChart } from "../components/hexbin/HexbinChart";
-import { HexbinFilters } from "../components/hexbin/HexbinFilters";
 import { CompareChartsModal } from "../components/hexbin/CompareChartsModal";
 import { CompareTagEditorModal } from "../components/hexbin/CompareTagEditorModal";
-import {
-  buildCompareTags,
-  type CompareTagItem,
-} from "../utils/hexbinCompareTags";
+import { HexbinChart } from "../components/hexbin/HexbinChart";
+import { HexbinFilters } from "../components/hexbin/HexbinFilters";
+import { useGeoPoints } from "../hooks/useGeoPoints";
+import { getEmptyCompareConfig } from "../hooks/useHexbinCompareModal";
+import { DEFAULT_HEXBIN_FILTERS_STATE } from "../hooks/useHexbinFilters";
 import type {
   CompareChartsConfig,
   CompareMode,
   HexbinFiltersState,
 } from "../types/hexbin";
-import { getEmptyCompareConfig } from "../hooks/useHexbinCompareModal";
 import {
-  DEFAULT_HEXBIN_FILTERS_STATE,
-} from "../hooks/useHexbinFilters";
-import { useGeoPoints } from "../hooks/useGeoPoints";
+  buildCompareTags,
+  type CompareTagItem,
+} from "../utils/hexbinCompareTags";
 import { cloneHexbinFilters } from "../utils/hexbinFilters";
 
 type CompareHexbinCardProps = {
@@ -29,11 +27,22 @@ function CompareHexbinCard({ title, filters }: CompareHexbinCardProps) {
 
   return (
     <div className="hexbin-compare-chart">
-      <HexbinChart title={title} data={points} height={360} maxDistanceKm={filters.maxDistance} />
+      <HexbinChart
+        title={title}
+        data={points}
+        height={360}
+        maxDistanceKm={filters.maxDistance}
+      />
       {loading && <p className="hexbin-map-feedback">Carregando...</p>}
-      {!loading && error && <p className="hexbin-map-feedback hexbin-map-feedback--error">{error}</p>}
+      {!loading && error && (
+        <p className="hexbin-map-feedback hexbin-map-feedback--error">
+          {error}
+        </p>
+      )}
       {!loading && !error && points.length === 0 && (
-        <p className="hexbin-map-feedback">Sem dados para os filtros deste gráfico.</p>
+        <p className="hexbin-map-feedback">
+          Sem dados para os filtros deste gráfico.
+        </p>
       )}
     </div>
   );
@@ -41,7 +50,8 @@ function CompareHexbinCard({ title, filters }: CompareHexbinCardProps) {
 
 export function DashboardPage() {
   const [compareOpen, setCompareOpen] = useState(false);
-  const [compareConfig, setCompareConfig] = useState<CompareChartsConfig | null>(null);
+  const [compareConfig, setCompareConfig] =
+    useState<CompareChartsConfig | null>(null);
   const [editingTag, setEditingTag] = useState<CompareTagItem | null>(null);
   const [appliedFilters, setAppliedFilters] = useState<HexbinFiltersState>(
     cloneHexbinFilters(DEFAULT_HEXBIN_FILTERS_STATE),
@@ -53,7 +63,7 @@ export function DashboardPage() {
   } = useGeoPoints({ filters: appliedFilters });
 
   function buildFiltersForGroup(groupValue: string) {
-    const next = cloneHexbinFilters(appliedFilters);
+    const next = cloneHexbinFilters(DEFAULT_HEXBIN_FILTERS_STATE);
 
     if (!compareConfig) return next;
 
@@ -81,7 +91,8 @@ export function DashboardPage() {
           if (compareMode !== "age") next.ages = [...filter.value];
           break;
         case "socialClass":
-          if (compareMode !== "socialClass") next.socialClasses = [...filter.value];
+          if (compareMode !== "socialClass")
+            next.socialClasses = [...filter.value];
           break;
       }
     }
@@ -98,18 +109,25 @@ export function DashboardPage() {
     if (!compareMode) return [] as string[];
 
     const modeFilter = compareConfig.filters.find((f) => f.key === compareMode);
-    const selected = modeFilter && Array.isArray(modeFilter.value) ? modeFilter.value : [];
+    const selected =
+      modeFilter && Array.isArray(modeFilter.value) ? modeFilter.value : [];
 
     const fallbackByMode: Record<CompareMode, string[]> = {
       gender: ["feminino", "masculino"],
-      age: ["18-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"],
-      socialClass: ["A", "B1", "B2", "C1", "C2", "DE"],
+      age: [
+        "18-19",
+        "20-29",
+        "30-39",
+        "40-49",
+        "50-59",
+        "60-69",
+        "70-79",
+        "80+",
+      ],
+      socialClass: ["a", "b1", "b2", "c1", "c2", "de"],
     };
 
-    const raw =
-      selected.length > 0
-        ? selected
-        : fallbackByMode[compareMode];
+    const raw = selected.length > 0 ? selected : fallbackByMode[compareMode];
 
     if (!raw) return [];
 
@@ -130,7 +148,6 @@ export function DashboardPage() {
 
   const handleCompareConfirm = (config: CompareChartsConfig) => {
     setCompareConfig(config.compareMode ? config : null);
-    console.log("config de comparação:", config);
   };
 
   const handleRemoveFilterTag = (tagToRemove: CompareTagItem) => {
@@ -142,7 +159,9 @@ export function DashboardPage() {
       return {
         ...current,
         filters: current.filters.map((filter) =>
-          filter.key === tagToRemove.filterKey ? { ...filter, enabled: false } : filter,
+          filter.key === tagToRemove.filterKey
+            ? { ...filter, enabled: false }
+            : filter,
         ),
       };
     });
@@ -180,15 +199,21 @@ export function DashboardPage() {
             maxDistanceKm={appliedFilters.maxDistance}
           />
 
-          {pointsLoading && <p className="hexbin-map-feedback">Carregando dados do mapa...</p>}
+          {pointsLoading && (
+            <p className="hexbin-map-feedback">Carregando dados do mapa...</p>
+          )}
           {!pointsLoading && pointsError && (
-            <p className="hexbin-map-feedback hexbin-map-feedback--error">{pointsError}</p>
+            <p className="hexbin-map-feedback hexbin-map-feedback--error">
+              {pointsError}
+            </p>
           )}
         </div>
 
         <HexbinFilters
           initialFilters={appliedFilters}
-          onApplyFilters={(filters) => setAppliedFilters(cloneHexbinFilters(filters))}
+          onApplyFilters={(filters) =>
+            setAppliedFilters(cloneHexbinFilters(filters))
+          }
           onClearFilters={() =>
             setAppliedFilters(cloneHexbinFilters(DEFAULT_HEXBIN_FILTERS_STATE))
           }
@@ -196,7 +221,10 @@ export function DashboardPage() {
       </div>
 
       <div className="hexbin-compare-bar">
-        <button className="hexbin-compare-button" onClick={() => setCompareOpen(true)}>
+        <button
+          className="hexbin-compare-button"
+          onClick={() => setCompareOpen(true)}
+        >
           Comparar gráficos
         </button>
 
@@ -276,7 +304,8 @@ export function DashboardPage() {
 
       {compareConfig?.compareMode && compareCards.length === 0 && (
         <p className="hexbin-map-feedback">
-          Não foi possível montar os grupos de comparação para o modo selecionado.
+          Não foi possível montar os grupos de comparação para o modo
+          selecionado.
         </p>
       )}
     </>

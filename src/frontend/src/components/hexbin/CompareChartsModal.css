@@ -365,3 +365,11 @@
   flex-direction: column;
   gap: 8px;
 }
+
+.hexbin-compare-chart .hexbin-card {
+  height: auto;
+}
+
+.hexbin-compare-chart .hexbin-card__stage {
+  flex: none;
+}

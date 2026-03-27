@@ -32,7 +32,10 @@ export function buildGeoFilterOptionsQuery(
   };
 }
 
-export function buildGeoPointsQuery(filters: HexbinFiltersState, limit?: number) {
+export function buildGeoPointsQuery(
+  filters: HexbinFiltersState,
+  limit?: number,
+) {
   return {
     uf_estado: filters.states.length > 0 ? filters.states.join(",") : undefined,
     cidade: filters.cities.length > 0 ? filters.cities.join(",") : undefined,
@@ -45,6 +48,7 @@ export function buildGeoPointsQuery(filters: HexbinFiltersState, limit?: number)
       filters.socialClasses.length > 0
         ? filters.socialClasses.join(",")
         : undefined,
+    limit: limit?.toString(),
   };
 }
 
