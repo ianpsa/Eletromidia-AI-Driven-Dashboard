@@ -43,12 +43,12 @@ variable "cs_dev_name" {
 }
 
 variable "cluster_name" {
-  type = string
+  type        = string
   description = "Nome do Cluster GKE"
 }
 
 variable "gke_zone" {
-  type = string
+  type        = string
   description = "Zona de Disponibilidade do GKE"
 }
 

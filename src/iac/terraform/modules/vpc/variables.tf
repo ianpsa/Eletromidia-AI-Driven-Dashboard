@@ -1,9 +1,9 @@
 variable "region" {
-  type = string
+  type        = string
   description = "Região onde se localiza a VPC"
 }
 
 variable "cluster_name" {
-  type = string
+  type        = string
   description = "Nome do Cluster GKE"
 }

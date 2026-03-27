@@ -21,24 +21,24 @@ module "artifact_registry" {
   source = "./modules/artifact_registry"
 
   project_id = var.project_id
-  region = var.location
+  region     = var.location
 }
 
 module "vpc" {
   source = "./modules/vpc"
 
-  region = var.location
+  region       = var.location
   cluster_name = var.cluster_name
 }
 
 module "gke" {
   source = "./modules/gke"
 
-  project_id = var.project_id
-  zone = var.gke_zone
-  cluster_name = var.cluster_name
+  project_id    = var.project_id
+  zone          = var.gke_zone
+  cluster_name  = var.cluster_name
   gke_subnet_id = module.vpc.gke_subnet_id
-  vpc_id = module.vpc.vpc_id
+  vpc_id        = module.vpc.vpc_id
 }
 
 module "iam" {
@@ -47,7 +47,7 @@ module "iam" {
   project_id            = var.project_id
   admin_email           = var.admin_email
   service_account_email = module.bigquery.service_account_email
-  gke_sa_email = module.gke.gke_sa_email
+  gke_sa_email          = module.gke.gke_sa_email
 }
 
 module "iam_dev" {

@@ -14,6 +14,6 @@ variable "service_account_email" {
 }
 
 variable "gke_sa_email" {
-  type = string
+  type        = string
   description = "Email da Service Account do GKE"
 }

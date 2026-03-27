@@ -26,7 +26,7 @@ resource "google_container_cluster" "standard" {
   private_cluster_config {
     enable_private_nodes    = true
     enable_private_endpoint = false
-    master_ipv4_cidr_block  = "172.16.0.0/28"   // Range de IPs para componentes internos do Cluster
+    master_ipv4_cidr_block  = "172.16.0.0/28" // Range de IPs para componentes internos do Cluster
   }
 
   master_authorized_networks_config {
