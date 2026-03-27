@@ -3,7 +3,10 @@ import "./HexbinFilters.css";
 import { useGeoFilterOptions } from "../../hooks/useGeoFilterOptions";
 import { useHexbinFilters } from "../../hooks/useHexbinFilters";
 import type { HexbinFiltersState } from "../../types/hexbin";
-import { HEXBIN_DISTANCE_MAX, HEXBIN_DISTANCE_MIN } from "../../utils/hexbinOptions";
+import {
+  HEXBIN_DISTANCE_MAX,
+  HEXBIN_DISTANCE_MIN,
+} from "../../utils/hexbinOptions";
 
 type HexbinFiltersProps = {
   onApplyFilters?: (filters: HexbinFiltersState) => void;
@@ -35,23 +38,12 @@ export function HexbinFilters({
 
     markFiltersAsApplied();
 
-    if (onApplyFilters) {
-      onApplyFilters(filters);
-      return;
-    }
-
-    console.log("Filtros aplicados:", filters);
+    onApplyFilters?.(filters);
   };
 
   const handleClear = () => {
     clearFilters();
-
-    if (onClearFilters) {
-      onClearFilters();
-      return;
-    }
-
-    console.log("Filtros limpos");
+    onClearFilters?.();
   };
 
   return (

@@ -19,13 +19,18 @@ export const INITIAL_COMPARE_FILTERS: CompareFilter[] = [
     },
   },
   { key: "hour", label: "Hora", enabled: false, value: [] },
-  { key: "distance", label: "Distância", enabled: false, value: HEXBIN_DISTANCE_DEFAULT },
+  {
+    key: "distance",
+    label: "Distância",
+    enabled: false,
+    value: HEXBIN_DISTANCE_DEFAULT,
+  },
   { key: "gender", label: "Gênero", enabled: false, value: [] },
   { key: "age", label: "Idade", enabled: false, value: [] },
   { key: "socialClass", label: "Classe social", enabled: false, value: [] },
 ];
 
-function cloneCompareFilter(filter: CompareFilter): CompareFilter {
+export function cloneCompareFilter(filter: CompareFilter): CompareFilter {
   if (filter.key === "location") {
     return {
       ...filter,
@@ -85,13 +90,17 @@ export function useHexbinCompareModal({
 
   function updateFilter(key: CompareFilterKey, patch: Partial<CompareFilter>) {
     setFilters((current) =>
-      current.map((item) => (item.key === key ? ({ ...item, ...patch } as CompareFilter) : item)),
+      current.map((item) =>
+        item.key === key ? ({ ...item, ...patch } as CompareFilter) : item,
+      ),
     );
   }
 
   function toggleFilter(key: CompareFilterKey) {
     setFilters((current) =>
-      current.map((item) => (item.key === key ? { ...item, enabled: !item.enabled } : item)),
+      current.map((item) =>
+        item.key === key ? { ...item, enabled: !item.enabled } : item,
+      ),
     );
   }
 

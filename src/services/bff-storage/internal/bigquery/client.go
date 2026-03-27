@@ -410,11 +410,11 @@ func groupByCase(groupBy string) (string, error) {
 		END`, nil
 	case "classe_social":
 		return `CASE
-			WHEN a_class >= GREATEST(b1_class, b2_class, c1_class, c2_class, de_class) THEN 'a'
-			WHEN b1_class >= GREATEST(a_class, b2_class, c1_class, c2_class, de_class) THEN 'b1'
-			WHEN b2_class >= GREATEST(a_class, b1_class, c1_class, c2_class, de_class) THEN 'b2'
-			WHEN c1_class >= GREATEST(a_class, b1_class, b2_class, c2_class, de_class) THEN 'c1'
-			WHEN c2_class >= GREATEST(a_class, b1_class, b2_class, c1_class, de_class) THEN 'c2'
+			WHEN sc.a_class >= GREATEST(sc.b1_class, sc.b2_class, sc.c1_class, sc.c2_class, sc.de_class) THEN 'a'
+			WHEN sc.b1_class >= GREATEST(sc.a_class, sc.b2_class, sc.c1_class, sc.c2_class, sc.de_class) THEN 'b1'
+			WHEN sc.b2_class >= GREATEST(sc.a_class, sc.b1_class, sc.c1_class, sc.c2_class, sc.de_class) THEN 'b2'
+			WHEN sc.c1_class >= GREATEST(sc.a_class, sc.b1_class, sc.b2_class, sc.c2_class, sc.de_class) THEN 'c1'
+			WHEN sc.c2_class >= GREATEST(sc.a_class, sc.b1_class, sc.b2_class, sc.c1_class, sc.de_class) THEN 'c2'
 			ELSE 'de'
 		END`, nil
 	default:

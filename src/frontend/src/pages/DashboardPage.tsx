@@ -144,7 +144,7 @@ export function DashboardPage() {
       title: `${compareConfig.compareMode} • ${group}`,
       filters: buildFiltersForGroup(group),
     }));
-  }, [compareConfig, compareValues, appliedFilters]);
+  }, [compareConfig, compareValues]);
 
   const handleCompareConfirm = (config: CompareChartsConfig) => {
     setCompareConfig(config.compareMode ? config : null);
