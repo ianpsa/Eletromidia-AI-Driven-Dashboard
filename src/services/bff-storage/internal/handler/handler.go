@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bff-storage/internal/bigquery"
 	"bff-storage/internal/storage"
 	"context"
 	"encoding/json"
@@ -18,11 +19,12 @@ import (
 )
 
 type Handler struct {
-	Storage *storage.Client
+	Storage  *storage.Client
+	BigQuery *bigquery.Client
 }
 
-func New(s *storage.Client) *Handler {
-	return &Handler{Storage: s}
+func New(s *storage.Client, bq *bigquery.Client) *Handler {
+	return &Handler{Storage: s, BigQuery: bq}
 }
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {

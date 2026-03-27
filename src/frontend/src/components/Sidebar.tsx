@@ -1,4 +1,4 @@
-type Page = "dashboard" | "cloud";
+type Page = "dashboard" | "analytics" | "cloud";
 
 interface SidebarProps {
   activePage: Page;
@@ -110,6 +110,15 @@ export function Sidebar({
         >
           <IconDashboard />
           {!collapsed && <span>Dashboard</span>}
+        </button>
+        <button
+          type="button"
+          className={`nav-item ${activePage === "analytics" ? "nav-item-active" : ""}`}
+          onClick={() => onNavigate("analytics")}
+          title="Analytics"
+        >
+          <IconDashboard />
+          {!collapsed && <span>Analytics</span>}
         </button>
         <button
           type="button"

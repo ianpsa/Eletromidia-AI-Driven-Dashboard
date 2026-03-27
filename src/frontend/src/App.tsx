@@ -2,10 +2,11 @@ import { useState } from "react";
 import { ChatSidebar } from "./components/ChatSidebar";
 import { Login } from "./components/Login";
 import { Sidebar } from "./components/Sidebar";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { CloudPage } from "./pages/CloudPage";
 import { DashboardPage } from "./pages/DashboardPage";
 
-type Page = "dashboard" | "cloud";
+type Page = "dashboard" | "analytics" | "cloud";
 
 function AppShell() {
   const [page, setPage] = useState<Page>("dashboard");
@@ -26,6 +27,7 @@ function AppShell() {
       />
       <main className="content">
         {page === "dashboard" && <DashboardPage />}
+        {page === "analytics" && <AnalyticsPage />}
         {page === "cloud" && <CloudPage />}
       </main>
       <ChatSidebar open={chatOpen} onClose={() => setChatOpen(false)} />

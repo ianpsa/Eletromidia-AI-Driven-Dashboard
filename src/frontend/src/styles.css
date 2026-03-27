@@ -797,6 +797,27 @@ tbody tr:hover {
   cursor: default;
 }
 
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 18px;
+  align-items: start;
+}
+
+.dashboard-grid--hexbin {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.main-column {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 /* Chat sidebar overrides */
 .chat-sidebar .agent-messages {
   padding: 16px;
