@@ -12,6 +12,12 @@ function AppShell() {
   const [page, setPage] = useState<Page>("dashboard");
   const [chatOpen, setChatOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [lookerUrl, setLookerUrl] = useState<string | undefined>(undefined);
+
+  function handleLookerUrl(url: string) {
+    setLookerUrl(url);
+    setPage("analytics");
+  }
 
   return (
     <div
@@ -27,10 +33,14 @@ function AppShell() {
       />
       <main className="content">
         {page === "dashboard" && <DashboardPage />}
-        {page === "analytics" && <AnalyticsPage />}
+        {page === "analytics" && <AnalyticsPage src={lookerUrl} />}
         {page === "cloud" && <CloudPage />}
       </main>
-      <ChatSidebar open={chatOpen} onClose={() => setChatOpen(false)} />
+      <ChatSidebar
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        onLookerUrl={handleLookerUrl}
+      />
     </div>
   );
 }

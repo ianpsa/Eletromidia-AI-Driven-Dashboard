@@ -218,8 +218,11 @@ def analyze_campaign(
         "Ranking:",
     ]
     for i, row in enumerate(rows, 1):
+        lat = row.get("latitude")
+        lng = row.get("longitude")
+        coords = f" [coords: {lat},{lng}]" if lat is not None and lng is not None else ""
         lines.append(
-            f"{i}. {row['endereco_ref']} — "
+            f"{i}. {row['endereco_ref']}{coords} — "
             f"Afinidade: {row['affinity']}%, "
             f"Público-alvo: {int(row['target_audience'] or 0)}, "
             f"Fluxo total: {int(row['total_flow'] or 0)}"

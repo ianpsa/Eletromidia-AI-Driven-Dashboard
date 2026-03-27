@@ -5,122 +5,111 @@ import os
 import re
 from urllib.parse import quote
 
+from langchain_core.tools import tool
+
+_DEFAULT_REPORT_ID = "1776f716-b7de-4268-99ef-8107f950868d"
+_DEFAULT_PAGE_ID = "p_dmgnzqj61d"
+
+# Literal separator string used inside the JSON filter values.
+# Looker Studio expects this exact string (percent-encoded form of U+E000)
+# as delimiter between filter parts. It gets double-encoded when the whole
+# JSON is URL-encoded: %EE%80%80 → %25EE%2580%2580 in the final URL.
+_SEP = "%EE%80%80"
+
 
 def _decode_unicode_escapes(s: str) -> str:
     """Decode literal \\uXXXX sequences that LLMs sometimes emit."""
     return re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), s)
 
 
-from langchain_core.tools import tool
-
-_DEFAULT_REPORT_ID = "1776f716-b7de-4268-99ef-8107f950868d"
-_DEFAULT_PAGE_ID = "DEQqF"
-_DEFAULT_DS_ALIAS = "ds0"
-
-# Looker Studio Linking API separator.
-# The filter value inside the JSON must contain the literal string "%EE%80%80"
-# (percent-encoded form of U+E000).  When quote() encodes the JSON string,
-# these % signs get double-encoded to %25EE%2580%2580 — which is exactly the
-# format Looker Studio expects in the URL.
-_SEP = "%EE%80%80"
+def _encode_value(v: str) -> str:
+    """Encode a coordinate/value: replace comma with %2C."""
+    return v.replace(",", "%2C")
 
 
-def _filter_value(value: str) -> str:
-    """Encode a single value for the Looker Studio Linking API.
-
-    Resulting format inside the JSON: include{SEP}0{SEP}IN{SEP}{url_encoded_value}
-    Verified against real Looker Studio filter URLs.
-    """
-    return f"include{_SEP}0{_SEP}IN{_SEP}{quote(value, safe='')}"
+def _filter_eq(value: str) -> str:
+    """Single-value EQ filter string (placed inside JSON value)."""
+    return f"include{_SEP}0{_SEP}EQ{_SEP}{_encode_value(value)}"
 
 
-def _get_config() -> tuple[str, str, str]:
+def _filter_in(values: list[str]) -> str:
+    """Multi-value IN filter string (placed inside JSON value)."""
+    encoded = _SEP.join(_encode_value(v) for v in values)
+    return f"include{_SEP}0{_SEP}IN{_SEP}{encoded}"
+
+
+def _get_config() -> tuple[str, str]:
     report_id = os.environ.get("LOOKER_REPORT_ID", _DEFAULT_REPORT_ID)
     page_id = os.environ.get("LOOKER_PAGE_ID", _DEFAULT_PAGE_ID)
-    ds_alias = os.environ.get("LOOKER_DS_ALIAS", _DEFAULT_DS_ALIAS)
-    return report_id, page_id, ds_alias
+    return report_id, page_id
 
 
 def _build_url(
     *,
+    pontos: list[str] | None,
     city: str | None,
     ambiente: str | None,
 ) -> str:
-    """Build a Looker Studio embed URL with Linking API filter params."""
-    report_id, page_id, ds_alias = _get_config()
-
+    """Build a Looker Studio embed URL with df filter control params."""
+    report_id, page_id = _get_config()
     base = f"https://lookerstudio.google.com/embed/reporting/{report_id}/page/{page_id}"
 
-    # Filter keys default to the field-name format "ds_alias.field".
-    # If your report uses filter control IDs instead (df52, df53 …), override
-    # via env vars LOOKER_KEY_CIDADE / LOOKER_KEY_AMBIENTE.
     filters: dict[str, str] = {}
+
+    if pontos:
+        key = os.environ.get("LOOKER_KEY_PONTOS", "df50")
+        decoded = [_decode_unicode_escapes(p) for p in pontos]
+        filters[key] = _filter_in(decoded)
+
     if city:
-        key = os.environ.get("LOOKER_KEY_CIDADE", f"{ds_alias}.cidade")
-        filters[key] = _filter_value(_decode_unicode_escapes(city))
+        key = os.environ.get("LOOKER_KEY_CIDADE", "df49")
+        filters[key] = _filter_eq(_decode_unicode_escapes(city))
+
     if ambiente:
-        key = os.environ.get("LOOKER_KEY_AMBIENTE", f"{ds_alias}.ambiente")
-        filters[key] = _filter_value(_decode_unicode_escapes(ambiente))
+        key = os.environ.get("LOOKER_KEY_AMBIENTE", "df48")
+        filters[key] = _filter_eq(_decode_unicode_escapes(ambiente))
 
     if not filters:
         return base
 
-    return f"{base}?params={quote(json.dumps(filters, separators=(',', ':'), ensure_ascii=False), safe=':,')}"
+    params_json = json.dumps(filters, separators=(",", ":"))
+    return f"{base}?params={quote(params_json, safe=':')}"
 
 
 @tool
 def filter_looker_dashboard(
+    pontos: list[str] | None = None,
     city: str | None = None,
     ambiente: str | None = None,
-    gender: str | None = None,
-    age_range: str | None = None,
-    social_class: list[str] | None = None,
 ) -> str:
-    """Generate a filtered Looker Studio dashboard URL for the user to view.
+    """Generate a Looker Studio dashboard URL filtered to specific OOH points.
 
-    Use this tool when the user wants to visualize data in a dashboard,
-    see charts or maps of the campaign results, or asks for a visual view.
-
-    The dashboard supports filtering by city and ambiente (screen location
-    subtype).  Demographic filters (gender, age_range, social_class) are noted
-    in the response but cannot be applied as visual filters — they are
-    proportion columns, not categorical.
+    Call this tool AFTER analyze_campaign to show the returned points in the
+    Looker dashboard.  Extract the coordinates from each result line
+    (format: [coords: lat,lng]) and pass them as the pontos list.
 
     Args:
-        city: Filter by city name (e.g. 'São Paulo').
-        ambiente: Filter by screen subtype, e.g. 'Edifícios Residenciais',
-                  'Universidades', 'Hotéis'.
-        gender: Demographic note — 'female' or 'male' (not a visual filter).
-        age_range: Demographic note — e.g. '20-29' (not a visual filter).
-        social_class: Demographic note — e.g. ['A', 'B1'] (not a visual filter).
+        pontos: List of geographic coordinates as "lat,lng" strings (e.g.
+                ["-23.5505,-46.6333", "-23.5489,-46.6388"]).  These map to
+                the ooh_pontos dimension in Looker.
+        city: Optional city name to also filter by cidade.
+        ambiente: Optional screen subtype filter (e.g. 'Edifícios Residenciais').
     """
-    url = _build_url(city=city, ambiente=ambiente)
+    url = _build_url(pontos=pontos, city=city, ambiente=ambiente)
 
     applied: list[str] = []
+    if pontos:
+        applied.append(f"{len(pontos)} pontos selecionados")
     if city:
         applied.append(f"cidade={city}")
     if ambiente:
         applied.append(f"ambiente={ambiente}")
 
-    demo: list[str] = []
-    if gender:
-        label = "feminino" if gender.lower() == "female" else "masculino"
-        demo.append(f"gênero={label}")
-    if age_range:
-        demo.append(f"idade={age_range}")
-    if social_class:
-        demo.append(f"classes={','.join(social_class)}")
-
     lines = [
-        "Dashboard filtrado disponível:",
+        "Dashboard com os pontos recomendados:",
         url,
         "",
-        f"Filtros aplicados no dashboard: {', '.join(applied) or 'nenhum'}",
+        f"Filtros aplicados: {', '.join(applied) or 'nenhum'}",
     ]
-    if demo:
-        lines.append(
-            f"Filtros demográficos (considerados na análise, não aplicáveis "
-            f"como filtro visual): {', '.join(demo)}"
-        )
 
     return "\n".join(lines)

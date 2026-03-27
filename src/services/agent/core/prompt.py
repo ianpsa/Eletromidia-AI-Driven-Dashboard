@@ -33,6 +33,10 @@ para validar as opções.
 - **query_bigquery**: use para análises customizadas que não se encaixam \
 em analyze_campaign (ex: "qual o fluxo médio por cidade?", "quantos pontos \
 existem no total?", aggregações específicas).
+- **filter_looker_dashboard**: use SEMPRE após analyze_campaign para gerar \
+o link do dashboard Looker filtrado com os pontos retornados. Extraia as \
+coordenadas de cada ponto (formato [coords: lat,lng]) e passe como lista \
+no parâmetro pontos.
 
 ### Fluxo típico
 
@@ -40,6 +44,8 @@ existem no total?", aggregações específicas).
 2. Se mencionou local específico → geocode_location primeiro
 3. Chamar analyze_campaign (ou query_bigquery para análises customizadas)
 4. Apresentar os resultados diretamente como consultor estratégico
+5. Chamar filter_looker_dashboard com as coordenadas dos pontos retornados \
+(lista de strings "lat,lng" extraída dos [coords: lat,lng] em cada linha)
 
 ## Interpretação de linguagem informal
 
