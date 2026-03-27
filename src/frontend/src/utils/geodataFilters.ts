@@ -29,7 +29,7 @@ export function buildGeoFilterOptionsQuery(selectedState?: string, selectedCity?
   };
 }
 
-export function buildGeoPointsQuery(filters: HexbinFiltersState) {
+export function buildGeoPointsQuery(filters: HexbinFiltersState, limit?: number) {
   return {
     uf_estado: filters.states[0],
     cidade: filters.cities[0],
@@ -37,6 +37,7 @@ export function buildGeoPointsQuery(filters: HexbinFiltersState) {
     genero: filters.genders[0],
     faixa_etaria: filters.ages[0],
     classe_social: filters.socialClasses[0],
+    limit: Number.isFinite(limit) && (limit as number) > 0 ? String(limit) : undefined,
   };
 }
 

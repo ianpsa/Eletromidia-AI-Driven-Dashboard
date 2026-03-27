@@ -7,9 +7,10 @@ import { buildApiUrl } from "../utils/url";
 
 type UseGeoPointsParams = {
   filters: HexbinFiltersState;
+  limit?: number;
 };
 
-export function useGeoPoints({ filters }: UseGeoPointsParams) {
+export function useGeoPoints({ filters, limit }: UseGeoPointsParams) {
   const [points, setPoints] = useState<HexbinPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,7 +20,7 @@ export function useGeoPoints({ filters }: UseGeoPointsParams) {
     setError("");
 
     try {
-      const query = buildGeoPointsQuery(filters);
+  const query = buildGeoPointsQuery(filters, limit);
       const response = await fetch(buildApiUrl("/geodata/points", query));
 
       if (!response.ok) {
@@ -36,7 +37,7 @@ export function useGeoPoints({ filters }: UseGeoPointsParams) {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, limit]);
 
   useEffect(() => {
     void loadPoints();

@@ -2,6 +2,7 @@ import { HexagonLayer } from "@deck.gl/aggregation-layers";
 import type { MapViewState } from "@deck.gl/core";
 import DeckGL from "@deck.gl/react";
 import { useEffect, useMemo, useState } from "react";
+import type { StyleSpecification } from "maplibre-gl";
 import MapView from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { HexbinPoint } from "../../types/geo";
@@ -32,6 +33,32 @@ const DEFAULT_VIEW_STATE: MapViewState = {
 const MIN_HEXBIN_RADIUS_METERS = 120;
 const MAX_HEXBIN_RADIUS_METERS = 3000;
 const GRANULARITY_CURVE_EXPONENT = 1.25;
+const SECONDARY_MAP_STYLE = "https://demotiles.maplibre.org/style.json";
+
+const FALLBACK_MAP_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {
+    osm: {
+      type: "raster",
+      tiles: [
+        "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      ],
+      tileSize: 256,
+      attribution: "© OpenStreetMap contributors",
+    },
+  },
+  layers: [
+    {
+      id: "osm",
+      type: "raster",
+      source: "osm",
+      minzoom: 0,
+      maxzoom: 22,
+    },
+  ],
+};
 
 export function HexbinChart({
   title,
@@ -42,6 +69,7 @@ export function HexbinChart({
 }: HexbinChartProps) {
   const [viewState, setViewState] = useState<MapViewState>(initialViewState);
   const [densityDomain, setDensityDomain] = useState<[number, number]>([0, 0]);
+  const [mapStyle, setMapStyle] = useState<string | StyleSpecification>(MAP_STYLE);
 
   const hexbinRadiusMeters = useMemo(() => {
     const boundedDistanceKm = Math.max(
@@ -89,7 +117,7 @@ export function HexbinChart({
         data,
         pickable: true,
         extruded: false,
-    radius: hexbinRadiusMeters,
+        radius: hexbinRadiusMeters,
         coverage: 0.82,
         upperPercentile: 100,
         opacity: 0.55,
@@ -150,12 +178,21 @@ export function HexbinChart({
           >
             <MapView
               reuseMaps
-              mapStyle={MAP_STYLE}
+              mapStyle={mapStyle}
               style={{
                 position: "absolute",
                 inset: 0,
                 width: "100%",
                 height: "100%",
+              }}
+              onError={() => {
+                setMapStyle((current) =>
+                  typeof current === "string"
+                    ? current === SECONDARY_MAP_STYLE
+                      ? FALLBACK_MAP_STYLE
+                      : SECONDARY_MAP_STYLE
+                    : current,
+                );
               }}
             />
           </DeckGL>
