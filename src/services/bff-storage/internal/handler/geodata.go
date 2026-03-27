@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -118,12 +119,27 @@ func parseGeoFilters(r *http.Request) models.GeoFilters {
 	}
 
 	return models.GeoFilters{
-		UfEstado:     q.Get("uf_estado"),
-		Cidade:       q.Get("cidade"),
-		Endereco:     q.Get("endereco"),
-		Genero:       q.Get("genero"),
-		FaixaEtaria:  q.Get("faixa_etaria"),
-		ClasseSocial: q.Get("classe_social"),
+		UfEstado:     splitParam(q.Get("uf_estado")),
+		Cidade:       splitParam(q.Get("cidade")),
+		Endereco:     splitParam(q.Get("endereco")),
+		Horario:      splitParam(q.Get("horario")),
+		Genero:       splitParam(q.Get("genero")),
+		FaixaEtaria:  splitParam(q.Get("faixa_etaria")),
+		ClasseSocial: splitParam(q.Get("classe_social")),
 		Limit:        limit,
 	}
+}
+
+func splitParam(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	var result []string
+	for _, v := range strings.Split(raw, ",") {
+		v = strings.TrimSpace(v)
+		if v != "" {
+			result = append(result, v)
+		}
+	}
+	return result
 }

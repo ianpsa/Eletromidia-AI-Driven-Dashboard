@@ -8,12 +8,13 @@ type GeoPoint struct {
 }
 
 type GeoFilters struct {
-	UfEstado     string
-	Cidade       string
-	Endereco     string
-	Genero       string
-	FaixaEtaria  string
-	ClasseSocial string
+	UfEstado     []string
+	Cidade       []string
+	Endereco     []string
+	Horario      []string
+	Genero       []string
+	FaixaEtaria  []string
+	ClasseSocial []string
 	Limit        int
 }
 
