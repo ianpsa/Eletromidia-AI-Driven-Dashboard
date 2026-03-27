@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useGeoFilterOptions } from "../../hooks/useGeoFilterOptions";
-import type { CompareChartsConfig, CompareFilter, CompareMode } from "../../types/hexbin";
+import { cloneCompareFilter } from "../../hooks/useHexbinCompareModal";
+import type {
+  CompareChartsConfig,
+  CompareFilter,
+  CompareMode,
+} from "../../types/hexbin";
 import type { CompareTagItem } from "../../utils/hexbinCompareTags";
-import { HEXBIN_DISTANCE_MAX, HEXBIN_DISTANCE_MIN } from "../../utils/hexbinOptions";
+import {
+  HEXBIN_DISTANCE_MAX,
+  HEXBIN_DISTANCE_MIN,
+} from "../../utils/hexbinOptions";
 import { MultiSelect } from "./MultiSelect";
 import "./CompareChartsModal.css";
 
@@ -14,9 +22,14 @@ type CompareTagEditorModalProps = {
   onSave: (nextConfig: CompareChartsConfig) => void;
 };
 
-function findFilter(config: CompareChartsConfig | null, targetTag: CompareTagItem | null) {
+function findFilter(
+  config: CompareChartsConfig | null,
+  targetTag: CompareTagItem | null,
+) {
   if (!config || !targetTag || targetTag.kind !== "filter") return null;
-  return config.filters.find((filter) => filter.key === targetTag.filterKey) ?? null;
+  return (
+    config.filters.find((filter) => filter.key === targetTag.filterKey) ?? null
+  );
 }
 
 export function CompareTagEditorModal({
@@ -26,14 +39,23 @@ export function CompareTagEditorModal({
   onClose,
   onSave,
 }: CompareTagEditorModalProps) {
-  const filter = useMemo(() => findFilter(config, targetTag), [config, targetTag]);
+  const filter = useMemo(
+    () => findFilter(config, targetTag),
+    [config, targetTag],
+  );
   const [draftFilter, setDraftFilter] = useState<CompareFilter | null>(null);
-  const [draftCompareMode, setDraftCompareMode] = useState<CompareMode | null>(null);
+  const [draftCompareMode, setDraftCompareMode] = useState<CompareMode | null>(
+    null,
+  );
 
   const selectedState =
-    draftFilter && draftFilter.key === "location" ? draftFilter.value.state[0] : undefined;
+    draftFilter && draftFilter.key === "location"
+      ? draftFilter.value.state[0]
+      : undefined;
   const selectedCity =
-    draftFilter && draftFilter.key === "location" ? draftFilter.value.city[0] : undefined;
+    draftFilter && draftFilter.key === "location"
+      ? draftFilter.value.city[0]
+      : undefined;
   const { options: remoteOptions } = useGeoFilterOptions({
     selectedState,
     selectedCity,
@@ -43,7 +65,7 @@ export function CompareTagEditorModal({
     if (!open || !targetTag) return;
 
     if (targetTag.kind === "filter") {
-      setDraftFilter(filter ? { ...filter } : null);
+      setDraftFilter(filter ? cloneCompareFilter(filter) : null);
       setDraftCompareMode(null);
       return;
     }
@@ -90,7 +112,11 @@ export function CompareTagEditorModal({
             <p>Atualize apenas os valores desta tag.</p>
           </div>
 
-          <button className="compare-modal__close" onClick={onClose} type="button">
+          <button
+            className="compare-modal__close"
+            onClick={onClose}
+            type="button"
+          >
             ×
           </button>
         </div>
@@ -176,7 +202,10 @@ export function CompareTagEditorModal({
                 onChange={(values) =>
                   setDraftFilter((current) =>
                     current && current.key === "location"
-                      ? { ...current, value: { ...current.value, address: values } }
+                      ? {
+                          ...current,
+                          value: { ...current.value, address: values },
+                        }
                       : current,
                   )
                 }
@@ -194,7 +223,9 @@ export function CompareTagEditorModal({
                 selected={draftFilter.value}
                 onChange={(values) =>
                   setDraftFilter((current) =>
-                    current && current.key === "hour" ? { ...current, value: values } : current,
+                    current && current.key === "hour"
+                      ? { ...current, value: values }
+                      : current,
                   )
                 }
                 placeholder="Todos"
@@ -233,7 +264,9 @@ export function CompareTagEditorModal({
                 selected={draftFilter.value}
                 onChange={(values) =>
                   setDraftFilter((current) =>
-                    current && current.key === "gender" ? { ...current, value: values } : current,
+                    current && current.key === "gender"
+                      ? { ...current, value: values }
+                      : current,
                   )
                 }
                 placeholder="Todos"
@@ -250,24 +283,7 @@ export function CompareTagEditorModal({
                 selected={draftFilter.value}
                 onChange={(values) =>
                   setDraftFilter((current) =>
-                    current && current.key === "age" ? { ...current, value: values } : current,
-                  )
-                }
-                placeholder="Todos"
-              />
-            </section>
-          )}
-
-          {targetTag.kind === "filter" && draftFilter?.key === "socialClass" && (
-            <section className="compare-modal__section">
-              <h3>Valores de classe social</h3>
-              <MultiSelect
-                label="Classes sociais"
-                options={remoteOptions.socialClasses}
-                selected={draftFilter.value}
-                onChange={(values) =>
-                  setDraftFilter((current) =>
-                    current && current.key === "socialClass"
+                    current && current.key === "age"
                       ? { ...current, value: values }
                       : current,
                   )
@@ -276,13 +292,41 @@ export function CompareTagEditorModal({
               />
             </section>
           )}
+
+          {targetTag.kind === "filter" &&
+            draftFilter?.key === "socialClass" && (
+              <section className="compare-modal__section">
+                <h3>Valores de classe social</h3>
+                <MultiSelect
+                  label="Classes sociais"
+                  options={remoteOptions.socialClasses}
+                  selected={draftFilter.value}
+                  onChange={(values) =>
+                    setDraftFilter((current) =>
+                      current && current.key === "socialClass"
+                        ? { ...current, value: values }
+                        : current,
+                    )
+                  }
+                  placeholder="Todos"
+                />
+              </section>
+            )}
         </div>
 
         <div className="compare-modal__footer">
-          <button className="compare-modal__ghost" onClick={onClose} type="button">
+          <button
+            className="compare-modal__ghost"
+            onClick={onClose}
+            type="button"
+          >
             Cancelar
           </button>
-          <button className="compare-modal__primary" onClick={handleSave} type="button">
+          <button
+            className="compare-modal__primary"
+            onClick={handleSave}
+            type="button"
+          >
             Salvar tag
           </button>
         </div>

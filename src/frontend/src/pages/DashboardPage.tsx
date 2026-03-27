@@ -159,7 +159,7 @@ export function DashboardPage() {
       title: group,
       filters: buildFiltersForGroup(group),
     }));
-  }, [compareConfig, compareValues, appliedFilters]);
+  }, [compareConfig, compareValues]);
 
   useEffect(() => {
     const activeIds = new Set(compareCards.map((card) => card.id));
