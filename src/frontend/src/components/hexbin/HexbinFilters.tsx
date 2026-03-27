@@ -1,17 +1,16 @@
-import { useMemo, useState } from "react";
 import { MultiSelect } from "./MultiSelect";
 import "./HexbinFilters.css";
-
-type HexbinFiltersState = {
-  states: string[];
-  cities: string[];
-  addresses: string[];
-  hours: string[];
-  genders: string[];
-  ages: string[];
-  socialClasses: string[];
-  maxDistance: number;
-};
+import type { HexbinFiltersState } from "../../types/hexbin";
+import { useHexbinFilters } from "../../hooks/useHexbinFilters";
+import {
+  STATE_OPTIONS,
+  CITY_OPTIONS,
+  ADDRESS_OPTIONS,
+  HOUR_OPTIONS,
+  GENDER_OPTIONS,
+  AGE_OPTIONS,
+  CLASS_OPTIONS,
+} from "../../utils/hexbinOptions";
 
 type HexbinFiltersProps = {
   onApplyFilters?: (filters: HexbinFiltersState) => void;
@@ -19,51 +18,12 @@ type HexbinFiltersProps = {
   initialFilters?: Partial<HexbinFiltersState>;
 };
 
-const STATE_OPTIONS = ["SP", "RJ", "MG", "PR"];
-const CITY_OPTIONS = ["São Paulo", "Campinas", "Santos", "Guarulhos", "Osasco"];
-const ADDRESS_OPTIONS = ["Rua M.M.D.C", "Avenida Paulista", "Rua da Consolação", "Rua Vergueiro"];
-const HOUR_OPTIONS = ["00:00 - 06:00", "06:00 - 12:00", "12:00 - 18:00", "18:00 - 24:00"];
-const GENDER_OPTIONS = ["Feminino", "Masculino", "Outro"];
-const AGE_OPTIONS = ["18-19", "20-29", "30-39", "40-49", "50+"];
-const CLASS_OPTIONS = ["Classe A/B", "Classe C", "Classe D/E"];
-
-const DEFAULT_STATE: HexbinFiltersState = {
-  states: [],
-  cities: [],
-  addresses: [],
-  hours: [],
-  genders: [],
-  ages: [],
-  socialClasses: [],
-  maxDistance: 10,
-};
-
 export function HexbinFilters({
   onApplyFilters,
   onClearFilters,
   initialFilters,
 }: HexbinFiltersProps) {
-  const [filters, setFilters] = useState<HexbinFiltersState>({
-    ...DEFAULT_STATE,
-    ...initialFilters,
-  });
-
-  const hasAnySelection = useMemo(
-    () =>
-      filters.states.length > 0 ||
-      filters.cities.length > 0 ||
-      filters.addresses.length > 0 ||
-      filters.hours.length > 0 ||
-      filters.genders.length > 0 ||
-      filters.ages.length > 0 ||
-      filters.socialClasses.length > 0 ||
-      filters.maxDistance !== DEFAULT_STATE.maxDistance,
-    [filters]
-  );
-
-  const setField = <K extends keyof HexbinFiltersState>(key: K, value: HexbinFiltersState[K]) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
+  const { filters, setField, hasAnySelection, clearFilters } = useHexbinFilters(initialFilters);
 
   const handleApply = () => {
     if (onApplyFilters) {
@@ -75,8 +35,7 @@ export function HexbinFilters({
   };
 
   const handleClear = () => {
-    const cleared = { ...DEFAULT_STATE };
-    setFilters(cleared);
+    clearFilters();
 
     if (onClearFilters) {
       onClearFilters();

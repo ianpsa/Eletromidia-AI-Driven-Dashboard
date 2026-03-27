@@ -1,42 +1,16 @@
-import { useMemo, useState } from "react";
 import { MultiSelect } from "./MultiSelect";
 import "./CompareChartsModal.css";
-
-type CompareMode = "gender" | "age" | "socialClass";
-
-type CompareFilterKey = "location" | "hour" | "distance" | "gender" | "age" | "socialClass";
-
-type LocationValue = {
-  state: string[];
-  city: string[];
-  address: string[];
-};
-
-type CompareFilter =
-  | {
-      key: "location";
-      label: string;
-      enabled: boolean;
-      value: LocationValue;
-    }
-  | {
-      key: "hour";
-      label: string;
-      enabled: boolean;
-      value: string[];
-    }
-  | {
-      key: "distance";
-      label: string;
-      enabled: boolean;
-      value: number;
-    }
-  | {
-      key: "gender" | "age" | "socialClass";
-      label: string;
-      enabled: boolean;
-      value: string[];
-    };
+import type { CompareMode, CompareFilter } from "../../types/hexbin";
+import { useHexbinCompareModal } from "../../hooks/useHexbinCompareModal";
+import {
+  STATE_OPTIONS,
+  CITY_OPTIONS,
+  ADDRESS_OPTIONS,
+  HOUR_OPTIONS,
+  GENDER_OPTIONS,
+  AGE_OPTIONS,
+  CLASS_OPTIONS,
+} from "../../utils/hexbinOptions";
 
 type CompareChartsModalProps = {
   open: boolean;
@@ -47,60 +21,21 @@ type CompareChartsModalProps = {
   }) => void;
 };
 
-const initialFilters: CompareFilter[] = [
-  {
-    key: "location",
-    label: "Localização",
-    enabled: false,
-    value: {
-      state: [],
-      city: [],
-      address: [],
-    },
-  },
-  { key: "hour", label: "Hora", enabled: false, value: [] },
-  { key: "distance", label: "Distância", enabled: false, value: 10 },
-  { key: "gender", label: "Gênero", enabled: false, value: [] },
-  { key: "age", label: "Idade", enabled: false, value: [] },
-  { key: "socialClass", label: "Classe social", enabled: false, value: [] },
-];
-
-const STATE_OPTIONS = ["SP", "RJ", "MG", "PR"];
-const CITY_OPTIONS = ["São Paulo", "Campinas", "Santos", "Guarulhos", "Osasco"];
-const ADDRESS_OPTIONS = ["Rua M.M.D.C", "Avenida Paulista", "Rua da Consolação", "Rua Vergueiro"];
-const HOUR_OPTIONS = ["00:00 - 06:00", "06:00 - 12:00", "12:00 - 18:00", "18:00 - 24:00"];
-const GENDER_OPTIONS = ["Feminino", "Masculino", "Outro"];
-const AGE_OPTIONS = ["18-19", "20-29", "30-39", "40-49", "50+"];
-const CLASS_OPTIONS = ["Classe A/B", "Classe C", "Classe D/E"];
-
 export function CompareChartsModal({
   open,
   onClose,
   onConfirm,
 }: CompareChartsModalProps) {
-  const [compareMode, setCompareMode] = useState<CompareMode | null>(null);
-  const [filters, setFilters] = useState<CompareFilter[]>(initialFilters);
-
-  const visibleFilters = useMemo(() => {
-    if (!compareMode) return filters;
-    return filters.filter((filter) => filter.key !== compareMode);
-  }, [filters, compareMode]);
+  const {
+    compareMode,
+    setCompareMode,
+    filters,
+    visibleFilters,
+    updateFilter,
+    toggleFilter,
+  } = useHexbinCompareModal();
 
   if (!open) return null;
-
-  function updateFilter(key: CompareFilterKey, patch: Partial<CompareFilter>) {
-    setFilters((current) =>
-      current.map((item) => (item.key === key ? ({ ...item, ...patch } as CompareFilter) : item)),
-    );
-  }
-
-  function toggleFilter(key: CompareFilterKey) {
-    setFilters((current) =>
-      current.map((item) =>
-        item.key === key ? { ...item, enabled: !item.enabled } : item,
-      ),
-    );
-  }
 
   function handleConfirm() {
     onConfirm?.({ compareMode, filters });
@@ -121,7 +56,7 @@ export function CompareChartsModal({
             <h2 id="compare-modal-title">Comparar gráficos</h2>
           </div>
 
-          <button className="compare-modal__close" onClick={onClose}>
+          <button className="compare-modal__close" onClick={onClose} type="button">
             ×
           </button>
         </div>
@@ -203,7 +138,9 @@ export function CompareChartsModal({
                           options={ADDRESS_OPTIONS}
                           selected={filter.value.address}
                           onChange={(values) =>
-                            updateFilter("location", { value: { ...filter.value, address: values } })
+                            updateFilter("location", {
+                              value: { ...filter.value, address: values },
+                            })
                           }
                           placeholder="Todos"
                         />

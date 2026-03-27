@@ -1,13 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import "./MultiSelect.css";
-
-type MultiSelectProps = {
-  label: string;
-  options: string[];
-  selected: string[];
-  onChange: (values: string[]) => void;
-  placeholder?: string;
-};
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import { formatMultiSelectDisplay } from "../../utils/multiSelect";
+import type { MultiSelectProps } from "../../types/hexbin";
 
 export function MultiSelect({
   label,
@@ -19,28 +14,16 @@ export function MultiSelect({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
+  useOutsideClick(rootRef, () => setOpen(false));
 
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
-
-  const displayValue = useMemo(() => {
-    if (selected.length === 0) return placeholder;
-    if (selected.length <= 2) return selected.join(", ");
-    return `${selected.slice(0, 2).join(", ")} (+${selected.length - 2})`;
-  }, [selected, placeholder]);
+  const displayValue = useMemo(
+    () => formatMultiSelectDisplay(selected, placeholder),
+    [selected, placeholder],
+  );
 
   const toggleOption = (value: string) => {
     onChange(
-      selected.includes(value)
-        ? selected.filter((item) => item !== value)
-        : [...selected, value],
+      selected.includes(value) ? selected.filter((item) => item !== value) : [...selected, value],
     );
   };
 
@@ -53,9 +36,7 @@ export function MultiSelect({
         className={`multi-select__control ${open ? "is-open" : ""}`}
         onClick={() => setOpen((prev) => !prev)}
       >
-        <span className={selected.length === 0 ? "is-placeholder" : ""}>
-          {displayValue}
-        </span>
+        <span className={selected.length === 0 ? "is-placeholder" : ""}>{displayValue}</span>
         <span className="multi-select__arrow">▾</span>
       </button>
 
@@ -65,15 +46,8 @@ export function MultiSelect({
             const checked = selected.includes(option);
 
             return (
-              <label
-                key={option}
-                className={`multi-select__option ${checked ? "is-checked" : ""}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleOption(option)}
-                />
+              <label key={option} className={`multi-select__option ${checked ? "is-checked" : ""}`}>
+                <input type="checkbox" checked={checked} onChange={() => toggleOption(option)} />
                 <span>{option}</span>
               </label>
             );

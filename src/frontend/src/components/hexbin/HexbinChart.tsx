@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import MapView from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { HexbinPoint } from "../../types/geo";
+import { MAP_STYLE } from "../../utils/hexbinOptions";
 import "./HexbinChart.css";
 
 type HexbinChartProps = {
@@ -22,8 +23,7 @@ const DEFAULT_VIEW_STATE: MapViewState = {
   bearing: 0,
 };
 
-const MAP_STYLE =
-  "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+
 
 export function HexbinChart({
   title,
