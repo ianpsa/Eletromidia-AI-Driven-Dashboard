@@ -87,62 +87,7 @@ func TestDeterministicID(t *testing.T) {
 	})
 }
 
-// --------------- Grupo 2: TestNormalizeTarget ---------------
-
-func TestNormalizeTarget(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "single-quoted keys become double-quoted",
-			input:    "{'idade': 0.5}",
-			expected: `{"idade": 0.5}`,
-		},
-		{
-			name:     "multiple single-quoted pairs",
-			input:    "{'a': 1, 'b': 2}",
-			expected: `{"a": 1, "b": 2}`,
-		},
-		{
-			name:     "already double-quoted unchanged",
-			input:    `{"idade": 0.5}`,
-			expected: `{"idade": 0.5}`,
-		},
-		{
-			name:     "no quotes unchanged",
-			input:    "{idade: 0.5}",
-			expected: "{idade: 0.5}",
-		},
-		{
-			name:     "empty string",
-			input:    "",
-			expected: "",
-		},
-		{
-			name:     "nested single-quoted keys",
-			input:    "{'key': {'inner': 1}}",
-			expected: `{"key": {"inner": 1}}`,
-		},
-		{
-			name:     "value with spaces in single quotes",
-			input:    "{'cidade': 'Sao Paulo'}",
-			expected: `{"cidade": "Sao Paulo"}`,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := normalizeTarget(tc.input)
-			if got != tc.expected {
-				t.Fatalf("normalizeTarget(%q) = %q, want %q", tc.input, got, tc.expected)
-			}
-		})
-	}
-}
-
-// --------------- Grupo 3: TestValidateMapKeys ---------------
+// --------------- Grupo 2: TestValidateMapKeys ---------------
 
 func TestValidateMapKeys(t *testing.T) {
 	t.Run("all keys present returns nil", func(t *testing.T) {

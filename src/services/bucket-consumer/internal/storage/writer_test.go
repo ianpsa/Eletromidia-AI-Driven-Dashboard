@@ -370,7 +370,9 @@ func TestPending(t *testing.T) {
 	t.Run("after 3 adds returns 3", func(t *testing.T) {
 		w := newTestWriter(100)
 		for i := 0; i < 3; i++ {
-			w.Add(validMessage(`{"i": ` + string(rune('0'+i)) + `}`))
+			if _, err := w.Add(validMessage(`{"i": ` + string(rune('0'+i)) + `}`)); err != nil {
+				t.Fatal(err)
+			}
 		}
 		if p := w.Pending(); p != 3 {
 			t.Fatalf("expected 3 pending, got %d", p)
