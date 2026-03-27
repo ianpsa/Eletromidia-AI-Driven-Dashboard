@@ -157,12 +157,22 @@ func buildFilters(filters models.GeoFilters) ([]string, []bq.QueryParameter) {
 	}
 
 	switch filters.ClasseSocial {
+	case "a":
+		conditions = append(conditions, fmt.Sprintf("sc.a_class > %f", socialClassThreshold))
+	case "b1":
+		conditions = append(conditions, fmt.Sprintf("sc.b1_class > %f", socialClassThreshold))
+	case "b2":
+		conditions = append(conditions, fmt.Sprintf("sc.b2_class > %f", socialClassThreshold))
+	case "c1":
+		conditions = append(conditions, fmt.Sprintf("sc.c1_class > %f", socialClassThreshold))
+	case "c2":
+		conditions = append(conditions, fmt.Sprintf("sc.c2_class > %f", socialClassThreshold))
+	case "de":
+		conditions = append(conditions, fmt.Sprintf("sc.de_class > %f", socialClassThreshold))
 	case "ab":
 		conditions = append(conditions, fmt.Sprintf("(sc.a_class + sc.b1_class + sc.b2_class) > %f", socialClassThreshold))
 	case "c":
 		conditions = append(conditions, fmt.Sprintf("(sc.c1_class + sc.c2_class) > %f", socialClassThreshold))
-	case "de":
-		conditions = append(conditions, fmt.Sprintf("sc.de_class > %f", socialClassThreshold))
 	}
 
 	return conditions, params
@@ -346,14 +356,20 @@ func groupByCase(groupBy string) (string, error) {
 			WHEN a.x20_29 >= GREATEST(a.x18_19, a.x30_39, a.x40_49, a.x50_59, a.x60_69, a.x70_79, a.x80_plus) THEN '20-29'
 			WHEN a.x30_39 >= GREATEST(a.x18_19, a.x20_29, a.x40_49, a.x50_59, a.x60_69, a.x70_79, a.x80_plus) THEN '30-39'
 			WHEN a.x40_49 >= GREATEST(a.x18_19, a.x20_29, a.x30_39, a.x50_59, a.x60_69, a.x70_79, a.x80_plus) THEN '40-49'
-			ELSE '50+'
+			WHEN a.x50_59 >= GREATEST(a.x18_19, a.x20_29, a.x30_39, a.x40_49, a.x60_69, a.x70_79, a.x80_plus) THEN '50-59'
+			WHEN a.x60_69 >= GREATEST(a.x18_19, a.x20_29, a.x30_39, a.x40_49, a.x50_59, a.x70_79, a.x80_plus) THEN '60-69'
+			WHEN a.x70_79 >= GREATEST(a.x18_19, a.x20_29, a.x30_39, a.x40_49, a.x50_59, a.x60_69, a.x80_plus) THEN '70-79'
+			ELSE '80+'
 		END`, nil
 	case "classe_social":
-		return fmt.Sprintf(`CASE
-			WHEN (sc.a_class + sc.b1_class + sc.b2_class) > %f THEN 'ab'
-			WHEN (sc.c1_class + sc.c2_class) > %f THEN 'c'
+		return `CASE
+			WHEN a_class >= GREATEST(b1_class, b2_class, c1_class, c2_class, de_class) THEN 'a'
+			WHEN b1_class >= GREATEST(a_class, b2_class, c1_class, c2_class, de_class) THEN 'b1'
+			WHEN b2_class >= GREATEST(a_class, b1_class, c1_class, c2_class, de_class) THEN 'b2'
+			WHEN c1_class >= GREATEST(a_class, b1_class, b2_class, c2_class, de_class) THEN 'c1'
+			WHEN c2_class >= GREATEST(a_class, b1_class, b2_class, c1_class, de_class) THEN 'c2'
 			ELSE 'de'
-		END`, socialClassThreshold, socialClassThreshold), nil
+		END`, nil
 	default:
 		return "", fmt.Errorf("invalid group_by value: %s", groupBy)
 	}
@@ -398,9 +414,30 @@ func (c *Client) QueryFilterOptions(ctx context.Context, filters models.GeoFilte
 		"12", "13", "14", "15", "16", "17",
 		"18", "19", "20", "21", "22", "23",
 	}
-	result.Generos = []string{"feminino", "masculino"}
-	result.FaixasEtarias = []string{"18-19", "20-29", "30-39", "40-49", "50+"}
-	result.ClassesSociais = []string{"ab", "c", "de"}
+
+	ageCols, err := c.queryTableColumns(ctx, "age")
+	if err != nil {
+		return nil, fmt.Errorf("querying age columns: %w", err)
+	}
+	for _, col := range ageCols {
+		result.FaixasEtarias = append(result.FaixasEtarias, ageColumnToLabel(col))
+	}
+
+	genderCols, err := c.queryTableColumns(ctx, "gender")
+	if err != nil {
+		return nil, fmt.Errorf("querying gender columns: %w", err)
+	}
+	for _, col := range genderCols {
+		result.Generos = append(result.Generos, genderColumnToLabel(col))
+	}
+
+	socialClassCols, err := c.queryTableColumns(ctx, "social_class")
+	if err != nil {
+		return nil, fmt.Errorf("querying social_class columns: %w", err)
+	}
+	for _, col := range socialClassCols {
+		result.ClassesSociais = append(result.ClassesSociais, socialClassColumnToLabel(col))
+	}
 
 	return result, nil
 }
@@ -452,9 +489,71 @@ func ageColumn(faixa string) string {
 		return "a.x30_39"
 	case "40-49":
 		return "a.x40_49"
+	case "50-59":
+		return "a.x50_59"
+	case "60-69":
+		return "a.x60_69"
+	case "70-79":
+		return "a.x70_79"
+	case "80+":
+		return "a.x80_plus"
 	case "50+":
 		return "(a.x50_59 + a.x60_69 + a.x70_79 + a.x80_plus)"
 	default:
 		return ""
 	}
+}
+
+func (c *Client) queryTableColumns(ctx context.Context, tableName string) ([]string, error) {
+	sql := fmt.Sprintf(
+		"SELECT column_name FROM `%s.%s.INFORMATION_SCHEMA.COLUMNS` WHERE table_name = @table AND column_name != 'id' ORDER BY ordinal_position",
+		c.ProjectID, c.DatasetID,
+	)
+
+	q := c.client.Query(sql)
+	q.Parameters = []bq.QueryParameter{{Name: "table", Value: tableName}}
+
+	it, err := q.Read(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var columns []string
+	for {
+		var row []bq.Value
+		err := it.Next(&row)
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if len(row) > 0 && row[0] != nil {
+			columns = append(columns, fmt.Sprintf("%v", row[0]))
+		}
+	}
+
+	return columns, nil
+}
+
+func ageColumnToLabel(col string) string {
+	s := strings.TrimPrefix(col, "x")
+	s = strings.Replace(s, "_plus", "+", 1)
+	s = strings.Replace(s, "_", "-", 1)
+	return s
+}
+
+func genderColumnToLabel(col string) string {
+	switch col {
+	case "feminine":
+		return "feminino"
+	case "masculine":
+		return "masculino"
+	default:
+		return col
+	}
+}
+
+func socialClassColumnToLabel(col string) string {
+	return strings.TrimSuffix(col, "_class")
 }
