@@ -160,10 +160,10 @@ func buildFilters(filters models.GeoFilters) ([]string, []bq.QueryParameter) {
 	if len(filters.Horario) > 0 {
 		hours := parseHours(filters.Horario)
 		if len(hours) == 1 {
-			conditions = append(conditions, "g.impression_hour = @horario")
+			conditions = append(conditions, "SAFE_CAST(g.impression_hour AS INT64) = @horario")
 			params = append(params, bq.QueryParameter{Name: "horario", Value: hours[0]})
 		} else if len(hours) > 1 {
-			conditions = append(conditions, "g.impression_hour IN UNNEST(@horario)")
+			conditions = append(conditions, "SAFE_CAST(g.impression_hour AS INT64) IN UNNEST(@horario)")
 			params = append(params, bq.QueryParameter{Name: "horario", Value: hours})
 		}
 	}
