@@ -189,6 +189,7 @@ export function CompareChartsModal({
                           type="range"
                           min={HEXBIN_DISTANCE_MIN}
                           max={HEXBIN_DISTANCE_MAX}
+                          step={1}
                           value={filter.value}
                           onChange={(e) =>
                             updateFilter("distance", { value: Number(e.target.value) })

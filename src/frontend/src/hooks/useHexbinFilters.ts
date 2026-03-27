@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { HexbinFiltersState } from "../types/hexbin";
 import { areHexbinFiltersEqual, cloneHexbinFilters } from "../utils/hexbinFilters";
+import { HEXBIN_DISTANCE_DEFAULT } from "../utils/hexbinOptions";
 
 export const DEFAULT_HEXBIN_FILTERS_STATE: HexbinFiltersState = {
   states: [],
@@ -10,7 +11,7 @@ export const DEFAULT_HEXBIN_FILTERS_STATE: HexbinFiltersState = {
   genders: [],
   ages: [],
   socialClasses: [],
-  maxDistance: 10,
+  maxDistance: HEXBIN_DISTANCE_DEFAULT,
 };
 
 export function useHexbinFilters(initialFilters?: Partial<HexbinFiltersState>) {

@@ -92,6 +92,7 @@ export function HexbinFilters({
           type="range"
           min={HEXBIN_DISTANCE_MIN}
           max={HEXBIN_DISTANCE_MAX}
+          step={1}
           value={filters.maxDistance}
           onChange={(e) => setField("maxDistance", Number(e.target.value))}
         />

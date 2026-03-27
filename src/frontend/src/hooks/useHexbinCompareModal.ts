@@ -5,6 +5,7 @@ import type {
   CompareFilterKey,
   CompareMode,
 } from "../types/hexbin";
+import { HEXBIN_DISTANCE_DEFAULT } from "../utils/hexbinOptions";
 
 export const INITIAL_COMPARE_FILTERS: CompareFilter[] = [
   {
@@ -18,7 +19,7 @@ export const INITIAL_COMPARE_FILTERS: CompareFilter[] = [
     },
   },
   { key: "hour", label: "Hora", enabled: false, value: [] },
-  { key: "distance", label: "Distância", enabled: false, value: 10 },
+  { key: "distance", label: "Distância", enabled: false, value: HEXBIN_DISTANCE_DEFAULT },
   { key: "gender", label: "Gênero", enabled: false, value: [] },
   { key: "age", label: "Idade", enabled: false, value: [] },
   { key: "socialClass", label: "Classe social", enabled: false, value: [] },

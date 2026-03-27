@@ -77,6 +77,7 @@ export function DashboardPage() {
             title="Mapa de densidade de pessoas"
             data={points}
             height={520}
+            maxDistanceKm={appliedFilters.maxDistance}
           />
 
           {pointsLoading && <p className="hexbin-map-feedback">Carregando dados do mapa...</p>}
