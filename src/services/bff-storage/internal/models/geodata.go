@@ -64,7 +64,11 @@ type CompareResponse struct {
 }
 
 type FilterOptions struct {
-	Estados   []string `json:"estados"`
-	Cidades   []string `json:"cidades"`
-	Enderecos []string `json:"enderecos"`
+	Estados        []string `json:"estados"`
+	Cidades        []string `json:"cidades"`
+	Enderecos      []string `json:"enderecos"`
+	Horarios       []string `json:"horarios"`
+	Generos        []string `json:"generos"`
+	FaixasEtarias  []string `json:"faixas_etarias"`
+	ClassesSociais []string `json:"classes_sociais"`
 }

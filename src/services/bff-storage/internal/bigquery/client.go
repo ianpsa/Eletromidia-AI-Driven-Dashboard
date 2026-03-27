@@ -392,6 +392,16 @@ func (c *Client) QueryFilterOptions(ctx context.Context, filters models.GeoFilte
 	}
 	result.Enderecos = enderecos
 
+	result.Horarios = []string{
+		"00", "01", "02", "03", "04", "05",
+		"06", "07", "08", "09", "10", "11",
+		"12", "13", "14", "15", "16", "17",
+		"18", "19", "20", "21", "22", "23",
+	}
+	result.Generos = []string{"feminino", "masculino"}
+	result.FaixasEtarias = []string{"18-19", "20-29", "30-39", "40-49", "50+"}
+	result.ClassesSociais = []string{"ab", "c", "de"}
+
 	return result, nil
 }
 
