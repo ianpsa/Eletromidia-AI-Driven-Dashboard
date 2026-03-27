@@ -254,9 +254,7 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 			}
 		}
 
-		var td TargetData
-
-		td = TargetData{
+		td := TargetData{
 			Idade:        event.Target["idade"],
 			Genero:       event.Target["genero"],
 			ClasseSocial: event.Target["classe_social"],
