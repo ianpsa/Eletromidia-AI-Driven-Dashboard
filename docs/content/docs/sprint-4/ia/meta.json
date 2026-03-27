@@ -1,0 +1,10 @@
+{
+  "title": "IA",
+  "pages": [
+    "visao-geral",
+    "arquitetura",
+    "ferramentas",
+    "llm-providers",
+    "prompt-e-regras"
+  ]
+}

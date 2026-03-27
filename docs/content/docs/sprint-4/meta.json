@@ -2,6 +2,11 @@
   "title": "Sprint 4",
   "pages": [
     "ci-cd-pipeline",
-    "frontend"
+    "deploy",
+    "observabilidade",
+    "teste-de-carga",
+    "frontend",
+    "ia",
+    "auth"
   ]
 }
