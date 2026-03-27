@@ -168,9 +168,6 @@
   gap: 10px;
 }
 
-.compare-modal__stack input,
-.compare-modal__stack select,
-.compare-modal__inline input,
 .compare-modal__distance input,
 .compare-modal__filter-body select {
   width: 100%;
@@ -210,31 +207,6 @@
   font-weight: 800;
 }
 
-.compare-modal__preview {
-  display: grid;
-  gap: 10px;
-}
-
-.compare-modal__preview-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-size: 13px;
-}
-
-.compare-modal__preview-item strong {
-  color: var(--ink);
-}
-
-.compare-modal__preview-item span {
-  color: var(--muted);
-  text-align: right;
-}
-
 .compare-modal__footer {
   display: flex;
   justify-content: flex-end;
@@ -268,7 +240,6 @@
   .compare-modal {
     max-height: 92vh;
   }
-
   .compare-modal__inline {
     grid-template-columns: 1fr;
   }

@@ -1,54 +1,96 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { MultiSelect } from "./MultiSelect";
 import "./CompareChartsModal.css";
 
 type CompareMode = "gender" | "age" | "socialClass";
 
 type CompareFilterKey = "location" | "hour" | "distance" | "gender" | "age" | "socialClass";
 
-type CompareFilter = {
-  key: CompareFilterKey;
-  label: string;
-  enabled: boolean;
-  value: string;
+type LocationValue = {
+  state: string[];
+  city: string[];
+  address: string[];
 };
+
+type CompareFilter =
+  | {
+      key: "location";
+      label: string;
+      enabled: boolean;
+      value: LocationValue;
+    }
+  | {
+      key: "hour";
+      label: string;
+      enabled: boolean;
+      value: string[];
+    }
+  | {
+      key: "distance";
+      label: string;
+      enabled: boolean;
+      value: number;
+    }
+  | {
+      key: "gender" | "age" | "socialClass";
+      label: string;
+      enabled: boolean;
+      value: string[];
+    };
 
 type CompareChartsModalProps = {
   open: boolean;
   onClose: () => void;
   onConfirm?: (config: {
-    compareMode: CompareMode;
+    compareMode: CompareMode | null;
     filters: CompareFilter[];
   }) => void;
 };
 
 const initialFilters: CompareFilter[] = [
-  { key: "location", label: "Localização", enabled: false, value: "SP / São Paulo / Rua M.M.D.C" },
-  { key: "hour", label: "Hora", enabled: false, value: "" },
-  { key: "distance", label: "Distância", enabled: false, value: "10 km" },
-  { key: "gender", label: "Gênero", enabled: false, value: "Todos" },
-  { key: "age", label: "Idade", enabled: false, value: "Todos" },
-  { key: "socialClass", label: "Classe social", enabled: false, value: "Todos" },
+  {
+    key: "location",
+    label: "Localização",
+    enabled: false,
+    value: {
+      state: [],
+      city: [],
+      address: [],
+    },
+  },
+  { key: "hour", label: "Hora", enabled: false, value: [] },
+  { key: "distance", label: "Distância", enabled: false, value: 10 },
+  { key: "gender", label: "Gênero", enabled: false, value: [] },
+  { key: "age", label: "Idade", enabled: false, value: [] },
+  { key: "socialClass", label: "Classe social", enabled: false, value: [] },
 ];
 
-
+const STATE_OPTIONS = ["SP", "RJ", "MG", "PR"];
+const CITY_OPTIONS = ["São Paulo", "Campinas", "Santos", "Guarulhos", "Osasco"];
+const ADDRESS_OPTIONS = ["Rua M.M.D.C", "Avenida Paulista", "Rua da Consolação", "Rua Vergueiro"];
+const HOUR_OPTIONS = ["00:00 - 06:00", "06:00 - 12:00", "12:00 - 18:00", "18:00 - 24:00"];
+const GENDER_OPTIONS = ["Feminino", "Masculino", "Outro"];
+const AGE_OPTIONS = ["18-19", "20-29", "30-39", "40-49", "50+"];
+const CLASS_OPTIONS = ["Classe A/B", "Classe C", "Classe D/E"];
 
 export function CompareChartsModal({
   open,
   onClose,
   onConfirm,
 }: CompareChartsModalProps) {
-  const [compareMode, setCompareMode] = useState<CompareMode>("gender");
+  const [compareMode, setCompareMode] = useState<CompareMode | null>(null);
   const [filters, setFilters] = useState<CompareFilter[]>(initialFilters);
 
-  
+  const visibleFilters = useMemo(() => {
+    if (!compareMode) return filters;
+    return filters.filter((filter) => filter.key !== compareMode);
+  }, [filters, compareMode]);
 
   if (!open) return null;
 
   function updateFilter(key: CompareFilterKey, patch: Partial<CompareFilter>) {
     setFilters((current) =>
-      current.map((item) =>
-        item.key === key ? { ...item, ...patch } : item,
-      ),
+      current.map((item) => (item.key === key ? ({ ...item, ...patch } as CompareFilter) : item)),
     );
   }
 
@@ -64,8 +106,6 @@ export function CompareChartsModal({
     onConfirm?.({ compareMode, filters });
     onClose();
   }
-
-  
 
   return (
     <div className="compare-modal__backdrop" onClick={onClose}>
@@ -94,23 +134,25 @@ export function CompareChartsModal({
               <button
                 className={`compare-modal__tab ${compareMode === "gender" ? "compare-modal__tab--active" : ""}`}
                 onClick={() => setCompareMode("gender")}
+                type="button"
               >
                 Gênero
               </button>
               <button
                 className={`compare-modal__tab ${compareMode === "age" ? "compare-modal__tab--active" : ""}`}
                 onClick={() => setCompareMode("age")}
+                type="button"
               >
                 Idade
               </button>
               <button
                 className={`compare-modal__tab ${compareMode === "socialClass" ? "compare-modal__tab--active" : ""}`}
                 onClick={() => setCompareMode("socialClass")}
+                type="button"
               >
                 Classe
               </button>
             </div>
-
           </section>
 
           <section className="compare-modal__section">
@@ -120,9 +162,7 @@ export function CompareChartsModal({
             </div>
 
             <div className="compare-modal__filters">
-              {filters
-                .filter((f) => f.key !== compareMode) // não mostrar o filtro que já está sendo usado na comparação
-                .map((filter) => (
+              {visibleFilters.map((filter) => (
                 <div key={filter.key} className="compare-modal__filter-card">
                   <label className="compare-modal__filter-toggle">
                     <input
@@ -133,103 +173,98 @@ export function CompareChartsModal({
                     <span>{filter.label}</span>
                   </label>
 
-                  <div className={`compare-modal__filter-body ${filter.enabled ? "compare-modal__filter-body--active" : ""}`}>
+                  <div
+                    className={`compare-modal__filter-body ${filter.enabled ? "compare-modal__filter-body--active" : ""}`}
+                  >
                     {filter.key === "location" && (
                       <div className="compare-modal__stack">
-                        <select
-                          value={filter.value.split(" / ")[0]}
-                          onChange={(e) =>
-                            updateFilter(filter.key, {
-                              value: `${e.target.value} / São Paulo / Rua M.M.D.C`,
-                            })
+                        <MultiSelect
+                          label="Estados"
+                          options={STATE_OPTIONS}
+                          selected={filter.value.state}
+                          onChange={(values) =>
+                            updateFilter("location", { value: { ...filter.value, state: values } })
                           }
-                        >
-                          <option>SP</option>
-                          <option>RJ</option>
-                          <option>MG</option>
-                          <option>PR</option>
-                        </select>
+                          placeholder="Todos"
+                        />
 
-                        <select
-                          value="São Paulo"
-                          onChange={(e) =>
-                            updateFilter(filter.key, {
-                              value: `SP / ${e.target.value} / Rua M.M.D.C`,
-                            })
+                        <MultiSelect
+                          label="Cidades"
+                          options={CITY_OPTIONS}
+                          selected={filter.value.city}
+                          onChange={(values) =>
+                            updateFilter("location", { value: { ...filter.value, city: values } })
                           }
-                        >
-                          <option>São Paulo</option>
-                          <option>Campinas</option>
-                          <option>Santos</option>
-                          <option>Guarulhos</option>
-                          <option>Osasco</option>
-                        </select>
+                          placeholder="Todos"
+                        />
 
-                        <select
-                          value="Rua M.M.D.C"
-                          onChange={(e) =>
-                            updateFilter(filter.key, {
-                              value: `SP / São Paulo / ${e.target.value}`,
-                            })
+                        <MultiSelect
+                          label="Endereços"
+                          options={ADDRESS_OPTIONS}
+                          selected={filter.value.address}
+                          onChange={(values) =>
+                            updateFilter("location", { value: { ...filter.value, address: values } })
                           }
-                        >
-                          <option>Rua M.M.D.C</option>
-                          <option>Avenida Paulista</option>
-                          <option>Rua da Consolação</option>
-                          <option>Rua Vergueiro</option>
-                        </select>
+                          placeholder="Todos"
+                        />
                       </div>
                     )}
 
                     {filter.key === "hour" && (
                       <div>
-                        <select
-                          value={filter.value}
-                          onChange={(e) => updateFilter(filter.key, { value: e.target.value })}
-                        >
-                          <option value="">Todos</option>
-                          <option value="0-6">00:00 - 06:00</option>
-                          <option value="6-12">06:00 - 12:00</option>
-                          <option value="12-18">12:00 - 18:00</option>
-                          <option value="18-24">18:00 - 24:00</option>
-                        </select>
+                        <MultiSelect
+                          label="Horários"
+                          options={HOUR_OPTIONS}
+                          selected={filter.value}
+                          onChange={(values) => updateFilter("hour", { value: values })}
+                          placeholder="Todos"
+                        />
                       </div>
                     )}
 
                     {filter.key === "distance" && (
                       <div className="compare-modal__distance">
-                        <input type="range" min={2} max={15} defaultValue={10} />
-                        <strong>10 km</strong>
+                        <input
+                          type="range"
+                          min={2}
+                          max={15}
+                          value={filter.value}
+                          onChange={(e) =>
+                            updateFilter("distance", { value: Number(e.target.value) })
+                          }
+                        />
+                        <strong>{filter.value} km</strong>
                       </div>
                     )}
 
                     {filter.key === "gender" && (
-                      <select defaultValue="Todos">
-                        <option>Todos</option>
-                        <option>Feminino</option>
-                        <option>Masculino</option>
-                        <option>Outro</option>
-                      </select>
+                      <MultiSelect
+                        label="Selecionar gêneros"
+                        options={GENDER_OPTIONS}
+                        selected={filter.value}
+                        onChange={(values) => updateFilter("gender", { value: values })}
+                        placeholder="Todos"
+                      />
                     )}
 
                     {filter.key === "age" && (
-                      <select defaultValue="Todos">
-                        <option>Todos</option>
-                        <option>18-19</option>
-                        <option>20-29</option>
-                        <option>30-39</option>
-                        <option>40-49</option>
-                        <option>50+</option>
-                      </select>
+                      <MultiSelect
+                        label="Selecionar faixas etárias"
+                        options={AGE_OPTIONS}
+                        selected={filter.value}
+                        onChange={(values) => updateFilter("age", { value: values })}
+                        placeholder="Todos"
+                      />
                     )}
 
                     {filter.key === "socialClass" && (
-                      <select defaultValue="Todos">
-                        <option>Todos</option>
-                        <option>Classe A/B</option>
-                        <option>Classe C</option>
-                        <option>Classe D/E</option>
-                      </select>
+                      <MultiSelect
+                        label="Selecionar classes sociais"
+                        options={CLASS_OPTIONS}
+                        selected={filter.value}
+                        onChange={(values) => updateFilter("socialClass", { value: values })}
+                        placeholder="Todos"
+                      />
                     )}
                   </div>
                 </div>
@@ -239,10 +274,10 @@ export function CompareChartsModal({
         </div>
 
         <div className="compare-modal__footer">
-          <button className="compare-modal__ghost" onClick={onClose}>
+          <button className="compare-modal__ghost" onClick={onClose} type="button">
             Cancelar
           </button>
-          <button className="compare-modal__primary" onClick={handleConfirm}>
+          <button className="compare-modal__primary" onClick={handleConfirm} type="button">
             Confirmar comparação
           </button>
         </div>
