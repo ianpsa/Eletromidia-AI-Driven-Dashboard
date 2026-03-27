@@ -6,3 +6,5 @@ python-dateutil
 requests
 langchain-groq
 tabulate
+pytest>=7.0
+httpx>=0.23.0
