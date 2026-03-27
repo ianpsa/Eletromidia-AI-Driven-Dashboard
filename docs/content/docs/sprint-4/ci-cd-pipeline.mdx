@@ -211,18 +211,14 @@ flowchart LR
         DL[docs:lint]
         IL[iac:lint]
     end
-
     subgraph build [Build]
         FB[frontend:build]
     end
-
     subgraph deploy [Deploy]
         PG[pages]
         RC[release:create]
     end
-
     test --> build --> deploy
-
 `} />
 
 ---
