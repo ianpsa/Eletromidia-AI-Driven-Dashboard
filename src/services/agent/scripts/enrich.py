@@ -2,7 +2,8 @@
 
 Three-tier matching:
   1. Exact   — Claro points within ``radius_m`` (default 500 m), weighted by uniques.
-  2. Fallback — Claro points within ``fallback_radius_m`` (default 5 km), inverse-distance weighted.
+  2. Fallback — Claro points within ``fallback_radius_m``
+     (default 5 km), inverse-distance weighted.
   3. Global   — Uniques-weighted average of all Claro data (ensures 100 % coverage).
 
 Usage::
@@ -211,7 +212,10 @@ def _build_row(
         "vertical": eletro_row["vertical"],
         "ambiente": eletro_row["ambiente"],
         "cidade": str(claro_cidades[nearest_global]),
-        "endereco_ref": f"{claro_enderecos[nearest_global]}, {claro_numeros[nearest_global]}",
+        "endereco_ref": (
+            f"{claro_enderecos[nearest_global]}"
+            f", {claro_numeros[nearest_global]}"
+        ),
         "uniques": total_uniques,
         "match_type": "fallback" if is_fallback else "exact",
     }

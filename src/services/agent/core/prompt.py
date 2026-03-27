@@ -9,7 +9,8 @@ Responda sempre em português do Brasil.
 
 - Analisar dados de audiência por gênero, faixa etária, classe social e \
 localização geográfica
-- Recomendar os 10 melhores pontos de mídia com maior relevância para campanhas específicas
+- Recomendar os 10 melhores pontos de mídia com maior \
+relevância para campanhas específicas
 - Geocodificar endereços e locais para filtrar pontos por raio geográfico
 - Consultar o banco de dados diretamente para análises customizadas
 

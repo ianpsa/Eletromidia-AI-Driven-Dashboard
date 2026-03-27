@@ -116,7 +116,9 @@ def _build_sql(
     sql = f"""
 SELECT
   s.location_id,
-  CONCAT(TRIM(s.endereco), ', ', CAST(s.numero AS STRING), ' — ', s.cidade) AS endereco_ref,
+  CONCAT(TRIM(s.endereco), ', ',
+    CAST(s.numero AS STRING), ' — ', s.cidade
+  ) AS endereco_ref,
   s.cidade,
   ANY_VALUE(s.latitude) AS latitude,
   ANY_VALUE(s.longitude) AS longitude,
@@ -220,7 +222,9 @@ def analyze_campaign(
     for i, row in enumerate(rows, 1):
         lat = row.get("latitude")
         lng = row.get("longitude")
-        coords = f" [coords: {lat},{lng}]" if lat is not None and lng is not None else ""
+        coords = (
+            f" [coords: {lat},{lng}]" if lat is not None and lng is not None else ""
+        )
         lines.append(
             f"{i}. {row['endereco_ref']}{coords} — "
             f"Afinidade: {row['affinity']}%, "
