@@ -1,0 +1,242 @@
+---
+title: CI/CD Pipeline
+description: Pipeline de integração e entrega contínua no GitLab CI — estágios, jobs, regras de execução, cache, Docker e deploy.
+---
+
+## Visão Geral
+
+O projeto utiliza **GitLab CI/CD** com uma pipeline modular dividida em três estágios. Cada serviço do monorepo possui seus próprios jobs de lint/build, ativados apenas quando arquivos do respectivo diretório são alterados.
+
+A configuração principal está em `.gitlab-ci.yml`, que inclui arquivos especializados de `.gitlab/ci/`.
+
+---
+
+## Estágios
+
+| Estágio  | Objetivo                                             |
+| -------- | ---------------------------------------------------- |
+| `test`   | Lint, formatação, type-check e validação de infra    |
+| `build`  | Build de artefatos (frontend dist, imagens Docker)   |
+| `deploy` | Deploy do site de documentação e criação de releases |
+
+---
+
+## Arquivos de configuração
+
+```text
+.gitlab-ci.yml              ← entry point, inclui todos os arquivos abaixo
+.gitlab/ci/
+├── variables.yml           ← variáveis globais
+├── actions-rules.yml       ← regras condicionais por componente
+├── branch-rules.yml        ← proteção de branches
+├── pipeline-check.yml      ← validação da pipeline
+├── frontend.yml            ← jobs do frontend (Node.js)
+├── go.yml                  ← jobs dos serviços Go
+├── rust.yml                ← jobs do Rust producer
+├── python.yml              ← jobs do agente Python
+├── docs.yml                ← jobs da documentação
+├── iac.yml                 ← jobs de infraestrutura (Terraform)
+└── release.yml             ← criação de releases GitLab
+```
+
+---
+
+## Regras de execução
+
+Todos os jobs usam regras baseadas em caminhos de arquivo (`changes`). Um job só executa quando arquivos do seu diretório são modificados, e apenas em dois contextos:
+
+1. **Merge requests** — quando há alterações no componente
+2. **Push para `main`** — quando o merge é concluído
+
+| Regra                              | Diretório monitorado                  |
+| ---------------------------------- | ------------------------------------- |
+| `.actions-rules:frontend`          | `src/frontend/**/*`                   |
+| `.actions-rules:bff-storage`       | `src/services/bff-storage/**/*`       |
+| `.actions-rules:bigquery-writer`   | `src/services/bigquery-writer/**/*`   |
+| `.actions-rules:bucket-consumer`   | `src/services/bucket-consumer/**/*`   |
+| `.actions-rules:populate-bigquery` | `src/services/populate-bigquery/**/*` |
+| `.actions-rules:rust-producer`     | `src/services/rust-producer/**/*`     |
+| `.actions-rules:agent`             | `src/services/agent/**/*`             |
+| `.actions-rules:iac`               | `src/iac/**/*`                        |
+| `.actions-rules:docs`              | `docs/**/*`                           |
+| `.actions-rules:always`            | Executa em todo MR e push para main   |
+
+---
+
+## Proteção de branches
+
+O job `branch-rules` garante que **apenas a branch `develop` pode fazer merge em `main`**. Qualquer MR originado de outra branch falha automaticamente na pipeline.
+
+---
+
+## Jobs por serviço
+
+### Frontend (Node.js)
+
+| Job                  | Estágio | Imagem           | Comando             |
+| -------------------- | ------- | ---------------- | ------------------- |
+| `frontend:lint`      | test    | `node:20-alpine` | `npm run lint`      |
+| `frontend:typecheck` | test    | `node:20-alpine` | `npm run typecheck` |
+| `frontend:build`     | build   | `node:20-alpine` | `npm run build`     |
+
+- **Cache**: baseado em `package-lock.json`, armazena `.npm/` e `node_modules/.vite/`
+- **Artefatos**: `src/frontend/dist/` com expiração de 1 hora
+
+### Serviços Go
+
+Quatro serviços Go compartilham a mesma estrutura de lint:
+
+| Job                      | Serviço           | Imagem                          |
+| ------------------------ | ----------------- | ------------------------------- |
+| `bff-storage:lint`       | BFF Storage       | `golangci/golangci-lint:latest` |
+| `bigquery-writer:lint`   | BigQuery Writer   | `golangci/golangci-lint:latest` |
+| `bucket-consumer:lint`   | Bucket Consumer   | `golangci/golangci-lint:latest` |
+| `populate-bigquery:lint` | Populate BigQuery | `golangci/golangci-lint:latest` |
+
+Cada job executa `gofmt -l .` (formatação) e `golangci-lint run` (linting estático).
+
+### Rust Producer
+
+| Job                  | Estágio | Imagem           | Comandos                                         |
+| -------------------- | ------- | ---------------- | ------------------------------------------------ |
+| `rust-producer:lint` | test    | `rust:1.88-slim` | `cargo fmt --check` + `cargo clippy -D warnings` |
+
+- **Cache**: chave estática `"rust-producer"`, armazena `target/`, `~/.cargo/registry/`, `~/.cargo/git/`
+
+### Agente Python
+
+| Job          | Estágio | Imagem              | Comandos                                 |
+| ------------ | ------- | ------------------- | ---------------------------------------- |
+| `agent:lint` | test    | `python:3.9-alpine` | `ruff check .` + `ruff format --check .` |
+
+### Documentação
+
+| Job         | Estágio | Imagem           | Comandos                                                   |
+| ----------- | ------- | ---------------- | ---------------------------------------------------------- |
+| `docs:lint` | test    | `node:20-alpine` | `npm run lint` + `npm run lint:md` + `npm run types:check` |
+| `pages`     | deploy  | `node:20-alpine` | `npm run build` → move output para `public/`               |
+
+- O job `pages` executa **apenas na branch `main`** e faz deploy automático via **GitLab Pages**
+- **Cache**: baseado em `docs/package-lock.json`, armazena `.npm/` e `docs/.next/cache/`
+
+### Infraestrutura (Terraform)
+
+| Job        | Estágio | Imagem                       | Comandos                                                 |
+| ---------- | ------- | ---------------------------- | -------------------------------------------------------- |
+| `iac:lint` | test    | `hashicorp/terraform:latest` | `terraform fmt -check` + `terraform validate` + `tflint` |
+
+---
+
+## Release automático
+
+O job `release:create` executa na branch `main` quando há alterações em `releases/[0-9]*`. Ele:
+
+1. Encontra o arquivo de release mais recente (versionamento semântico)
+2. Verifica via API do GitLab se a release já existe
+3. Extrai as notas do arquivo de release
+4. Cria a release no GitLab usando `release-cli`
+
+---
+
+## Estratégia de cache
+
+| Componente    | Chave de cache               | Caminhos cacheados                               |
+| ------------- | ---------------------------- | ------------------------------------------------ |
+| Frontend      | `package-lock.json`          | `.npm/`, `node_modules/.vite/`                   |
+| Documentação  | `docs/package-lock.json`     | `.npm/`, `docs/.next/cache/`                     |
+| Rust Producer | `"rust-producer"` (estática) | `target/`, `~/.cargo/registry/`, `~/.cargo/git/` |
+| Go / Python   | —                            | Sem cache configurado                            |
+
+---
+
+## Docker
+
+Cada serviço possui um Dockerfile multi-stage otimizado para produção.
+
+### Imagens e estratégia de build
+
+| Serviço            | Base build           | Base produção          | Porta |
+| ------------------ | -------------------- | ---------------------- | ----- |
+| Frontend           | `node:22-alpine`     | `nginx:1.27-alpine`    | 80    |
+| BFF Storage        | `golang:1.25-alpine` | `alpine:3.19`          | 8080  |
+| BigQuery Writer    | `golang:1.25-alpine` | `alpine:3.19`          | —     |
+| Bucket Consumer    | `golang:1.25-alpine` | `alpine:3.19`          | —     |
+| Agent              | `python:3.11-slim`   | (single stage)         | 8000  |
+| CSV Kafka Producer | `rust:1.88`          | `debian:bookworm-slim` | 5000  |
+
+### Docker Compose (desenvolvimento)
+
+O arquivo `src/docker-compose.yml` orquestra o ambiente local:
+
+```text
+Zookeeper (7.5.0)  →  Kafka (7.5.0)  →  Kafka Producer (Rust)
+                                          ↑
+Frontend (Nginx) ──→ Agent (FastAPI)     BFF Storage (Go)
+```
+
+| Serviço        | Porta   | Health check          |
+| -------------- | ------- | --------------------- |
+| Zookeeper      | 2181    | —                     |
+| Kafka          | 9092    | —                     |
+| Kafka Producer | 5000    | —                     |
+| Agent          | 8000    | `GET /health`         |
+| Frontend       | 5173→80 | `GET /health` (Nginx) |
+
+### Nginx como reverse proxy
+
+O frontend em produção usa Nginx para servir a SPA e rotear chamadas de API:
+
+| Rota          | Destino            | Observação                                 |
+| ------------- | ------------------ | ------------------------------------------ |
+| `/health`     | Retorna 200        | Health check para orquestradores           |
+| `/api/chat`   | `agent:8000`       | Streaming SSE, sem buffering, 300s timeout |
+| `/api/bucket` | `bff-storage:8080` | Proxy para o BFF de storage                |
+| `/`           | SPA estática       | Fallback para `index.html`                 |
+
+---
+
+## Diagrama da pipeline
+
+<Mermaid chart={`
+flowchart LR
+    subgraph test [Test]
+        direction TB
+        BC[branch-rules]
+        PC[pipeline:check]
+        FL[frontend:lint]
+        FT[frontend:typecheck]
+        GL[go services:lint]
+        RL[rust-producer:lint]
+        AL[agent:lint]
+        DL[docs:lint]
+        IL[iac:lint]
+    end
+
+    subgraph build [Build]
+        FB[frontend:build]
+    end
+
+    subgraph deploy [Deploy]
+        PG[pages]
+        RC[release:create]
+    end
+
+    test --> build --> deploy
+
+`} />
+
+---
+
+## Variáveis globais
+
+| Variável           | Valor                  | Finalidade                |
+| ------------------ | ---------------------- | ------------------------- |
+| `npm_config_cache` | `$CI_PROJECT_DIR/.npm` | Cache centralizado do NPM |
+
+---
+
+## Ver também
+
+- [Arquitetura](/docs/sprint-1/arquitetura) — visão geral da arquitetura do sistema
+- [Kubernetes](/docs/sprint-3/kubernetes/probes-and-security) — probes e segurança no cluster
+- [Terraform](/docs/sprint-2/backend/infra/terraform) — infraestrutura como código

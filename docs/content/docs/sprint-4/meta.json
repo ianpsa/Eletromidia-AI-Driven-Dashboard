@@ -1,3 +1,7 @@
 {
-  "title": "Sprint 4"
+  "title": "Sprint 4",
+  "pages": [
+    "ci-cd-pipeline",
+    "frontend"
+  ]
 }
