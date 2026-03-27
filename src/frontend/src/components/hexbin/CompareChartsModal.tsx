@@ -1,17 +1,10 @@
 import { MultiSelect } from "./MultiSelect";
 import "./CompareChartsModal.css";
-import type { CompareChartsConfig } from "../../types/hexbin";
+import { useGeoFilterOptions } from "../../hooks/useGeoFilterOptions";
 import { useHexbinCompareModal } from "../../hooks/useHexbinCompareModal";
-import {
-  STATE_OPTIONS,
-  CITY_OPTIONS,
-  ADDRESS_OPTIONS,
-  HOUR_OPTIONS,
-  GENDER_OPTIONS,
-  AGE_OPTIONS,
-  CLASS_OPTIONS,
-} from "../../utils/hexbinOptions";
+import type { CompareChartsConfig } from "../../types/hexbin";
 import { canConfirmCompareConfig } from "../../utils/compareValidation";
+import { HEXBIN_DISTANCE_MAX, HEXBIN_DISTANCE_MIN } from "../../utils/hexbinOptions";
 
 type CompareChartsModalProps = {
   open: boolean;
@@ -34,6 +27,21 @@ export function CompareChartsModal({
     updateFilter,
     toggleFilter,
   } = useHexbinCompareModal({ open, initialConfig });
+
+  const locationFilter = filters.find((filter) => filter.key === "location");
+  const selectedState =
+    locationFilter && locationFilter.key === "location"
+      ? locationFilter.value.state[0]
+      : undefined;
+  const selectedCity =
+    locationFilter && locationFilter.key === "location"
+      ? locationFilter.value.city[0]
+      : undefined;
+
+  const { options: remoteOptions } = useGeoFilterOptions({
+    selectedState,
+    selectedCity,
+  });
 
   const isConfirmDisabled = !canConfirmCompareConfig(compareMode, visibleFilters);
 
@@ -118,27 +126,40 @@ export function CompareChartsModal({
                       <div className="compare-modal__stack">
                         <MultiSelect
                           label="Estados"
-                          options={STATE_OPTIONS}
+                          options={remoteOptions.states}
                           selected={filter.value.state}
                           onChange={(values) =>
-                            updateFilter("location", { value: { ...filter.value, state: values } })
+                            updateFilter("location", {
+                              value: {
+                                ...filter.value,
+                                state: values,
+                                city: [],
+                                address: [],
+                              },
+                            })
                           }
                           placeholder="Todos"
                         />
 
                         <MultiSelect
                           label="Cidades"
-                          options={CITY_OPTIONS}
+                          options={remoteOptions.cities}
                           selected={filter.value.city}
                           onChange={(values) =>
-                            updateFilter("location", { value: { ...filter.value, city: values } })
+                            updateFilter("location", {
+                              value: {
+                                ...filter.value,
+                                city: values,
+                                address: [],
+                              },
+                            })
                           }
                           placeholder="Todos"
                         />
 
                         <MultiSelect
                           label="Endereços"
-                          options={ADDRESS_OPTIONS}
+                          options={remoteOptions.addresses}
                           selected={filter.value.address}
                           onChange={(values) =>
                             updateFilter("location", {
@@ -154,7 +175,7 @@ export function CompareChartsModal({
                       <div>
                         <MultiSelect
                           label="Horários"
-                          options={HOUR_OPTIONS}
+                          options={remoteOptions.hours}
                           selected={filter.value}
                           onChange={(values) => updateFilter("hour", { value: values })}
                           placeholder="Todos"
@@ -166,8 +187,8 @@ export function CompareChartsModal({
                       <div className="compare-modal__distance">
                         <input
                           type="range"
-                          min={2}
-                          max={15}
+                          min={HEXBIN_DISTANCE_MIN}
+                          max={HEXBIN_DISTANCE_MAX}
                           value={filter.value}
                           onChange={(e) =>
                             updateFilter("distance", { value: Number(e.target.value) })
@@ -180,7 +201,7 @@ export function CompareChartsModal({
                     {filter.key === "gender" && (
                       <MultiSelect
                         label="Selecionar gêneros"
-                        options={GENDER_OPTIONS}
+                        options={remoteOptions.genders}
                         selected={filter.value}
                         onChange={(values) => updateFilter("gender", { value: values })}
                         placeholder="Todos"
@@ -190,7 +211,7 @@ export function CompareChartsModal({
                     {filter.key === "age" && (
                       <MultiSelect
                         label="Selecionar faixas etárias"
-                        options={AGE_OPTIONS}
+                        options={remoteOptions.ages}
                         selected={filter.value}
                         onChange={(values) => updateFilter("age", { value: values })}
                         placeholder="Todos"
@@ -200,7 +221,7 @@ export function CompareChartsModal({
                     {filter.key === "socialClass" && (
                       <MultiSelect
                         label="Selecionar classes sociais"
-                        options={CLASS_OPTIONS}
+                        options={remoteOptions.socialClasses}
                         selected={filter.value}
                         onChange={(values) => updateFilter("socialClass", { value: values })}
                         placeholder="Todos"

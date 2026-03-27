@@ -1,15 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  ADDRESS_OPTIONS,
-  AGE_OPTIONS,
-  CITY_OPTIONS,
-  CLASS_OPTIONS,
-  GENDER_OPTIONS,
-  HOUR_OPTIONS,
-  STATE_OPTIONS,
-} from "../../utils/hexbinOptions";
+import { useGeoFilterOptions } from "../../hooks/useGeoFilterOptions";
 import type { CompareChartsConfig, CompareFilter, CompareMode } from "../../types/hexbin";
 import type { CompareTagItem } from "../../utils/hexbinCompareTags";
+import { HEXBIN_DISTANCE_MAX, HEXBIN_DISTANCE_MIN } from "../../utils/hexbinOptions";
 import { MultiSelect } from "./MultiSelect";
 import "./CompareChartsModal.css";
 
@@ -36,6 +29,15 @@ export function CompareTagEditorModal({
   const filter = useMemo(() => findFilter(config, targetTag), [config, targetTag]);
   const [draftFilter, setDraftFilter] = useState<CompareFilter | null>(null);
   const [draftCompareMode, setDraftCompareMode] = useState<CompareMode | null>(null);
+
+  const selectedState =
+    draftFilter && draftFilter.key === "location" ? draftFilter.value.state[0] : undefined;
+  const selectedCity =
+    draftFilter && draftFilter.key === "location" ? draftFilter.value.city[0] : undefined;
+  const { options: remoteOptions } = useGeoFilterOptions({
+    selectedState,
+    selectedCity,
+  });
 
   useEffect(() => {
     if (!open || !targetTag) return;
@@ -128,12 +130,20 @@ export function CompareTagEditorModal({
               <h3>Valores de localização</h3>
               <MultiSelect
                 label="Estados"
-                options={STATE_OPTIONS}
+                options={remoteOptions.states}
                 selected={draftFilter.value.state}
                 onChange={(values) =>
                   setDraftFilter((current) =>
                     current && current.key === "location"
-                      ? { ...current, value: { ...current.value, state: values } }
+                      ? {
+                          ...current,
+                          value: {
+                            ...current.value,
+                            state: values,
+                            city: [],
+                            address: [],
+                          },
+                        }
                       : current,
                   )
                 }
@@ -141,12 +151,19 @@ export function CompareTagEditorModal({
               />
               <MultiSelect
                 label="Cidades"
-                options={CITY_OPTIONS}
+                options={remoteOptions.cities}
                 selected={draftFilter.value.city}
                 onChange={(values) =>
                   setDraftFilter((current) =>
                     current && current.key === "location"
-                      ? { ...current, value: { ...current.value, city: values } }
+                      ? {
+                          ...current,
+                          value: {
+                            ...current.value,
+                            city: values,
+                            address: [],
+                          },
+                        }
                       : current,
                   )
                 }
@@ -154,7 +171,7 @@ export function CompareTagEditorModal({
               />
               <MultiSelect
                 label="Endereços"
-                options={ADDRESS_OPTIONS}
+                options={remoteOptions.addresses}
                 selected={draftFilter.value.address}
                 onChange={(values) =>
                   setDraftFilter((current) =>
@@ -173,7 +190,7 @@ export function CompareTagEditorModal({
               <h3>Valores de hora</h3>
               <MultiSelect
                 label="Horários"
-                options={HOUR_OPTIONS}
+                options={remoteOptions.hours}
                 selected={draftFilter.value}
                 onChange={(values) =>
                   setDraftFilter((current) =>
@@ -191,8 +208,8 @@ export function CompareTagEditorModal({
               <div className="compare-modal__distance">
                 <input
                   type="range"
-                  min={2}
-                  max={15}
+                  min={HEXBIN_DISTANCE_MIN}
+                  max={HEXBIN_DISTANCE_MAX}
                   value={draftFilter.value}
                   onChange={(event) =>
                     setDraftFilter((current) =>
@@ -212,7 +229,7 @@ export function CompareTagEditorModal({
               <h3>Valores de gênero</h3>
               <MultiSelect
                 label="Gêneros"
-                options={GENDER_OPTIONS}
+                options={remoteOptions.genders}
                 selected={draftFilter.value}
                 onChange={(values) =>
                   setDraftFilter((current) =>
@@ -229,7 +246,7 @@ export function CompareTagEditorModal({
               <h3>Valores de idade</h3>
               <MultiSelect
                 label="Faixas etárias"
-                options={AGE_OPTIONS}
+                options={remoteOptions.ages}
                 selected={draftFilter.value}
                 onChange={(values) =>
                   setDraftFilter((current) =>
@@ -246,7 +263,7 @@ export function CompareTagEditorModal({
               <h3>Valores de classe social</h3>
               <MultiSelect
                 label="Classes sociais"
-                options={CLASS_OPTIONS}
+                options={remoteOptions.socialClasses}
                 selected={draftFilter.value}
                 onChange={(values) =>
                   setDraftFilter((current) =>

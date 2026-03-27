@@ -1,16 +1,9 @@
 import { MultiSelect } from "./MultiSelect";
 import "./HexbinFilters.css";
-import type { HexbinFiltersState } from "../../types/hexbin";
+import { useGeoFilterOptions } from "../../hooks/useGeoFilterOptions";
 import { useHexbinFilters } from "../../hooks/useHexbinFilters";
-import {
-  STATE_OPTIONS,
-  CITY_OPTIONS,
-  ADDRESS_OPTIONS,
-  HOUR_OPTIONS,
-  GENDER_OPTIONS,
-  AGE_OPTIONS,
-  CLASS_OPTIONS,
-} from "../../utils/hexbinOptions";
+import type { HexbinFiltersState } from "../../types/hexbin";
+import { HEXBIN_DISTANCE_MAX, HEXBIN_DISTANCE_MIN } from "../../utils/hexbinOptions";
 
 type HexbinFiltersProps = {
   onApplyFilters?: (filters: HexbinFiltersState) => void;
@@ -31,6 +24,11 @@ export function HexbinFilters({
     hasChangesSinceLastApply,
     markFiltersAsApplied,
   } = useHexbinFilters(initialFilters);
+
+  const { options: remoteOptions } = useGeoFilterOptions({
+    selectedState: filters.states[0],
+    selectedCity: filters.cities[0],
+  });
 
   const handleApply = () => {
     if (!hasChangesSinceLastApply) return;
@@ -62,21 +60,28 @@ export function HexbinFilters({
 
       <MultiSelect
         label="Estado"
-        options={STATE_OPTIONS}
+        options={remoteOptions.states}
         selected={filters.states}
-        onChange={(values) => setField("states", values)}
+        onChange={(values) => {
+          setField("states", values);
+          setField("cities", []);
+          setField("addresses", []);
+        }}
       />
 
       <MultiSelect
         label="Cidade"
-        options={CITY_OPTIONS}
+        options={remoteOptions.cities}
         selected={filters.cities}
-        onChange={(values) => setField("cities", values)}
+        onChange={(values) => {
+          setField("cities", values);
+          setField("addresses", []);
+        }}
       />
 
       <MultiSelect
         label="Endereço"
-        options={ADDRESS_OPTIONS}
+        options={remoteOptions.addresses}
         selected={filters.addresses}
         onChange={(values) => setField("addresses", values)}
       />
@@ -85,8 +90,8 @@ export function HexbinFilters({
         <span>Distância máxima</span>
         <input
           type="range"
-          min={2}
-          max={15}
+          min={HEXBIN_DISTANCE_MIN}
+          max={HEXBIN_DISTANCE_MAX}
           value={filters.maxDistance}
           onChange={(e) => setField("maxDistance", Number(e.target.value))}
         />
@@ -95,28 +100,28 @@ export function HexbinFilters({
 
       <MultiSelect
         label="Horário"
-        options={HOUR_OPTIONS}
+        options={remoteOptions.hours}
         selected={filters.hours}
         onChange={(values) => setField("hours", values)}
       />
 
       <MultiSelect
         label="Gênero"
-        options={GENDER_OPTIONS}
+        options={remoteOptions.genders}
         selected={filters.genders}
         onChange={(values) => setField("genders", values)}
       />
 
       <MultiSelect
         label="Faixa etária"
-        options={AGE_OPTIONS}
+        options={remoteOptions.ages}
         selected={filters.ages}
         onChange={(values) => setField("ages", values)}
       />
 
       <MultiSelect
         label="Classe social"
-        options={CLASS_OPTIONS}
+        options={remoteOptions.socialClasses}
         selected={filters.socialClasses}
         onChange={(values) => setField("socialClasses", values)}
       />
