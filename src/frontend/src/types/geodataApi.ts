@@ -17,3 +17,15 @@ export type GeodataFilterOptions = {
   ages: string[];
   socialClasses: string[];
 };
+
+export type GeodataPointResponse = {
+  id: string;
+  latitude: number;
+  longitude: number;
+  value?: number;
+};
+
+export type GeodataPointsResponse = {
+  count?: number;
+  points?: GeodataPointResponse[];
+};

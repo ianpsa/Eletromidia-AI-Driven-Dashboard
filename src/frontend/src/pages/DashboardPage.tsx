@@ -3,20 +3,30 @@ import { HexbinChart } from "../components/hexbin/HexbinChart";
 import { HexbinFilters } from "../components/hexbin/HexbinFilters";
 import { CompareChartsModal } from "../components/hexbin/CompareChartsModal";
 import { CompareTagEditorModal } from "../components/hexbin/CompareTagEditorModal";
-import { generateMockHexbinData } from "../utils/mockHexbinData";
 import {
   buildCompareTags,
   type CompareTagItem,
 } from "../utils/hexbinCompareTags";
-import type { CompareChartsConfig } from "../types/hexbin";
+import type { CompareChartsConfig, HexbinFiltersState } from "../types/hexbin";
 import { getEmptyCompareConfig } from "../hooks/useHexbinCompareModal";
-
-const data = generateMockHexbinData(4500);
+import {
+  DEFAULT_HEXBIN_FILTERS_STATE,
+} from "../hooks/useHexbinFilters";
+import { useGeoPoints } from "../hooks/useGeoPoints";
+import { cloneHexbinFilters } from "../utils/hexbinFilters";
 
 export function DashboardPage() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareConfig, setCompareConfig] = useState<CompareChartsConfig | null>(null);
   const [editingTag, setEditingTag] = useState<CompareTagItem | null>(null);
+  const [appliedFilters, setAppliedFilters] = useState<HexbinFiltersState>(
+    cloneHexbinFilters(DEFAULT_HEXBIN_FILTERS_STATE),
+  );
+  const {
+    points,
+    loading: pointsLoading,
+    error: pointsError,
+  } = useGeoPoints({ filters: appliedFilters });
 
   const handleCompareConfirm = (config: CompareChartsConfig) => {
     setCompareConfig(config.compareMode ? config : null);
@@ -65,12 +75,23 @@ export function DashboardPage() {
         <div className="main-column">
           <HexbinChart
             title="Mapa de densidade de pessoas"
-            data={data}
+            data={points}
             height={520}
           />
+
+          {pointsLoading && <p className="hexbin-map-feedback">Carregando dados do mapa...</p>}
+          {!pointsLoading && pointsError && (
+            <p className="hexbin-map-feedback hexbin-map-feedback--error">{pointsError}</p>
+          )}
         </div>
 
-        <HexbinFilters />
+        <HexbinFilters
+          initialFilters={appliedFilters}
+          onApplyFilters={(filters) => setAppliedFilters(cloneHexbinFilters(filters))}
+          onClearFilters={() =>
+            setAppliedFilters(cloneHexbinFilters(DEFAULT_HEXBIN_FILTERS_STATE))
+          }
+        />
       </div>
 
       <div className="hexbin-compare-bar">

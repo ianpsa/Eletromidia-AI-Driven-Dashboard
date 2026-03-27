@@ -23,6 +23,8 @@ const DEFAULT_VIEW_STATE: MapViewState = {
   bearing: 0,
 };
 
+const HEXBIN_RADIUS_METERS = 700;
+
 
 
 export function HexbinChart({
@@ -33,6 +35,47 @@ export function HexbinChart({
 }: HexbinChartProps) {
   const [viewState, setViewState] = useState<MapViewState>(initialViewState);
 
+  const { minDensityValue, maxDensityValue } = useMemo(() => {
+    if (data.length === 0) {
+      return { minDensityValue: 0, maxDensityValue: 0 };
+    }
+
+    // Aproxima a agregação espacial para manter a legenda coerente
+    // com a métrica visual do hexbin (registros por área).
+    const latRef =
+      data.reduce((acc, point) => acc + point.latitude, 0) / data.length;
+    const metersPerDegLat = 110_540;
+    const metersPerDegLon = 111_320 * Math.cos((latRef * Math.PI) / 180);
+
+    const buckets = new Map<string, number>();
+
+    for (const point of data) {
+      const xMeters = point.longitude * metersPerDegLon;
+      const yMeters = point.latitude * metersPerDegLat;
+
+      const cellX = Math.floor(xMeters / HEXBIN_RADIUS_METERS);
+      const cellY = Math.floor(yMeters / HEXBIN_RADIUS_METERS);
+      const key = `${cellX}:${cellY}`;
+
+      buckets.set(key, (buckets.get(key) ?? 0) + 1);
+    }
+
+    let min = Number.POSITIVE_INFINITY;
+    let max = Number.NEGATIVE_INFINITY;
+
+    for (const count of buckets.values()) {
+      if (count < min) min = count;
+      if (count > max) max = count;
+    }
+
+    return { minDensityValue: min, maxDensityValue: max };
+  }, [data]);
+
+  const formatDensityLabel = (value: number) =>
+    new Intl.NumberFormat("pt-BR", {
+      maximumFractionDigits: 0,
+    }).format(value);
+
   const layers = useMemo(() => {
     return [
       new HexagonLayer<HexbinPoint>({
@@ -40,17 +83,17 @@ export function HexbinChart({
         data,
         pickable: true,
         extruded: false,
-        radius: 700,
+  radius: HEXBIN_RADIUS_METERS,
         coverage: 0.82,
         upperPercentile: 100,
         opacity: 0.55,
         colorRange: [
-          [255, 245, 240],
-          [254, 224, 210],
           [252, 187, 161],
           [252, 146, 114],
           [251, 106, 74],
+          [239, 85, 59],
           [222, 45, 38],
+          [165, 15, 21],
         ],
         getPosition: (d: HexbinPoint) => [d.longitude, d.latitude],
       }),
@@ -85,7 +128,7 @@ export function HexbinChart({
                 0;
 
               return {
-                html: `<strong>${count} registros</strong>`,
+                html: `<strong>${count} registros na área</strong>`,
               };
             }}
           >
@@ -104,14 +147,16 @@ export function HexbinChart({
       </div>
 
       <div className="hexbin-card__legend">
-        <span>
-          <i className="hexbin-card__legend-hot" />
-          Alta densidade
-        </span>
-        <span>
-          <i className="hexbin-card__legend-cold" />
-          Baixa densidade
-        </span>
+        <span className="hexbin-card__legend-title">Escala de densidade</span>
+        <div
+          className="hexbin-card__legend-scale"
+          role="img"
+          aria-label="Escala de cor de densidade, do mínimo ao máximo"
+        />
+        <div className="hexbin-card__legend-labels">
+          <span>Mín: {formatDensityLabel(minDensityValue)}</span>
+          <span>Máx: {formatDensityLabel(maxDensityValue)}</span>
+        </div>
       </div>
     </section>
   );
