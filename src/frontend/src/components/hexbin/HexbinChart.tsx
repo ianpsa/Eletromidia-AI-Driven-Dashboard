@@ -20,6 +20,8 @@ type HexbinChartProps = {
   height?: number;
   maxDistanceKm?: number;
   initialViewState?: MapViewState;
+  densityDomain?: [number, number];
+  onDensityDomainChange?: (domain: [number, number]) => void;
 };
 
 const DEFAULT_VIEW_STATE: MapViewState = {
@@ -66,6 +68,8 @@ export function HexbinChart({
   height = 480,
   maxDistanceKm = HEXBIN_DISTANCE_DEFAULT,
   initialViewState = DEFAULT_VIEW_STATE,
+  densityDomain: densityDomainOverride,
+  onDensityDomainChange,
 }: HexbinChartProps) {
   const [viewState, setViewState] = useState<MapViewState>(initialViewState);
   const [densityDomain, setDensityDomain] = useState<[number, number]>([0, 0]);
@@ -93,8 +97,10 @@ export function HexbinChart({
     setDensityDomain([0, 0]);
   }, [data, hexbinRadiusMeters]);
 
+  const effectiveDensityDomain = densityDomainOverride ?? densityDomain;
+
   const { minDensityValue, maxDensityValue } = useMemo(() => {
-    const [rawMin, rawMax] = densityDomain;
+    const [rawMin, rawMax] = effectiveDensityDomain;
     const min = Number.isFinite(rawMin) ? rawMin : 0;
     const max = Number.isFinite(rawMax) ? rawMax : 0;
 
@@ -103,7 +109,7 @@ export function HexbinChart({
     }
 
     return { minDensityValue: min, maxDensityValue: max };
-  }, [densityDomain]);
+  }, [effectiveDensityDomain]);
 
   const formatDensityLabel = (value: number) =>
     new Intl.NumberFormat("pt-BR", {
@@ -121,6 +127,7 @@ export function HexbinChart({
         coverage: 0.82,
         upperPercentile: 100,
         opacity: 0.55,
+  colorDomain: densityDomainOverride,
         colorRange: [
           [252, 187, 161],
           [252, 146, 114],
@@ -139,10 +146,11 @@ export function HexbinChart({
           const nextMin = Number.isFinite(domain[0]) ? domain[0] : 0;
           const nextMax = Number.isFinite(domain[1]) ? domain[1] : 0;
           setDensityDomain([nextMin, nextMax]);
+          onDensityDomainChange?.([nextMin, nextMax]);
         },
       }),
     ];
-  }, [data, hexbinRadiusMeters, title]);
+  }, [data, hexbinRadiusMeters, title, densityDomainOverride, onDensityDomainChange]);
 
   return (
     <section className="hexbin-card">

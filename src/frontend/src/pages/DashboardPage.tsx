@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CompareChartsModal } from "../components/hexbin/CompareChartsModal";
 import { CompareTagEditorModal } from "../components/hexbin/CompareTagEditorModal";
 import { HexbinChart } from "../components/hexbin/HexbinChart";
@@ -18,11 +18,20 @@ import {
 import { cloneHexbinFilters } from "../utils/hexbinFilters";
 
 type CompareHexbinCardProps = {
+  id: string;
   title: string;
   filters: HexbinFiltersState;
+  densityDomain?: [number, number];
+  onDensityDomainChange?: (id: string, domain: [number, number]) => void;
 };
 
-function CompareHexbinCard({ title, filters }: CompareHexbinCardProps) {
+function CompareHexbinCard({
+  id,
+  title,
+  filters,
+  densityDomain,
+  onDensityDomainChange,
+}: CompareHexbinCardProps) {
   const { points, loading, error } = useGeoPoints({ filters, limit: 2000 });
 
   return (
@@ -32,6 +41,8 @@ function CompareHexbinCard({ title, filters }: CompareHexbinCardProps) {
         data={points}
         height={360}
         maxDistanceKm={filters.maxDistance}
+        densityDomain={densityDomain}
+        onDensityDomainChange={(domain) => onDensityDomainChange?.(id, domain)}
       />
       {loading && <p className="hexbin-map-feedback">Carregando...</p>}
       {!loading && error && (
@@ -61,6 +72,9 @@ export function DashboardPage() {
     loading: pointsLoading,
     error: pointsError,
   } = useGeoPoints({ filters: appliedFilters });
+  const [compareDomains, setCompareDomains] = useState<
+    Record<string, [number, number]>
+  >({});
 
   function buildFiltersForGroup(groupValue: string) {
     const next = cloneHexbinFilters(DEFAULT_HEXBIN_FILTERS_STATE);
@@ -141,10 +155,54 @@ export function DashboardPage() {
     if (!compareConfig?.compareMode) return [] as CompareHexbinCardProps[];
 
     return compareValues.map((group) => ({
-      title: `${compareConfig.compareMode} • ${group}`,
+      id: `${compareConfig.compareMode}-${group}`,
+      title: group,
       filters: buildFiltersForGroup(group),
     }));
   }, [compareConfig, compareValues, appliedFilters]);
+
+  useEffect(() => {
+    const activeIds = new Set(compareCards.map((card) => card.id));
+    setCompareDomains((current) => {
+      const next = Object.fromEntries(
+        Object.entries(current).filter(([id]) => activeIds.has(id)),
+      );
+      return next;
+    });
+  }, [compareCards]);
+
+  const sharedCompareDensityDomain = useMemo<[number, number] | undefined>(() => {
+    const activeDomains = compareCards
+      .map((card) => compareDomains[card.id])
+      .filter(
+        (domain): domain is [number, number] =>
+          Array.isArray(domain) &&
+          Number.isFinite(domain[0]) &&
+          Number.isFinite(domain[1]) &&
+          domain[1] >= domain[0],
+      );
+
+    if (activeDomains.length === 0) return undefined;
+
+    const min = Math.min(...activeDomains.map((domain) => domain[0]));
+    const max = Math.max(...activeDomains.map((domain) => domain[1]));
+
+    return [min, max];
+  }, [compareCards, compareDomains]);
+
+  function handleCompareDomainChange(id: string, domain: [number, number]) {
+    setCompareDomains((current) => {
+      const previous = current[id];
+      if (previous && previous[0] === domain[0] && previous[1] === domain[1]) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [id]: domain,
+      };
+    });
+  }
 
   const handleCompareConfirm = (config: CompareChartsConfig) => {
     setCompareConfig(config.compareMode ? config : null);
@@ -293,9 +351,12 @@ export function DashboardPage() {
           <div className="hexbin-compare-grid">
             {compareCards.map((card) => (
               <CompareHexbinCard
-                key={card.title}
+                key={card.id}
+                id={card.id}
                 title={card.title}
                 filters={card.filters}
+                densityDomain={sharedCompareDensityDomain}
+                onDensityDomainChange={handleCompareDomainChange}
               />
             ))}
           </div>
