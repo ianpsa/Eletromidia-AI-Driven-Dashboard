@@ -11,6 +11,7 @@ rust-producer:lint:
       - ~/.cargo/git/
   script:
     - cd src/services/rust-producer
+    - rustup component add clippy
     - rustup component add rustfmt
     - cargo fmt --check
     - cargo clippy -- -D warnings
