@@ -1,8 +1,15 @@
 import { useMemo, useRef, useState } from "react";
 import "./MultiSelect.css";
+import { useDropdownPosition } from "../../hooks/useDropdownPosition";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { formatMultiSelectDisplay } from "../../utils/multiSelect";
+import {
+  DEFAULT_MULTISELECT_MAX_VISIBLE_OPTIONS,
+  getMultiSelectDropdownMaxHeight,
+  shouldEnableMultiSelectScroll,
+} from "../../utils/multiSelect";
 import type { MultiSelectProps } from "../../types/hexbin";
+import { MultiSelectDropdown } from "./MultiSelectDropdown";
 
 export function MultiSelect({
   label,
@@ -10,15 +17,32 @@ export function MultiSelect({
   selected,
   onChange,
   placeholder = "Todos",
+  maxVisibleOptions = DEFAULT_MULTISELECT_MAX_VISIBLE_OPTIONS,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useOutsideClick(rootRef, () => setOpen(false));
+  useOutsideClick(rootRef, () => setOpen(false), { ignoreRefs: [dropdownRef] });
 
   const displayValue = useMemo(
     () => formatMultiSelectDisplay(selected, placeholder),
     [selected, placeholder],
+  );
+
+  const dropdownPosition = useDropdownPosition({
+    open,
+    anchorRef: rootRef,
+  });
+
+  const isScrollable = useMemo(
+    () => shouldEnableMultiSelectScroll(options.length, maxVisibleOptions),
+    [options.length, maxVisibleOptions],
+  );
+
+  const dropdownMaxHeight = useMemo(
+    () => getMultiSelectDropdownMaxHeight(options.length, maxVisibleOptions),
+    [options.length, maxVisibleOptions],
   );
 
   const toggleOption = (value: string) => {
@@ -40,20 +64,16 @@ export function MultiSelect({
         <span className="multi-select__arrow">▾</span>
       </button>
 
-      {open && (
-        <div className="multi-select__dropdown">
-          {options.map((option) => {
-            const checked = selected.includes(option);
-
-            return (
-              <label key={option} className={`multi-select__option ${checked ? "is-checked" : ""}`}>
-                <input type="checkbox" checked={checked} onChange={() => toggleOption(option)} />
-                <span>{option}</span>
-              </label>
-            );
-          })}
-        </div>
-      )}
+      <MultiSelectDropdown
+        open={open}
+        options={options}
+        selected={selected}
+        onToggleOption={toggleOption}
+        dropdownRef={dropdownRef}
+        positionStyle={dropdownPosition}
+        maxHeight={dropdownMaxHeight}
+        isScrollable={isScrollable}
+      />
     </div>
   );
 }

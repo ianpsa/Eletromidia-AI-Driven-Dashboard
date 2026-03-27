@@ -1,6 +1,6 @@
 import { MultiSelect } from "./MultiSelect";
 import "./CompareChartsModal.css";
-import type { CompareMode, CompareFilter } from "../../types/hexbin";
+import type { CompareChartsConfig } from "../../types/hexbin";
 import { useHexbinCompareModal } from "../../hooks/useHexbinCompareModal";
 import {
   STATE_OPTIONS,
@@ -15,10 +15,7 @@ import {
 type CompareChartsModalProps = {
   open: boolean;
   onClose: () => void;
-  onConfirm?: (config: {
-    compareMode: CompareMode | null;
-    filters: CompareFilter[];
-  }) => void;
+  onConfirm?: (config: CompareChartsConfig) => void;
 };
 
 export function CompareChartsModal({

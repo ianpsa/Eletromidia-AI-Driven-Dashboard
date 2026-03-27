@@ -51,4 +51,10 @@ export type MultiSelectProps = {
   selected: string[];
   onChange: (values: string[]) => void;
   placeholder?: string;
+  maxVisibleOptions?: number;
+};
+
+export type CompareChartsConfig = {
+  compareMode: CompareMode | null;
+  filters: CompareFilter[];
 };
