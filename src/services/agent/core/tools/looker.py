@@ -43,7 +43,6 @@ def _get_config() -> tuple[str, str, str]:
 def _build_url(
     *,
     city: str | None,
-    vertical: str | None,
     ambiente: str | None,
 ) -> str:
     """Build a Looker Studio embed URL with Linking API filter params."""
@@ -55,14 +54,11 @@ def _build_url(
 
     # Filter keys default to the field-name format "ds_alias.field".
     # If your report uses filter control IDs instead (df52, df53 …), override
-    # via env vars LOOKER_KEY_CIDADE / LOOKER_KEY_VERTICAL / LOOKER_KEY_AMBIENTE.
+    # via env vars LOOKER_KEY_CIDADE / LOOKER_KEY_AMBIENTE.
     filters: dict[str, str] = {}
     if city:
         key = os.environ.get("LOOKER_KEY_CIDADE", f"{ds_alias}.cidade")
         filters[key] = _filter_value(_decode_unicode_escapes(city))
-    if vertical:
-        key = os.environ.get("LOOKER_KEY_VERTICAL", f"{ds_alias}.vertical")
-        filters[key] = _filter_value(_decode_unicode_escapes(vertical))
     if ambiente:
         key = os.environ.get("LOOKER_KEY_AMBIENTE", f"{ds_alias}.ambiente")
         filters[key] = _filter_value(_decode_unicode_escapes(ambiente))
@@ -70,13 +66,12 @@ def _build_url(
     if not filters:
         return base
 
-    return f"{base}?params={quote(json.dumps(filters, ensure_ascii=False))}"
+    return f"{base}?params={quote(json.dumps(filters, separators=(',', ':'), ensure_ascii=False), safe=':,')}"
 
 
 @tool
 def filter_looker_dashboard(
     city: str | None = None,
-    vertical: str | None = None,
     ambiente: str | None = None,
     gender: str | None = None,
     age_range: str | None = None,
@@ -87,28 +82,24 @@ def filter_looker_dashboard(
     Use this tool when the user wants to visualize data in a dashboard,
     see charts or maps of the campaign results, or asks for a visual view.
 
-    The dashboard supports filtering by city, vertical (screen location type),
-    and ambiente (screen location subtype).  Demographic filters (gender,
-    age_range, social_class) are noted in the response but cannot be applied
-    as visual filters — they are proportion columns, not categorical.
+    The dashboard supports filtering by city and ambiente (screen location
+    subtype).  Demographic filters (gender, age_range, social_class) are noted
+    in the response but cannot be applied as visual filters — they are
+    proportion columns, not categorical.
 
     Args:
         city: Filter by city name (e.g. 'São Paulo').
-        vertical: Filter by screen type — 'Edifícios', 'MUB-Rua',
-                  'Estabelecimentos Comerciais', or 'Shoppings'.
         ambiente: Filter by screen subtype, e.g. 'Edifícios Residenciais',
                   'Universidades', 'Hotéis'.
         gender: Demographic note — 'female' or 'male' (not a visual filter).
         age_range: Demographic note — e.g. '20-29' (not a visual filter).
         social_class: Demographic note — e.g. ['A', 'B1'] (not a visual filter).
     """
-    url = _build_url(city=city, vertical=vertical, ambiente=ambiente)
+    url = _build_url(city=city, ambiente=ambiente)
 
     applied: list[str] = []
     if city:
         applied.append(f"cidade={city}")
-    if vertical:
-        applied.append(f"vertical={vertical}")
     if ambiente:
         applied.append(f"ambiente={ambiente}")
 
