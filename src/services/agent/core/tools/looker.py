@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from typing import Optional
 from urllib.parse import quote
 
 from langchain_core.tools import tool
@@ -46,9 +47,9 @@ def _get_config() -> tuple[str, str]:
 
 def _build_url(
     *,
-    pontos: list[str] | None,
-    city: str | None,
-    ambiente: str | None,
+    pontos: Optional[list[str]],
+    city: Optional[str],
+    ambiente: Optional[str],
 ) -> str:
     """Build a Looker Studio embed URL with df filter control params."""
     report_id, page_id = _get_config()
@@ -78,9 +79,9 @@ def _build_url(
 
 @tool
 def filter_looker_dashboard(
-    pontos: list[str] | None = None,
-    city: str | None = None,
-    ambiente: str | None = None,
+    pontos: Optional[list[str]] = None,
+    city: Optional[str] = None,
+    ambiente: Optional[str] = None,
 ) -> str:
     """Generate a Looker Studio dashboard URL filtered to specific OOH points.
 
