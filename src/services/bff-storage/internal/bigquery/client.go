@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	bq "cloud.google.com/go/bigquery"
@@ -132,47 +133,93 @@ func buildFilters(filters models.GeoFilters) ([]string, []bq.QueryParameter) {
 	var conditions []string
 	var params []bq.QueryParameter
 
-	if filters.UfEstado != "" {
+	if len(filters.UfEstado) == 1 {
 		conditions = append(conditions, "g.uf_estado = @uf_estado")
+		params = append(params, bq.QueryParameter{Name: "uf_estado", Value: filters.UfEstado[0]})
+	} else if len(filters.UfEstado) > 1 {
+		conditions = append(conditions, "g.uf_estado IN UNNEST(@uf_estado)")
 		params = append(params, bq.QueryParameter{Name: "uf_estado", Value: filters.UfEstado})
 	}
-	if filters.Cidade != "" {
+
+	if len(filters.Cidade) == 1 {
 		conditions = append(conditions, "g.cidade = @cidade")
+		params = append(params, bq.QueryParameter{Name: "cidade", Value: filters.Cidade[0]})
+	} else if len(filters.Cidade) > 1 {
+		conditions = append(conditions, "g.cidade IN UNNEST(@cidade)")
 		params = append(params, bq.QueryParameter{Name: "cidade", Value: filters.Cidade})
 	}
-	if filters.Endereco != "" {
+
+	if len(filters.Endereco) == 1 {
 		conditions = append(conditions, "g.endereco = @endereco")
+		params = append(params, bq.QueryParameter{Name: "endereco", Value: filters.Endereco[0]})
+	} else if len(filters.Endereco) > 1 {
+		conditions = append(conditions, "g.endereco IN UNNEST(@endereco)")
 		params = append(params, bq.QueryParameter{Name: "endereco", Value: filters.Endereco})
 	}
 
-	switch filters.Genero {
-	case "feminino":
-		conditions = append(conditions, fmt.Sprintf("gen.feminine > %f", genderThreshold))
-	case "masculino":
-		conditions = append(conditions, fmt.Sprintf("gen.masculine > %f", genderThreshold))
+	if len(filters.Horario) > 0 {
+		hours := parseHours(filters.Horario)
+		if len(hours) == 1 {
+			conditions = append(conditions, "g.impression_hour = @horario")
+			params = append(params, bq.QueryParameter{Name: "horario", Value: hours[0]})
+		} else if len(hours) > 1 {
+			conditions = append(conditions, "g.impression_hour IN UNNEST(@horario)")
+			params = append(params, bq.QueryParameter{Name: "horario", Value: hours})
+		}
 	}
 
-	if col := ageColumn(filters.FaixaEtaria); col != "" {
-		conditions = append(conditions, fmt.Sprintf("%s > %f", col, ageThreshold))
+	if len(filters.Genero) > 0 {
+		var genderConds []string
+		for _, g := range filters.Genero {
+			switch g {
+			case "feminino":
+				genderConds = append(genderConds, fmt.Sprintf("gen.feminine > %f", genderThreshold))
+			case "masculino":
+				genderConds = append(genderConds, fmt.Sprintf("gen.masculine > %f", genderThreshold))
+			}
+		}
+		if len(genderConds) > 0 {
+			conditions = append(conditions, "("+strings.Join(genderConds, " OR ")+")")
+		}
 	}
 
-	switch filters.ClasseSocial {
-	case "a":
-		conditions = append(conditions, fmt.Sprintf("sc.a_class > %f", socialClassThreshold))
-	case "b1":
-		conditions = append(conditions, fmt.Sprintf("sc.b1_class > %f", socialClassThreshold))
-	case "b2":
-		conditions = append(conditions, fmt.Sprintf("sc.b2_class > %f", socialClassThreshold))
-	case "c1":
-		conditions = append(conditions, fmt.Sprintf("sc.c1_class > %f", socialClassThreshold))
-	case "c2":
-		conditions = append(conditions, fmt.Sprintf("sc.c2_class > %f", socialClassThreshold))
-	case "de":
-		conditions = append(conditions, fmt.Sprintf("sc.de_class > %f", socialClassThreshold))
-	case "ab":
-		conditions = append(conditions, fmt.Sprintf("(sc.a_class + sc.b1_class + sc.b2_class) > %f", socialClassThreshold))
-	case "c":
-		conditions = append(conditions, fmt.Sprintf("(sc.c1_class + sc.c2_class) > %f", socialClassThreshold))
+	if len(filters.FaixaEtaria) > 0 {
+		var ageConds []string
+		for _, faixa := range filters.FaixaEtaria {
+			if col := ageColumn(faixa); col != "" {
+				ageConds = append(ageConds, fmt.Sprintf("%s > %f", col, ageThreshold))
+			}
+		}
+		if len(ageConds) > 0 {
+			conditions = append(conditions, "("+strings.Join(ageConds, " OR ")+")")
+		}
+	}
+
+	if len(filters.ClasseSocial) > 0 {
+		var classConds []string
+		for _, cs := range filters.ClasseSocial {
+			switch cs {
+			case "a":
+				classConds = append(classConds, fmt.Sprintf("sc.a_class > %f", socialClassThreshold))
+			case "b1":
+				classConds = append(classConds, fmt.Sprintf("sc.b1_class > %f", socialClassThreshold))
+			case "b2":
+				classConds = append(classConds, fmt.Sprintf("sc.b2_class > %f", socialClassThreshold))
+			case "c1":
+				classConds = append(classConds, fmt.Sprintf("sc.c1_class > %f", socialClassThreshold))
+			case "c2":
+				classConds = append(classConds, fmt.Sprintf("sc.c2_class > %f", socialClassThreshold))
+			case "de":
+				classConds = append(classConds, fmt.Sprintf("sc.de_class > %f", socialClassThreshold))
+			case "ab":
+				classConds = append(classConds, fmt.Sprintf("(sc.a_class + sc.b1_class + sc.b2_class) > %f", socialClassThreshold))
+			case "c":
+				classConds = append(classConds, fmt.Sprintf("(sc.c1_class + sc.c2_class) > %f", socialClassThreshold))
+			}
+		}
+		if len(classConds) > 0 {
+			conditions = append(conditions, "("+strings.Join(classConds, " OR ")+")")
+		}
 	}
 
 	return conditions, params
@@ -386,8 +433,11 @@ func (c *Client) QueryFilterOptions(ctx context.Context, filters models.GeoFilte
 
 	var cidadeCondition string
 	var cidadeParams []bq.QueryParameter
-	if filters.UfEstado != "" {
+	if len(filters.UfEstado) == 1 {
 		cidadeCondition = "uf_estado = @uf_estado"
+		cidadeParams = []bq.QueryParameter{{Name: "uf_estado", Value: filters.UfEstado[0]}}
+	} else if len(filters.UfEstado) > 1 {
+		cidadeCondition = "uf_estado IN UNNEST(@uf_estado)"
 		cidadeParams = []bq.QueryParameter{{Name: "uf_estado", Value: filters.UfEstado}}
 	}
 	cidades, err := c.queryDistinct(ctx, "cidade", cidadeCondition, "", cidadeParams)
@@ -398,8 +448,11 @@ func (c *Client) QueryFilterOptions(ctx context.Context, filters models.GeoFilte
 
 	var enderecoCondition string
 	var enderecoParams []bq.QueryParameter
-	if filters.Cidade != "" {
+	if len(filters.Cidade) == 1 {
 		enderecoCondition = "cidade = @cidade"
+		enderecoParams = []bq.QueryParameter{{Name: "cidade", Value: filters.Cidade[0]}}
+	} else if len(filters.Cidade) > 1 {
+		enderecoCondition = "cidade IN UNNEST(@cidade)"
 		enderecoParams = []bq.QueryParameter{{Name: "cidade", Value: filters.Cidade}}
 	}
 	enderecos, err := c.queryDistinct(ctx, "endereco", enderecoCondition, "", enderecoParams)
@@ -477,6 +530,16 @@ func (c *Client) queryDistinct(ctx context.Context, column, condition, _ string,
 	}
 
 	return values, nil
+}
+
+func parseHours(raw []string) []int64 {
+	var hours []int64
+	for _, h := range raw {
+		if v, err := strconv.ParseInt(h, 10, 64); err == nil && v >= 0 && v <= 23 {
+			hours = append(hours, v)
+		}
+	}
+	return hours
 }
 
 func ageColumn(faixa string) string {

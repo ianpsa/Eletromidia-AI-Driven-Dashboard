@@ -1,9 +1,9 @@
+import type { HexbinPoint } from "../types/geo";
 import type {
   GeodataFilterOptions,
   GeodataFilterOptionsResponse,
   GeodataPointsResponse,
 } from "../types/geodataApi";
-import type { HexbinPoint } from "../types/geo";
 import type { HexbinFiltersState } from "../types/hexbin";
 
 export function toGeoFilterOptions(
@@ -22,7 +22,10 @@ export function toGeoFilterOptions(
   };
 }
 
-export function buildGeoFilterOptionsQuery(selectedState?: string, selectedCity?: string) {
+export function buildGeoFilterOptionsQuery(
+  selectedState?: string,
+  selectedCity?: string,
+) {
   return {
     uf_estado: selectedState,
     cidade: selectedCity,
@@ -31,16 +34,23 @@ export function buildGeoFilterOptionsQuery(selectedState?: string, selectedCity?
 
 export function buildGeoPointsQuery(filters: HexbinFiltersState) {
   return {
-    uf_estado: filters.states[0],
-    cidade: filters.cities[0],
-    endereco: filters.addresses[0],
-    genero: filters.genders[0],
-    faixa_etaria: filters.ages[0],
-    classe_social: filters.socialClasses[0],
+    uf_estado: filters.states.length > 0 ? filters.states.join(",") : undefined,
+    cidade: filters.cities.length > 0 ? filters.cities.join(",") : undefined,
+    endereco:
+      filters.addresses.length > 0 ? filters.addresses.join(",") : undefined,
+    horario: filters.hours.length > 0 ? filters.hours.join(",") : undefined,
+    genero: filters.genders.length > 0 ? filters.genders.join(",") : undefined,
+    faixa_etaria: filters.ages.length > 0 ? filters.ages.join(",") : undefined,
+    classe_social:
+      filters.socialClasses.length > 0
+        ? filters.socialClasses.join(",")
+        : undefined,
   };
 }
 
-export function toHexbinPoints(payload: GeodataPointsResponse | null | undefined): HexbinPoint[] {
+export function toHexbinPoints(
+  payload: GeodataPointsResponse | null | undefined,
+): HexbinPoint[] {
   if (!Array.isArray(payload?.points)) {
     return [];
   }
