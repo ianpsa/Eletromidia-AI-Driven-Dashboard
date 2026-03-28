@@ -124,6 +124,25 @@ mod tests {
     }
 
     #[test]
+    fn test_map_multiple_roles() {
+        let iam_roles = vec![
+            "roles/looker.accessUser".to_string(),
+            "roles/bigquery.dataEditor".to_string(),
+        ];
+        let app_roles = IamAuthorizer::map_to_app_roles(&iam_roles);
+        assert!(app_roles.contains(&AppRole::Editor));
+        assert!(app_roles.contains(&AppRole::Viewer));
+        assert!(!app_roles.contains(&AppRole::Admin));
+    }
+
+    #[test]
+    fn test_map_unknown_roles() {
+        let iam_roles = vec!["roles/unknown.role".to_string()];
+        let app_roles = IamAuthorizer::map_to_app_roles(&iam_roles);
+        assert!(app_roles.is_empty());
+    }
+
+    #[test]
     fn test_highest_role() {
         let roles = vec![AppRole::Viewer, AppRole::Editor];
         assert_eq!(IamAuthorizer::get_highest_role(&roles), Some(AppRole::Editor));
