@@ -35,18 +35,23 @@ Esta implementação segue o padrão de **Probes e Métricas** estabelecido na S
 ## Novas Funcionalidades
 
 ### 1. Validação Firebase JWT Nativa
+
 O serviço agora implementa um verificador de tokens que:
+
 - Busca chaves públicas dinamicamente de `https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com`.
 - Realiza cache de chaves por 6 horas (via crate `moka`) para minimizar latência.
 - Valida rigorosamente o `iss` (issuer) e `aud` (audience) baseados no ID do projeto.
 
 ### 2. Mapeamento Dinâmico de Roles (GCP IAM)
+
 Uma das principais inovações da Sprint 4 é a tradução de permissões de infraestrutura para permissões de aplicação:
+
 - **Admin**: Mapeado para `roles/resourcemanager.projectIamAdmin` ou administradores de serviços específicos.
 - **Editor**: Mapeado para desenvolvedores (ex: `roles/looker.developer`).
 - **Viewer**: Usuários com acesso básico de leitura (ex: `roles/looker.accessUser`).
 
 ### 3. Health Checks e Observabilidade
+
 Seguindo o padrão do `csv-kafka-producer`, o serviço expõe:
 
 | Endpoint | Descrição | Uso |
