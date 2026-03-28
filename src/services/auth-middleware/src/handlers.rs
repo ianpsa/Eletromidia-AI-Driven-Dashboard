@@ -5,7 +5,7 @@ use axum::{
     Json,
 };
 use crate::models::{AuthorizeRequest, AuthorizeResponse, User};
-use crate::auth::{FirebaseVerifier, IamAuthorizer, AuthToken, AuthError};
+use crate::auth::{FirebaseVerifier, IamAuthorizer, AuthenticatedUser};
 use std::sync::Arc;
 use std::collections::HashMap;
 
@@ -52,14 +52,16 @@ pub async fn authorize(
     // 2. Map role alias to GCP role
     let gcp_role = state.role_mapping.get(&payload.required_role)
         .cloned()
-        .unwrap_or_else(|| payload.required_role.clone()); // Default to the role string itself if no mapping
+        .unwrap_or_else(|| payload.required_role.clone());
 
     // 3. Check IAM role
-    let authorized = state.iam_authorizer.check_role(&email, &gcp_role).await
+    let user_roles = state.iam_authorizer.get_user_iam_roles(&email).await
         .map_err(|e| (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": format!("IAM check failed: {}", e) }))
         ))?;
+
+    let authorized = user_roles.contains(&gcp_role);
 
     Ok(Json(AuthorizeResponse {
         authorized,
@@ -69,32 +71,30 @@ pub async fn authorize(
 }
 
 pub async fn me(
-    AuthToken(claims): AuthToken,
+    auth_user: AuthenticatedUser,
 ) -> impl IntoResponse {
     Json(User {
-        uid: claims.sub,
-        email: claims.email.unwrap_or_default(),
-        email_verified: claims.email_verified.unwrap_or(false),
+        uid: auth_user.claims.sub,
+        email: auth_user.claims.email.unwrap_or_default(),
+        email_verified: auth_user.claims.email_verified.unwrap_or(false),
+        roles: auth_user.roles,
     })
 }
 
 pub async fn admin_only(
-    State(state): State<Arc<AppState>>,
-    AuthToken(claims): AuthToken,
-) -> Result<impl IntoResponse, AuthError> {
-    let email = claims.email.ok_or_else(|| AuthError::InvalidToken("Missing email".to_string()))?;
+    auth_user: AuthenticatedUser,
+) -> impl IntoResponse {
+    (StatusCode::OK, format!("Welcome Admin, {}!", auth_user.claims.email.unwrap_or_default()))
+}
 
-    // Try to get admin role from mapping
-    let admin_role = state.role_mapping.get("admin")
-        .cloned()
-        .unwrap_or_else(|| "roles/resourcemanager.projectIamAdmin".to_string());
+pub async fn editor_only(
+    auth_user: AuthenticatedUser,
+) -> impl IntoResponse {
+    (StatusCode::OK, format!("Welcome Editor, {}!", auth_user.claims.email.unwrap_or_default()))
+}
 
-    let is_admin = state.iam_authorizer.check_role(&email, &admin_role).await
-        .map_err(|e| AuthError::InternalError(e))?;
-
-    if is_admin {
-        Ok((StatusCode::OK, format!("Welcome Admin, {}!", email)))
-    } else {
-        Err(AuthError::InsufficientPermissions)
-    }
+pub async fn viewer_only(
+    auth_user: AuthenticatedUser,
+) -> impl IntoResponse {
+    (StatusCode::OK, format!("Welcome Viewer, {}!", auth_user.claims.email.unwrap_or_default()))
 }

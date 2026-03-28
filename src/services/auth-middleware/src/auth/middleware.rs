@@ -2,8 +2,10 @@ use axum::{
     extract::FromRequestParts,
     http::{request::Parts, StatusCode, header::AUTHORIZATION},
     response::{IntoResponse, Response},
+    middleware::Next,
+    extract::State,
 };
-use crate::auth::FirebaseClaims;
+use crate::auth::{FirebaseClaims, AppRole};
 use crate::handlers::AppState;
 use serde::Serialize;
 use std::sync::Arc;
@@ -41,9 +43,13 @@ impl IntoResponse for AuthError {
     }
 }
 
-pub struct AuthToken(pub FirebaseClaims);
+#[derive(Clone, Debug)]
+pub struct AuthenticatedUser {
+    pub claims: FirebaseClaims,
+    pub roles: Vec<AppRole>,
+}
 
-impl FromRequestParts<Arc<AppState>> for AuthToken 
+impl FromRequestParts<Arc<AppState>> for AuthenticatedUser 
 {
     type Rejection = AuthError;
     
@@ -59,7 +65,6 @@ impl FromRequestParts<Arc<AppState>> for AuthToken
             .ok_or(AuthError::InvalidToken("Expected Bearer token".to_string()))?
             .to_string(); // Clone to release borrow on parts
         
-        // state is already Arc<AppState>
         let app_state = state;
 
         let claims = app_state.firebase_verifier
@@ -67,6 +72,56 @@ impl FromRequestParts<Arc<AppState>> for AuthToken
             .await
             .map_err(AuthError::InvalidToken)?;
         
-        Ok(AuthToken(claims))
+        let email = claims.email.as_ref().ok_or(AuthError::InvalidToken("Missing email in token".to_string()))?;
+        
+        let roles = app_state.iam_authorizer.get_user_app_roles(email)
+            .await
+            .map_err(AuthError::InternalError)?;
+        
+        Ok(AuthenticatedUser { claims, roles })
     }
+}
+
+use axum::extract::Request;
+
+// Middleware that requires a specific role
+pub async fn require_role(
+    State(_state): State<Arc<AppState>>,
+    auth_user: AuthenticatedUser,
+    request: Request,
+    next: Next,
+    required_role: AppRole,
+) -> Result<Response, AuthError> {
+    if auth_user.roles.contains(&required_role) {
+        Ok(next.run(request).await)
+    } else {
+        Err(AuthError::InsufficientPermissions)
+    }
+}
+
+pub async fn require_admin(
+    state: State<Arc<AppState>>,
+    auth: AuthenticatedUser,
+    req: Request,
+    next: Next,
+) -> Result<Response, AuthError> {
+    require_role(state, auth, req, next, AppRole::Admin).await
+}
+
+pub async fn require_editor(
+    state: State<Arc<AppState>>,
+    auth: AuthenticatedUser,
+    req: Request,
+    next: Next,
+) -> Result<Response, AuthError> {
+    require_role(state, auth, req, next, AppRole::Editor).await
+}
+
+pub async fn require_viewer(
+    state: State<Arc<AppState>>,
+    auth: AuthenticatedUser,
+    req: Request,
+    next: Next,
+) -> Result<Response, AuthError> {
+    require_role(state, auth, req, next, AppRole::Viewer).await
 }

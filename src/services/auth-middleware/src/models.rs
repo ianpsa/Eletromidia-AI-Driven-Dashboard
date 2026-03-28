@@ -1,3 +1,4 @@
+use crate::auth::AppRole;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -5,6 +6,7 @@ pub struct User {
     pub uid: String,
     pub email: String,
     pub email_verified: bool,
+    pub roles: Vec<AppRole>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

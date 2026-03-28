@@ -5,9 +5,10 @@ mod auth;
 use axum::{
     routing::{get, post},
     Router,
+    middleware::from_fn_with_state,
 };
-use handlers::{authorize, health, healthz, metrics, admin_only, me, AppState};
-use auth::{FirebaseVerifier, IamAuthorizer};
+use handlers::{authorize, health, healthz, metrics, admin_only, editor_only, viewer_only, me, AppState};
+use auth::{FirebaseVerifier, IamAuthorizer, require_admin, require_editor, require_viewer};
 use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -49,7 +50,12 @@ async fn main() {
         .route("/metrics", get(metrics))
         .route("/authorize", post(authorize))
         .route("/me", get(me))
-        .route("/admin", get(admin_only))
+        .route("/admin", get(admin_only)
+            .layer(from_fn_with_state(app_state.clone(), require_admin)))
+        .route("/editor", get(editor_only)
+            .layer(from_fn_with_state(app_state.clone(), require_editor)))
+        .route("/viewer", get(viewer_only)
+            .layer(from_fn_with_state(app_state.clone(), require_viewer)))
         .layer(TraceLayer::new_for_http())
         .with_state(app_state);
 
