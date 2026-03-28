@@ -1,72 +1,123 @@
 ---
-title: Autenticação e Segurança
-description: Detalhes da implementação de autenticação JWT e integração com GCP IAM
+title: Auth Middleware — Autenticação e Segurança
+description: "Centralização de segurança: Validação Firebase JWT, mapeamento dinâmico de GCP IAM e observabilidade"
 ---
 
-## Visão Geral
+## O que é
 
-Na Sprint 4, consolidamos a estratégia de segurança do ecossistema. Dado que o projeto envolve APIs de interface, processamento assíncrono (Kafka) e serviços gerenciados no Google Cloud Platform (GCP), a segurança foi segmentada em duas abordagens complementares.
+O `auth-middleware` é o componente central de segurança do ecossistema, desenvolvido em **Rust** utilizando o framework **Axum**. Ele foi projetado para fornecer uma camada de autenticação e autorização robusta, integrando a facilidade do **Firebase Auth** com o controle granular do **Google Cloud IAM**.
 
-1.  **Autenticação de Aplicação (JWT)**: Focada no usuário final e controle de acesso baseado em papéis (RBAC).
-2.  **Autenticação de Infraestrutura (GCP IAM)**: Focada na comunicação segura entre serviços e recursos de nuvem.
-
----
-
-## 1. Auth-middleware (JWT)
-
-O serviço `Auth-middleware`, desenvolvido em Rust com Axum, centraliza a emissão e validação de tokens. Implementamos três níveis de acesso principais:
-
-| Papel (Role) | Descrição |
-| :--- | :--- |
-| **User** | Acesso básico para visualização de dashboards e consultas simples. |
-| **Administrator** | Controle total do sistema, gestão de usuários e configurações críticas. |
-| **Eletromidia-Employee** | Operadores técnicos com acesso a monitoramento e gestão de inventário. |
-
-### Endpoints de Autenticação
-
-*   `POST /authenticate`: Recebe credenciais e retorna um token JWT assinado.
-*   `POST /authorize`: Valida se um token é legítimo e possui o papel (`Role`) necessário.
-*   `GET /me`: Permite que a interface recupere os dados do usuário logado a partir do token.
+Diferente de um middleware tradicional de rede, este serviço atua como um validador de identidade (Identity Provider Proxy) que traduz tokens de identidade em permissões de negócio (`AppRoles`).
 
 ---
 
-## 2. Aplicabilidade e Arquitetura
+## Estrutura e Conexões
 
-A segurança é aplicada de forma distinta dependendo da natureza do serviço:
+O `auth-middleware` funciona como um ponto de intersecção entre o frontend, os serviços internos e os provedores de identidade da Google. Sua posição na arquitetura:
 
-### Serviços com Proteção JWT
-Estes serviços expõem endpoints HTTP para clientes ou administradores e utilizam o `AuthToken` extractor:
+```text
+Usuário (Frontend/Mobile)
+       │
+       ▼ [Token JWT do Firebase]
+Serviços Protegidos (bff-storage, agent, rust-producer)
+       │
+       ▼ [Request: POST /authorize]
+  auth-middleware (Rust) ◄── este serviço
+       │
+       ├──► Google APIs (Certs) ──► Validação de Assinatura
+       └──► GCP IAM Policy ───────► Mapeamento de Roles
+```
 
-*   **`bff-storage`**: Protege o upload de arquivos para o Cloud Storage.
-*   **`agent`**: Garante que as consultas de IA (LLM) sejam feitas apenas por usuários autorizados.
-*   **`rust-producer`**: Restringe o disparo de testes de carga e ingestão manual de CSVs a administradores.
-
-### Serviços com Proteção GCP IAM
-Serviços de background (workers) que não possuem interface pública utilizam identidades de serviço (`Service Accounts`) nativas do GCP:
-
-*   **`bucket-consumer`**: Autorizado via IAM para escrever objetos no Cloud Storage.
-*   **`bigquery-writer`**: Autorizado para inserir linhas no Data Warehouse (BigQuery).
-*   **`populate-bigquery`**: Job de ETL que utiliza permissões de leitura/escrita no Storage e BigQuery.
+Esta implementação segue o padrão de **Probes e Métricas** estabelecido na Sprint 3, expondo endpoints de saúde e monitoramento compatíveis com o ecossistema do projeto.
 
 ---
 
-## 3. Fluxo de Segurança
+## Novas Funcionalidades
 
-O diagrama abaixo ilustra como um usuário interage com o sistema de forma segura:
+### 1. Validação Firebase JWT Nativa
+O serviço agora implementa um verificador de tokens que:
+- Busca chaves públicas dinamicamente de `https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com`.
+- Realiza cache de chaves por 6 horas (via crate `moka`) para minimizar latência.
+- Valida rigorosamente o `iss` (issuer) e `aud` (audience) baseados no ID do projeto.
 
-<Mermaid chart={`
-sequenceDiagram
-    participant U as Usuário/Admin
-    participant A as Auth-middleware
-    participant S as Serviços (BFF/Agent)
-    participant G as Recursos GCP
+### 2. Mapeamento Dinâmico de Roles (GCP IAM)
+Uma das principais inovações da Sprint 4 é a tradução de permissões de infraestrutura para permissões de aplicação:
+- **Admin**: Mapeado para `roles/resourcemanager.projectIamAdmin` ou administradores de serviços específicos.
+- **Editor**: Mapeado para desenvolvedores (ex: `roles/looker.developer`).
+- **Viewer**: Usuários com acesso básico de leitura (ex: `roles/looker.accessUser`).
 
-    U->>A: Login (POST /authenticate)
-    A-->>U: Token JWT
-    U->>S: Request + Bearer Token
-    S->>A: Valida Token (POST /authorize)
-    A-->>S: OK + Roles
-    S->>G: Operação Cloud (via IAM)
-    G-->>S: Dados/Sucesso
-    S-->>U: Resposta
-`} />
+### 3. Health Checks e Observabilidade
+Seguindo o padrão do `csv-kafka-producer`, o serviço expõe:
+
+| Endpoint | Descrição | Uso |
+| -------- | ---------- |-----|
+| `/healthz` | Retorna `200 OK` | Liveness/Readiness do Kubernetes |
+| `/metrics` | Métricas Prometheus | Observabilidade e monitoramento de performance |
+
+---
+
+## Configuração no Kubernetes
+
+A flexibilidade do serviço é garantida pelo uso de **ConfigMaps**, que permitem alterar o mapeamento de roles sem recompilar o código. No ambiente de desenvolvimento, utilizamos o arquivo `src/kubernetes/auth-middleware/configmap-dev.yaml`:
+
+```yaml
+# configmap-dev.yaml
+data:
+  FIREBASE_PROJECT_ID: "dev-firebase-project"
+  GCP_PROJECT_ID: "dev-gcp-project"
+  # Mapeamento de Roles (Alibi -> GCP Role)
+  ROLE_ADMIN: "roles/resourcemanager.projectIamAdmin"
+  ROLE_EDITOR: "roles/looker.developer"
+  ROLE_VIEWER: "roles/looker.accessUser"
+```
+
+O serviço carrega automaticamente qualquer variável de ambiente iniciada com `ROLE_` e a utiliza na lógica de autorização.
+
+---
+
+## Atualizações na API REST
+
+### Endpoints Disponíveis
+
+| Método | Caminho | Descrição | Proteção |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/authorize` | Valida token e verifica se possui a role necessária | Pública |
+| `GET` | `/me` | Retorna dados do usuário logado e seus papéis | Bearer Token |
+| `GET` | `/admin` | Endpoint de teste para administradores | Admin Only |
+| `GET` | `/healthz` | Health check para Kubernetes | Pública |
+| `GET` | `/metrics` | Exportador Prometheus | Pública |
+
+### Exemplo de Uso (Autorização Interna)
+
+```bash
+curl -X POST http://auth-middleware:5000/authorize \
+  -H "Content-Type: application/json" \
+  -d '{"token": "JWT_TOKEN...", "required_role": "admin"}'
+```
+
+---
+
+## Variáveis de Ambiente
+
+| Variável | Descrição | Exemplo |
+|----------|-----------|---------|
+| `FIREBASE_PROJECT_ID` | ID do projeto no Firebase | `meu-projeto-dev` |
+| `GCP_PROJECT_ID` | ID do projeto no Google Cloud | `meu-projeto-gcp` |
+| `ROLE_[NOME]` | Mapeamento de alias para role real | `ROLE_VIEWER=roles/viewer` |
+| `HTTP_PORT` | Porta do servidor | `5000` |
+
+---
+
+## Integração com Outros Serviços
+
+1. **Frontend**: Utiliza o endpoint `/me` para exibir o perfil e controlar a visibilidade de botões na UI.
+2. **BFF Storage**: Chama `/authorize` antes de permitir o upload de novos arquivos para o Cloud Storage.
+3. **Agent (LLM)**: Valida se o usuário tem permissão de `Editor` antes de processar consultas complexas.
+
+---
+
+## Veja também
+
+- [Probes and Security (Sprint 3)](/docs/sprint-3/kubernetes/probes-and-security) - Padrão de saúde e segurança.
+- [CSV Kafka Producer](/docs/sprint-3/csv-kafka-producer) - Exemplo de implementação Rust com métricas.
+- [Infraestrutura GCP](/docs/sprint-4/infraestrutura-gcp) - Detalhes sobre Service Accounts e IAM.
