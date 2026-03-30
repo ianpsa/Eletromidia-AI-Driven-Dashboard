@@ -5,6 +5,7 @@
     "arquitetura",
     "ferramentas",
     "llm-providers",
-    "prompt-e-regras"
+    "prompt-e-regras",
+    "dockerizar-api"
   ]
 }
