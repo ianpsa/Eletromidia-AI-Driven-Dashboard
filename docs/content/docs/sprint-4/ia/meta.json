@@ -6,6 +6,7 @@
     "ferramentas",
     "llm-providers",
     "bigquery",
+    "juntar-dados",
     "prompt-e-regras",
     "looker",
     "frontend",
