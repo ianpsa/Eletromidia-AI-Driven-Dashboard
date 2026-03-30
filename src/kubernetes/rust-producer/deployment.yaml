@@ -23,8 +23,8 @@ spec:
         runAsNonRoot: true
       automountServiceAccountToken: false
       containers:
-      - image: rust-producer:latest
-        imagePullPolicy: Never
+      - image: southamerica-east1-docker.pkg.dev/midia-in-da-house/gke-cr/rust-producer:latest
+        imagePullPolicy: Always
         name: rust-producer
         ports:
           - containerPort: 5000
@@ -36,7 +36,7 @@ spec:
               name: rust-producer-cm
         resources:
           requests:
-            cpu: "250m"
+            cpu: "50m"
             memory: "64Mi"
           limits:
             cpu: "500m"

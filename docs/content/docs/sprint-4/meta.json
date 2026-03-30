@@ -1,6 +1,14 @@
 {
   "title": "Sprint 4",
   "pages": [
+    "ci-cd-pipeline",
+    "deploy",
+    "observabilidade",
+    "teste-de-carga",
+    "frontend",
+    "ia",
+    "auth",
+    "autenticacao",
     "testes-unitarios"
   ]
 }

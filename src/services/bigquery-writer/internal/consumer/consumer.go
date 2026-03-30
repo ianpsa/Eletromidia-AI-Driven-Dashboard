@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"bigquery-writer/internal/config"
+	"bigquery-writer/internal/metrics"
 	"bigquery-writer/internal/writer"
 	"context"
 	"errors"
@@ -33,7 +34,8 @@ func touchHealthFile() {
 	})
 }
 
-func (c *Consumer) Run(ctx context.Context) {
+func (c *Consumer) Run(ctx context.Context, m *metrics.FlushMetrics) {
+
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  c.Cfg.KafkaBrokers,
 		Topic:    c.Cfg.KafkaTopic,
@@ -60,7 +62,7 @@ func (c *Consumer) Run(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				if err := c.w.Flush(ctx); err != nil {
+				if err := c.w.Flush(ctx, m); err != nil {
 					log.Printf("periodic flush error: %v", err)
 				}
 			}
@@ -85,14 +87,15 @@ func (c *Consumer) Run(ctx context.Context) {
 		}
 
 		shouldFlush := c.w.Add(writer.BufferedMessage{
-			Topic:     msg.Topic,
-			Partition: msg.Partition,
-			Offset:    msg.Offset,
-			Value:     msg.Value,
+			Topic:         msg.Topic,
+			Partition:     msg.Partition,
+			Offset:        msg.Offset,
+			Value:         msg.Value,
+			HighWatermark: msg.HighWaterMark,
 		})
 
 		if shouldFlush {
-			if err := c.w.Flush(ctx); err != nil {
+			if err := c.w.Flush(ctx, m); err != nil {
 				log.Printf("flush error: %v", err)
 			}
 		}

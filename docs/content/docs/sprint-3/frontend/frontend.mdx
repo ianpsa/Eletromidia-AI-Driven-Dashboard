@@ -22,9 +22,10 @@ Sem bibliotecas de roteamento nem gerenciamento de estado externo. A navegação
 
 | Página                                         | Descrição                                  | Detalhes                               |
 | ---------------------------------------------- | ------------------------------------------ | -------------------------------------- |
-| [Login](/docs/sprint-3/frontend/login)         | Entrada da aplicação, formulário de acesso | [→](/docs/sprint-3/frontend/login)     |
-| [Dashboard](/docs/sprint-3/frontend/dashboard) | Analytics via embed do Looker Studio       | [→](/docs/sprint-3/frontend/dashboard) |
-| [Cloud](/docs/sprint-3/frontend/cloud)         | Navegação e download de arquivos do bucket | [→](/docs/sprint-3/frontend/cloud)     |
+| [Login](/docs/sprint-3/frontend/login)         | Entrada da aplicação, formulário de acesso        | [→](/docs/sprint-3/frontend/login)     |
+| [Dashboard](/docs/sprint-3/frontend/dashboard) | Analytics via embed do Looker Studio              | [→](/docs/sprint-3/frontend/dashboard) |
+| [Cloud](/docs/sprint-3/frontend/cloud)         | Navegação e download de arquivos do bucket        | [→](/docs/sprint-3/frontend/cloud)     |
+| [Agente IA](/docs/sprint-3/frontend/agent)     | Chat com agente de IA para análise de campanhas   | [→](/docs/sprint-3/frontend/agent)     |
 
 ## Fluxo da aplicação
 
@@ -34,6 +35,7 @@ Login
   ▼
 Dashboard  ←──┐
 Cloud      ←──┤ menu lateral
+Agente IA  ←──┘
 ```
 
 Após o login, a tela inicial é `Dashboard`. A troca entre telas não recarrega a página — o estado é mantido em memória.

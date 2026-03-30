@@ -16,3 +16,6 @@ serde_json = "1"
 dotenv = "0.15"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[workspace.dev-dependencies]
+rustfmt = "0.10"

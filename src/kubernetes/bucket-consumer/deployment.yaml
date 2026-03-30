@@ -6,7 +6,7 @@ metadata:
     kafka-role: consumer
   name: bucket-consumer
 spec:
-  replicas: 1
+  replicas: 20
   selector:
     matchLabels:
       app: bucket-consumer
@@ -23,8 +23,8 @@ spec:
         runAsNonRoot: true
       automountServiceAccountToken: false
       containers:
-      - image: bucket-consumer:latest
-        imagePullPolicy: Never
+      - image: southamerica-east1-docker.pkg.dev/midia-in-da-house/gke-cr/bucket-consumer:latest
+        imagePullPolicy: Always
         name: bucket-consumer
         securityContext:
           allowPrivilegeEscalation: false
@@ -53,11 +53,11 @@ spec:
             readOnly: true
         resources:
           requests:
-            cpu: "250m"
-            memory: "64Mi"
+            cpu: "10m"
+            memory: "30Mi"
           limits:
-            cpu: "500m"
-            memory: "128Mi"
+            cpu: "50m"
+            memory: "60Mi"
       volumes:
         - name: gcs-sa-key
           secret:

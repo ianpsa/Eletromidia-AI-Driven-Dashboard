@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bff-storage/internal/bigquery"
 	"bff-storage/internal/models"
 	"bff-storage/internal/storage"
 	"context"
@@ -27,11 +28,12 @@ type StorageService interface {
 }
 
 type Handler struct {
-	Storage StorageService
+	Storage  StorageService
+	BigQuery *bigquery.Client
 }
 
-func New(s StorageService) *Handler {
-	return &Handler{Storage: s}
+func New(s StorageService, bq *bigquery.Client) *Handler {
+	return &Handler{Storage: s, BigQuery: bq}
 }
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
@@ -46,6 +48,7 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) StartUpProbe(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Printf("Método não autorizado!")
 		return
 	}
 
@@ -54,6 +57,7 @@ func (h *Handler) StartUpProbe(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"message": fmt.Sprintf("Bucket não conectado: %v", err),
 		})
+		fmt.Printf("Bucket não conectado: %v", err)
 		return
 	}
 

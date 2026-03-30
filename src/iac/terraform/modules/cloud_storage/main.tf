@@ -29,11 +29,6 @@ resource "google_storage_bucket" "kafka_backup" {
   }
 }
 
-resource "google_storage_managed_folder" "topics" {
-  bucket = google_storage_bucket.kafka_backup.name
-  name   = "topics/"
-}
-
 resource "google_service_account" "cs_sa" {
   project      = var.project_id
   account_id   = "cs-kafka-consumer"

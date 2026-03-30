@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: rust-producer-svc-np
+  name: rust-producer-svc
+spec:
+  ports:
+  - name: 80-8080
+    port: 80
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: rust-producer
+  type: ClusterIP
+status:
+  loadBalancer: {}

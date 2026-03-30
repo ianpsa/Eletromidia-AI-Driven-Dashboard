@@ -22,23 +22,22 @@ def get_available_filters() -> str:
         rows = run_query(
             f"""
             SELECT
-              COUNT(DISTINCT CONCAT(endereco, ',', CAST(numero AS STRING)))
-                AS total_points,
+              COUNT(DISTINCT location_id) AS total_points,
               ARRAY_AGG(DISTINCT cidade ORDER BY cidade LIMIT 500) AS cities
-            FROM `{ds}.geodata`
+            FROM `{ds}.vw_geodata_enriched`
             """
         )
     except Exception:
         logger.exception("Metadata filter query failed")
         return "Erro ao consultar filtros disponíveis. Tente novamente."
 
-    total_points = rows[0]["total_points"] if rows else 0
+    total = rows[0]["total_points"] if rows else 0
     cities = rows[0]["cities"] if rows else []
 
     lines = [
-        f"Total de pontos de mídia: {total_points}",
+        f"Total de pontos de mídia: {total}",
         "",
-        f"Cidades disponíveis: {', '.join(cities)}",
+        f"Cidades disponíveis: {', '.join(str(c) for c in cities)}",
         "Classes sociais: A, B1, B2, C1, C2, DE",
         "Faixas etárias: 18-19, 20-29, 30-39, 40-49, 50-59, 60-69, 70-79, 80+",
         "Gêneros: Feminino, Masculino",

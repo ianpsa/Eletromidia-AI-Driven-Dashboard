@@ -19,7 +19,7 @@ import (
 // --------------- Grupo 1: TestHealth ---------------
 
 func TestHealth(t *testing.T) {
-	h := New(&mockStorage{})
+	h := New(&mockStorage{}, nil)
 
 	t.Run("GET returns 200 with status ok", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -56,7 +56,7 @@ func TestStartUpProbe(t *testing.T) {
 	t.Run("bucket connected returns 200", func(t *testing.T) {
 		h := New(&mockStorage{
 			checkBucketFn: func(ctx context.Context) error { return nil },
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/probe/startup", nil)
 		rec := httptest.NewRecorder()
 		h.StartUpProbe(rec, req)
@@ -77,7 +77,7 @@ func TestStartUpProbe(t *testing.T) {
 	t.Run("bucket error returns 500", func(t *testing.T) {
 		h := New(&mockStorage{
 			checkBucketFn: func(ctx context.Context) error { return errors.New("connection refused") },
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/probe/startup", nil)
 		rec := httptest.NewRecorder()
 		h.StartUpProbe(rec, req)
@@ -88,7 +88,7 @@ func TestStartUpProbe(t *testing.T) {
 	})
 
 	t.Run("POST returns 405", func(t *testing.T) {
-		h := New(&mockStorage{})
+		h := New(&mockStorage{}, nil)
 		req := httptest.NewRequest(http.MethodPost, "/probe/startup", nil)
 		rec := httptest.NewRecorder()
 		h.StartUpProbe(rec, req)
@@ -113,7 +113,7 @@ func TestListItems(t *testing.T) {
 					{ID: "file2.json", Size: 200, ContentType: "application/json", UpdatedAt: now},
 				}, nil
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items", nil)
 		rec := httptest.NewRecorder()
 		h.ListItems(rec, req)
@@ -144,7 +144,7 @@ func TestListItems(t *testing.T) {
 			listObjectsFn: func(ctx context.Context, prefix string) ([]models.ObjectItem, error) {
 				return []models.ObjectItem{}, nil
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items", nil)
 		rec := httptest.NewRecorder()
 		h.ListItems(rec, req)
@@ -171,7 +171,7 @@ func TestListItems(t *testing.T) {
 			listObjectsFn: func(ctx context.Context, prefix string) ([]models.ObjectItem, error) {
 				return nil, errors.New("storage unavailable")
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items", nil)
 		rec := httptest.NewRecorder()
 		h.ListItems(rec, req)
@@ -182,7 +182,7 @@ func TestListItems(t *testing.T) {
 	})
 
 	t.Run("POST returns 405", func(t *testing.T) {
-		h := New(&mockStorage{})
+		h := New(&mockStorage{}, nil)
 		req := httptest.NewRequest(http.MethodPost, "/bucket/items", nil)
 		rec := httptest.NewRecorder()
 		h.ListItems(rec, req)
@@ -211,7 +211,7 @@ func TestListItemsByFolder(t *testing.T) {
 					},
 				}, nil
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items/by-folder?folder=data/images", nil)
 		rec := httptest.NewRecorder()
 		h.ListItemsByFolder(rec, req)
@@ -250,7 +250,7 @@ func TestListItemsByFolder(t *testing.T) {
 					Items:   []models.ObjectItem{},
 				}, nil
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items/by-folder?folder=", nil)
 		rec := httptest.NewRecorder()
 		h.ListItemsByFolder(rec, req)
@@ -274,7 +274,7 @@ func TestListItemsByFolder(t *testing.T) {
 					Items:   []models.ObjectItem{},
 				}, nil
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items/by-folder?folder=/data/images", nil)
 		rec := httptest.NewRecorder()
 		h.ListItemsByFolder(rec, req)
@@ -292,7 +292,7 @@ func TestListItemsByFolder(t *testing.T) {
 			listLevelFn: func(ctx context.Context, prefix string) (*models.FolderListing, error) {
 				return nil, errors.New("storage error")
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items/by-folder?folder=data", nil)
 		rec := httptest.NewRecorder()
 		h.ListItemsByFolder(rec, req)
@@ -303,7 +303,7 @@ func TestListItemsByFolder(t *testing.T) {
 	})
 
 	t.Run("POST returns 405", func(t *testing.T) {
-		h := New(&mockStorage{})
+		h := New(&mockStorage{}, nil)
 		req := httptest.NewRequest(http.MethodPost, "/bucket/items/by-folder", nil)
 		rec := httptest.NewRecorder()
 		h.ListItemsByFolder(rec, req)
@@ -327,7 +327,7 @@ func TestGetFileByID(t *testing.T) {
 					Size:        int64(len(fileContent)),
 				}, nil
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items/file?id=docs/readme.txt", nil)
 		rec := httptest.NewRecorder()
 		h.GetFileByID(rec, req)
@@ -350,7 +350,7 @@ func TestGetFileByID(t *testing.T) {
 	})
 
 	t.Run("empty id returns 400", func(t *testing.T) {
-		h := New(&mockStorage{})
+		h := New(&mockStorage{}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items/file?id=", nil)
 		rec := httptest.NewRecorder()
 		h.GetFileByID(rec, req)
@@ -373,7 +373,7 @@ func TestGetFileByID(t *testing.T) {
 			getFileFn: func(ctx context.Context, id string) (*storage.FileResult, error) {
 				return nil, gcs.ErrObjectNotExist
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items/file?id=missing.txt", nil)
 		rec := httptest.NewRecorder()
 		h.GetFileByID(rec, req)
@@ -396,7 +396,7 @@ func TestGetFileByID(t *testing.T) {
 			getFileFn: func(ctx context.Context, id string) (*storage.FileResult, error) {
 				return nil, errors.New("disk failure")
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items/file?id=file.txt", nil)
 		rec := httptest.NewRecorder()
 		h.GetFileByID(rec, req)
@@ -417,7 +417,7 @@ func TestGetFileByID(t *testing.T) {
 					Size:        4,
 				}, nil
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items/file?id=/path/to/file.json", nil)
 		rec := httptest.NewRecorder()
 		h.GetFileByID(rec, req)
@@ -439,7 +439,7 @@ func TestGetFileByID(t *testing.T) {
 					Size:        -1,
 				}, nil
 			},
-		})
+		}, nil)
 		req := httptest.NewRequest(http.MethodGet, "/bucket/items/file?id=file.bin", nil)
 		rec := httptest.NewRecorder()
 		h.GetFileByID(rec, req)
@@ -453,7 +453,7 @@ func TestGetFileByID(t *testing.T) {
 	})
 
 	t.Run("POST returns 405", func(t *testing.T) {
-		h := New(&mockStorage{})
+		h := New(&mockStorage{}, nil)
 		req := httptest.NewRequest(http.MethodPost, "/bucket/items/file?id=file.txt", nil)
 		rec := httptest.NewRecorder()
 		h.GetFileByID(rec, req)

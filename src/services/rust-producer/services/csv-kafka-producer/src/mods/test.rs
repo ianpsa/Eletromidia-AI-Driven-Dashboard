@@ -11,7 +11,6 @@ fn kafka_topic() -> String {
     env::var("KAFKA_TOPIC").unwrap_or_else(|_| "csv-topic".to_string())
 }
 
-
 fn auto_taxa_inicial_min() -> usize {
     env::var("LOAD_TEST_AUTO_TAXA_INICIAL_MIN")
         .ok()
@@ -163,8 +162,10 @@ pub async fn run_load_test(
         let elapsed_batch = batch_start.elapsed().as_micros() as u64;
         let expected_batch_duration = messages_this_second as u64 * interval_per_message_us;
         if elapsed_batch < expected_batch_duration {
-            tokio::time::sleep(std::time::Duration::from_micros(expected_batch_duration - elapsed_batch))
-                .await;
+            tokio::time::sleep(std::time::Duration::from_micros(
+                expected_batch_duration - elapsed_batch,
+            ))
+            .await;
         }
     }
 

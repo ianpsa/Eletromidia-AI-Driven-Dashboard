@@ -1,0 +1,156 @@
+---
+title: Deploy
+description: Documentação do deploy da infraestrutura gerada por Terraform
+---
+
+Esta seção documenta os três módulos Terraform responsáveis pela infraestrutura base de execução da aplicação no Google Cloud Platform: a rede privada (VPC), o cluster Kubernetes (GKE) e o repositório de imagens Docker (Artifact Registry).
+
+---
+
+## VPC — Virtual Private Cloud
+
+### Visão Geral
+
+A VPC é o alicerce de rede de toda a infraestrutura. É criada sem sub-redes automáticas (`auto_create_subnetworks = false`), garantindo controle total sobre o espaço de endereçamento.
+
+### Recursos Provisionados
+
+**`google_compute_network`** — Rede VPC principal nomeada com base no `cluster_name`, isolando o ambiente de rede do projeto.
+
+**`google_compute_subnetwork`** — Sub-rede dedicada ao GKE com os seguintes ranges de IP:
+
+| Range | CIDR | Finalidade |
+|---|---|---|
+| Principal | `10.0.0.0/20` | Nós do cluster |
+| Secundário `pods` | `10.48.0.0/14` | IPs dos Pods |
+| Secundário `services` | `10.52.0.0/20` | IPs dos Services |
+
+A flag `private_ip_google_access = true` permite que os nós do GKE acessem serviços gerenciados do Google (como Cloud Storage e BigQuery) sem a necessidade de um endereço IP externo.
+
+**`google_compute_router` + `google_compute_router_nat`** — Um Cloud Router com NAT configurado para alocação automática de IPs (`AUTO_ONLY`) e cobertura de todos os ranges da sub-rede. Isso viabiliza a saída de tráfego dos nós privados para a internet sem expô-los diretamente.
+
+### Variáveis
+
+| Variável | Tipo | Descrição |
+|---|---|---|
+| `region` | `string` | Região onde a VPC será criada |
+| `cluster_name` | `string` | Prefixo usado para nomear os recursos |
+
+### Outputs
+
+| Output | Valor |
+|---|---|
+| `vpc_id` | ID da rede VPC criada |
+| `gke_subnet_id` | ID da sub-rede do GKE (consumido pelo módulo GKE) |
+
+---
+
+## GKE — Google Kubernetes Engine
+
+### Visão Geral
+
+O cluster GKE é provisionado no modo **Standard** com configurações voltadas para segurança, isolamento de rede e operação autônoma dos nós. O módulo depende diretamente dos outputs do módulo VPC.
+
+### Recursos Provisionados
+
+**`google_service_account`** — Service Account dedicada aos nós do cluster, seguindo o princípio de menor privilégio em vez de usar a SA padrão do Compute Engine.
+
+**`google_container_cluster`** — Cluster GKE com as seguintes configurações relevantes:
+
+- **Node pool padrão removido** (`remove_default_node_pool = true`): o pool inicial é descartado imediatamente, e o controle de nós fica inteiramente no pool gerenciado.
+- **Nós privados** (`enable_private_nodes = true`): os nós não recebem IPs públicos, reduzindo a superfície de ataque.
+- **Endpoint público** (`enable_private_endpoint = false`): o control plane permanece acessível externamente para operação via `kubectl`.
+- **Workload Identity** (`workload_pool`): integração com o sistema de identidade do GCP para que Pods possam autenticar em serviços do Google sem uso de chaves de SA.
+- **Release Channel `REGULAR`**: atualizações automáticas de versão do Kubernetes em cadência balanceada entre estabilidade e novidades.
+- **Logging e Monitoring**: habilitados para componentes do sistema e workloads, com coleta nativa pelo Google Cloud Operations.
+- **IP Aliasing** (`ip_allocation_policy`): os ranges secundários da sub-rede (`pods` e `services`) são referenciados diretamente, garantindo roteamento interno eficiente.
+- **Master CIDR interno**: `172.16.0.0/28` reservado para componentes internos do control plane.
+
+**`google_container_node_pool`** — Pool de nós `main-pool` com as seguintes especificações:
+
+| Configuração | Valor |
+|---|---|
+| Máquina | `e2-standard-2` |
+| Quantidade de nós | `3` |
+| Disco | `50 GB` — `pd-standard` |
+| Auto Repair | ✅ habilitado |
+| Auto Upgrade | ✅ habilitado |
+| Workload Metadata | `GKE_METADATA` |
+| Legacy endpoints | Desativados |
+
+O modo `GKE_METADATA` no `workload_metadata_config` bloqueia o acesso dos Pods ao servidor de metadados do nó, forçando o uso do Workload Identity — uma camada adicional de segurança.
+
+### Variáveis
+
+| Variável | Tipo | Descrição |
+|---|---|---|
+| `project_id` | `string` | ID do projeto GCP |
+| `cluster_name` | `string` | Nome do cluster |
+| `zone` | `string` | Zona de disponibilidade |
+| `gke_subnet_id` | `string` | ID da sub-rede (vindo do módulo VPC) |
+| `vpc_id` | `string` | ID da VPC (vindo do módulo VPC) |
+
+### Outputs
+
+| Output | Valor |
+|---|---|
+| `gke_sa_email` | E-mail da Service Account dos nós (consumido pelo módulo IAM) |
+
+---
+
+## Artifact Registry
+
+### Visão Geral
+
+O Artifact Registry provisiona um repositório Docker privado no GCP, utilizado para armazenar as imagens de container que serão executadas no cluster GKE.
+
+### Recursos Provisionados
+
+**`google_artifact_registry_repository`** — Repositório com as seguintes características:
+
+| Configuração | Valor |
+|---|---|
+| ID do repositório | `gke-cr` |
+| Formato | `DOCKER` |
+| Localização | Configurável via variável `region` |
+
+O repositório é posicionado na mesma região do cluster GKE, minimizando latência no pull de imagens e evitando custos de tráfego inter-regional.
+
+### Variáveis
+
+| Variável | Tipo | Descrição |
+|---|---|---|
+| `project_id` | `string` | ID do projeto GCP |
+| `region` | `string` | Região do repositório |
+
+### Outputs
+
+| Output | Valor |
+|---|---|
+| `registry_url` | URL completa do repositório no formato `{region}-docker.pkg.dev/{project_id}/gke-cr` |
+
+---
+
+## Integração entre os Módulos
+
+Os três módulos formam um pipeline de dependência bem definido no `main.tf` raiz:
+
+```text
+vpc → gke (consome vpc_id e gke_subnet_id)
+artifact_registry → (URL consumida no pipeline de CI/CD)
+gke → iam (consome gke_sa_email)
+```
+
+O Terraform resolve essa cadeia automaticamente via referências de output entre módulos, garantindo que a ordem de criação dos recursos seja correta sem necessidade de configuração manual de dependências.
+
+---
+
+## Conclusão
+
+Terraformar a infraestrutura de um projeto no GCP traz uma série de vantagens concretas que vão além da simples automação de provisionamento.
+
+Do ponto de vista operacional, a infraestrutura como código elimina o "configuration drift" — a divergência silenciosa entre o que está documentado e o que realmente existe no ambiente. Qualquer alteração passa pelo código, pelo versionamento e, idealmente, por uma revisão, tornando o histórico de mudanças auditável e reversível.
+
+Do ponto de vista arquitetural, a solução deployada demonstra maturidade em múltiplas dimensões. A rede foi desenhada com isolamento em camadas: nós privados, NAT gerenciado, ranges de IP separados para nós, Pods e Services, e acesso privado a serviços do Google sem exposição pública. O cluster GKE adota Workload Identity em vez de chaves de service account, o que é a prática mais segura para autenticação de workloads no GCP atualmente. A separação em módulos independentes (vpc, gke, artifact_registry) segue o princípio de responsabilidade única, facilitando reuso, manutenção e eventual evolução de cada componente de forma independente.
+
+A escolha de um Artifact Registry na mesma região do cluster, combinada com uma Service Account dedicada aos nós e auto repair/upgrade habilitados, indica uma arquitetura pensada não só para funcionar no dia um, mas para operar de forma confiável e segura ao longo do tempo.

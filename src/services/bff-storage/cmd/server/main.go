@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bff-storage/internal/bigquery"
 	"bff-storage/internal/config"
 	"bff-storage/internal/handler"
 	"bff-storage/internal/storage"
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -16,6 +18,9 @@ func main() {
 	if err := cfg.Validate(); err != nil {
 		log.Fatalf("config error: %v", err)
 	}
+
+	fmt.Printf("Bucket Name: %s\n", cfg.BucketName)
+	fmt.Printf("Key: %s\n", cfg.Key)
 
 	ctx := context.Background()
 	storageClient, err := storage.NewClient(ctx, cfg.BucketName, cfg.Key)
@@ -28,7 +33,17 @@ func main() {
 		}
 	}()
 
-	h := handler.New(storageClient)
+	bqClient, err := bigquery.NewClient(ctx, cfg.BQProjectID, cfg.BQDatasetID, cfg.BQKey)
+	if err != nil {
+		log.Fatalf("error creating bigquery client: %v", err)
+	}
+	defer func() {
+		if err := bqClient.Close(); err != nil {
+			log.Printf("error closing bigquery client: %v", err)
+		}
+	}()
+
+	h := handler.New(storageClient, bqClient)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", h.Health)
@@ -36,6 +51,10 @@ func main() {
 	mux.HandleFunc("/bucket/items/by-folder", h.ListItemsByFolder)
 	mux.HandleFunc("/bucket/items/file", h.GetFileByID)
 	mux.HandleFunc("/probe/startup", h.StartUpProbe)
+	mux.HandleFunc("/geodata/points", h.GetGeoPoints)
+	mux.HandleFunc("/geodata/demographics", h.GetDemographics)
+	mux.HandleFunc("/geodata/filter-options", h.GetFilterOptions)
+	mux.HandleFunc("/geodata/compare", h.GetCompare)
 
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,

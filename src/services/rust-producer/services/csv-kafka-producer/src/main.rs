@@ -1,13 +1,13 @@
-mod mods;
 mod models;
+mod mods;
 
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
-use std::env;
 use mods::csv::CsvManager;
 use mods::test::{run_auto_test, run_load_test, LoadTestConfig, LoadTestResult};
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::{DefaultProducerContext, ThreadedProducer};
 use serde::Serialize;
+use std::env;
 use std::sync::Arc;
 
 #[derive(Debug, Serialize)]
@@ -31,14 +31,19 @@ impl Clone for AppState {
 }
 
 fn create_producer() -> ThreadedProducer<DefaultProducerContext> {
-    let bootstrap_servers = env::var("KAFKA_BOOTSTRAP_SERVERS").unwrap_or_else(|_| "kafka:9092".to_string());
-    let message_timeout_ms = env::var("KAFKA_MESSAGE_TIMEOUT_MS").unwrap_or_else(|_| "5000".to_string());
-    let compression_type = env::var("KAFKA_COMPRESSION_TYPE").unwrap_or_else(|_| "zstd".to_string());
+    let bootstrap_servers =
+        env::var("KAFKA_BOOTSTRAP_SERVERS").unwrap_or_else(|_| "kafka:9092".to_string());
+    let message_timeout_ms =
+        env::var("KAFKA_MESSAGE_TIMEOUT_MS").unwrap_or_else(|_| "5000".to_string());
+    let compression_type =
+        env::var("KAFKA_COMPRESSION_TYPE").unwrap_or_else(|_| "zstd".to_string());
     let batch_size = env::var("KAFKA_BATCH_SIZE").unwrap_or_else(|_| "1048576".to_string());
     let linger_ms = env::var("KAFKA_LINGER_MS").unwrap_or_else(|_| "5".to_string());
-    let queue_buffering_max = env::var("KAFKA_QUEUE_BUFFERING_MAX_MESSAGES").unwrap_or_else(|_| "100000".to_string());
+    let queue_buffering_max =
+        env::var("KAFKA_QUEUE_BUFFERING_MAX_MESSAGES").unwrap_or_else(|_| "100000".to_string());
     let acks = env::var("KAFKA_ACKS").unwrap_or_else(|_| "1".to_string());
-    let request_timeout_ms = env::var("KAFKA_REQUEST_TIMEOUT_MS").unwrap_or_else(|_| "30000".to_string());
+    let request_timeout_ms =
+        env::var("KAFKA_REQUEST_TIMEOUT_MS").unwrap_or_else(|_| "30000".to_string());
 
     ClientConfig::new()
         .set("bootstrap.servers", &bootstrap_servers)
@@ -49,6 +54,7 @@ fn create_producer() -> ThreadedProducer<DefaultProducerContext> {
         .set("queue.buffering.max.messages", &queue_buffering_max)
         .set("acks", &acks)
         .set("request.timeout.ms", &request_timeout_ms)
+        .set("partitioner", "murmur2_random")
         .create()
         .expect("Falha ao criar producer")
 }
@@ -79,7 +85,10 @@ async fn health(state: web::Data<AppState>) -> impl Responder {
 }
 
 #[post("/csv")]
-async fn csv_post(config: web::Json<LoadTestConfig>, state: web::Data<AppState>) -> actix_web::Result<impl Responder> {
+async fn csv_post(
+    config: web::Json<LoadTestConfig>,
+    state: web::Data<AppState>,
+) -> actix_web::Result<impl Responder> {
     let csv_data = {
         let cache = state.csv_manager.cache.read().await;
         if cache.is_empty() {
@@ -124,7 +133,8 @@ async fn csv_post(config: web::Json<LoadTestConfig>, state: web::Data<AppState>)
 async fn main() -> std::io::Result<()> {
     let _ = dotenvy::dotenv();
 
-    let csv_filepath = env::var("CSV_FILEPATH").unwrap_or_else(|_| "/app/data/dados.csv".to_string());
+    let csv_filepath =
+        env::var("CSV_FILEPATH").unwrap_or_else(|_| "/app/data/dados.csv".to_string());
     let reload_interval_secs: u64 = env::var("CSV_RELOAD_INTERVAL_SECS")
         .ok()
         .and_then(|s| s.parse().ok())

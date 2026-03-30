@@ -23,6 +23,7 @@ type Message = {
 interface ChatSidebarProps {
   open: boolean;
   onClose: () => void;
+  onLookerUrl?: (url: string) => void;
 }
 
 function parseRankingFromToolResult(content: string): RankingItem[] {
@@ -44,7 +45,7 @@ function parseRankingFromToolResult(content: string): RankingItem[] {
   return items;
 }
 
-export function ChatSidebar({ open, onClose }: ChatSidebarProps) {
+export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -117,15 +118,22 @@ export function ChatSidebar({ open, onClose }: ChatSidebarProps) {
             const ranking = parseRankingFromToolResult(content);
             if (ranking.length > 0) {
               appendToAgentMessage(msgId, { type: "ranking", items: ranking });
+            } else {
+              appendToAgentMessage(msgId, { type: "text", text: content });
             }
           } else if (toolName === "filter_looker_dashboard") {
-            const urlMatch = content.match(/https:\/\/lookerstudio[^\s"]+/);
+            const urlMatch = content.match(/https?:\/\/\S+/);
             if (urlMatch) {
+              onLookerUrl?.(urlMatch[0]);
               appendToAgentMessage(msgId, {
                 type: "dashboard",
                 url: urlMatch[0],
               });
+            } else {
+              appendToAgentMessage(msgId, { type: "text", text: content });
             }
+          } else {
+            appendToAgentMessage(msgId, { type: "text", text: content });
           }
           break;
         }
@@ -137,7 +145,7 @@ export function ChatSidebar({ open, onClose }: ChatSidebarProps) {
           break;
       }
     },
-    [appendTextToken, appendToAgentMessage],
+    [appendTextToken, appendToAgentMessage, onLookerUrl],
   );
 
   async function handleSend() {

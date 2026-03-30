@@ -10,33 +10,31 @@ from core.bigquery_client import get_dataset_ref, run_query_with_params
 logger = logging.getLogger(__name__)
 
 _AGE_BUCKETS: list[tuple[str, int, int]] = [
-    ("x18_19", 18, 19),
-    ("x20_29", 20, 29),
-    ("x30_39", 30, 39),
-    ("x40_49", 40, 49),
-    ("x50_59", 50, 59),
-    ("x60_69", 60, 69),
-    ("x70_79", 70, 79),
-    ("x80_plus", 80, 120),
+    ("age_18_19_count", 18, 19),
+    ("age_20_29_count", 20, 29),
+    ("age_30_39_count", 30, 39),
+    ("age_40_49_count", 40, 49),
+    ("age_50_59_count", 50, 59),
+    ("age_60_69_count", 60, 69),
+    ("age_70_79_count", 70, 79),
+    ("age_80_plus_count", 80, 120),
 ]
 
 _CLASS_COLUMNS: dict[str, str] = {
-    "A": "a_class",
-    "B1": "b1_class",
-    "B2": "b2_class",
-    "C1": "c1_class",
-    "C2": "c2_class",
-    "DE": "de_class",
+    "A": "class_a_count",
+    "B1": "class_b1_count",
+    "B2": "class_b2_count",
+    "C1": "class_c1_count",
+    "C2": "class_c2_count",
+    "DE": "class_de_count",
 }
 
 
 def _overlapping_age_columns(age_min: int, age_max: int) -> list[str]:
-    """Return BQ column names whose age range overlaps [age_min, age_max]."""
     return [col for col, lo, hi in _AGE_BUCKETS if lo <= age_max and hi >= age_min]
 
 
 def _class_columns(classes: list[str]) -> list[str]:
-    """Return BQ column names for the requested social classes."""
     cols = []
     for cls in classes:
         col = _CLASS_COLUMNS.get(cls.upper())
@@ -57,28 +55,42 @@ def _build_sql(
     radius_km: float,
     limit: int,
 ) -> tuple[str, list[bigquery.ScalarQueryParameter]]:
-    """Build a BigQuery SQL query for campaign analysis.
+    """Build a BigQuery SQL query against vw_geodata_enriched.
 
-    Returns (sql, params) for use with parameterized queries.
+    The view has demographic counts per location and impression_hour.
+    We aggregate by location, compute proportions from counts, and rank by
+    the product of the relevant demographic proportions (affinity score).
     """
     ds = get_dataset_ref()
     params: list[bigquery.ScalarQueryParameter] = []
 
-    gender_expr = "1.0"
-    if gender:
-        gender_expr = "gnd.feminine" if gender.lower() == "female" else "gnd.masculine"
+    # Affinity numerator: sum of relevant demographic counts
+    # Affinity = (target_count / total_uniques) * 100
+    # We build each dimension as a SUM expression over the count columns.
 
-    age_expr = "1.0"
+    gender_sum = (
+        "SUM(s.feminine_count)"
+        if gender and gender.lower() == "female"
+        else (
+            "SUM(s.masculine_count)"
+            if gender and gender.lower() == "male"
+            else "SUM(s.uniques)"
+        )
+    )
+
     if age_min is not None and age_max is not None:
         cols = _overlapping_age_columns(age_min, age_max)
-        if cols:
-            age_expr = " + ".join(f"a.{c}" for c in cols)
+        age_sum = " + ".join(f"SUM(s.{c})" for c in cols) if cols else "SUM(s.uniques)"
+    else:
+        age_sum = "SUM(s.uniques)"
 
-    class_expr = "1.0"
     if classes:
         cols = _class_columns(classes)
-        if cols:
-            class_expr = " + ".join(f"sc.{c}" for c in cols)
+        class_sum = (
+            " + ".join(f"SUM(s.{c})" for c in cols) if cols else "SUM(s.uniques)"
+        )
+    else:
+        class_sum = "SUM(s.uniques)"
 
     where_parts: list[str] = []
 
@@ -86,38 +98,47 @@ def _build_sql(
         radius_m = radius_km * 1000
         where_parts.append(
             "ST_DISTANCE("
-            "ST_GEOGPOINT(CAST(g.longitude AS FLOAT64), "
-            "CAST(g.latitude AS FLOAT64)), "
+            "ST_GEOGPOINT(s.longitude, s.latitude), "
             "ST_GEOGPOINT(@lng, @lat)"
             ") <= @radius_m"
         )
         params.append(bigquery.ScalarQueryParameter("lng", "FLOAT64", longitude))
         params.append(bigquery.ScalarQueryParameter("lat", "FLOAT64", latitude))
         params.append(bigquery.ScalarQueryParameter("radius_m", "FLOAT64", radius_m))
+        where_parts.append("s.latitude IS NOT NULL")
 
     if city:
-        where_parts.append("LOWER(g.cidade) = LOWER(@city)")
+        where_parts.append("LOWER(s.cidade) = LOWER(@city)")
         params.append(bigquery.ScalarQueryParameter("city", "STRING", city))
 
-    where_clause = ""
-    if where_parts:
-        where_clause = "WHERE " + " AND ".join(where_parts)
+    where_clause = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
     sql = f"""
 SELECT
-  g.endereco,
-  g.numero,
-  ROUND(({gender_expr}) * ({age_expr}) * ({class_expr}) * 100, 2)
-    AS affinity,
-  ROUND(({gender_expr}) * ({age_expr}) * ({class_expr}) * g.uniques, 2)
-    AS target_audience,
-  ROUND(g.uniques, 2) AS total_flow
-FROM `{ds}.geodata` g
-JOIN `{ds}.target` t ON g.target_id = t.id
-JOIN `{ds}.age` a ON t.age_id = a.id
-JOIN `{ds}.gender` gnd ON t.gender_id = gnd.id
-JOIN `{ds}.social_class` sc ON t.social_class_id = sc.id
+  s.location_id,
+  CONCAT(TRIM(s.endereco), ', ',
+    CAST(s.numero AS STRING), ' — ', s.cidade
+  ) AS endereco_ref,
+  s.cidade,
+  ANY_VALUE(s.latitude) AS latitude,
+  ANY_VALUE(s.longitude) AS longitude,
+  ROUND(SUM(s.uniques), 0) AS total_flow,
+  ROUND(
+    (({gender_sum}) / NULLIF(SUM(s.uniques), 0)) *
+    (({age_sum}) / NULLIF(SUM(s.uniques), 0)) *
+    (({class_sum}) / NULLIF(SUM(s.uniques), 0)) * 100,
+    2
+  ) AS affinity,
+  ROUND(
+    SUM(s.uniques) *
+    (({gender_sum}) / NULLIF(SUM(s.uniques), 0)) *
+    (({age_sum}) / NULLIF(SUM(s.uniques), 0)) *
+    (({class_sum}) / NULLIF(SUM(s.uniques), 0)),
+    0
+  ) AS target_audience
+FROM `{ds}.vw_geodata_enriched` s
 {where_clause}
+GROUP BY s.location_id, s.endereco, s.numero, s.cidade
 ORDER BY affinity DESC
 LIMIT @result_limit
 """.strip()
@@ -136,7 +157,7 @@ def analyze_campaign(
     latitude: float | None = None,
     longitude: float | None = None,
     radius_km: float | None = 2.0,
-    limit: int | None = 5,
+    limit: int | None = 10,
 ) -> str:
     """Analyze OOH media points and return a ranked list by audience affinity.
 
@@ -155,7 +176,7 @@ def analyze_campaign(
         latitude: Center latitude for geographic filtering.
         longitude: Center longitude for geographic filtering.
         radius_km: Radius in km around the center point (default 2).
-        limit: Maximum number of points to return (default 5).
+        limit: Maximum number of points to return (default 10).
     """
     sql, params = _build_sql(
         gender=gender,
@@ -166,7 +187,7 @@ def analyze_campaign(
         latitude=latitude,
         longitude=longitude,
         radius_km=radius_km or 2.0,
-        limit=limit or 5,
+        limit=limit or 10,
     )
 
     try:
@@ -199,11 +220,16 @@ def analyze_campaign(
         "Ranking:",
     ]
     for i, row in enumerate(rows, 1):
+        lat = row.get("latitude")
+        lng = row.get("longitude")
+        coords = (
+            f" [coords: {lat},{lng}]" if lat is not None and lng is not None else ""
+        )
         lines.append(
-            f"{i}. {row['endereco']}, {row['numero']} — "
+            f"{i}. {row['endereco_ref']}{coords} — "
             f"Afinidade: {row['affinity']}%, "
-            f"Público-alvo: {row['target_audience']}, "
-            f"Fluxo total: {row['total_flow']}"
+            f"Público-alvo: {int(row['target_audience'] or 0)}, "
+            f"Fluxo total: {int(row['total_flow'] or 0)}"
         )
 
     return "\n".join(lines)

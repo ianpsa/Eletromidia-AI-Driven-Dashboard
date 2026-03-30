@@ -12,3 +12,8 @@ variable "service_account_email" {
   description = "Email da Service Account criada pelo BigQuery"
   type        = string
 }
+
+variable "gke_sa_email" {
+  type        = string
+  description = "Email da Service Account do GKE"
+}

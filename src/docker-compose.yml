@@ -42,7 +42,7 @@ services:
       dockerfile: Dockerfile
     container_name: agent
     ports:
-      - "8000:8000"
+      - "8001:8001"
     env_file:
       - ./services/agent/.env
     healthcheck:
@@ -51,7 +51,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')",
         ]
       interval: 30s
       timeout: 5s
@@ -67,3 +67,18 @@ services:
     depends_on:
       agent:
         condition: service_healthy
+
+  auth-middleware:
+    build:
+      context: ./services/auth-middleware
+      dockerfile: Dockerfile
+    container_name: auth-middleware
+    ports:
+      - "5001:5000"
+    environment:
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-your-firebase-project-id}
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID:-your-gcp-project-id}
+    deploy:
+      resources:
+        limits:
+          memory: 128M

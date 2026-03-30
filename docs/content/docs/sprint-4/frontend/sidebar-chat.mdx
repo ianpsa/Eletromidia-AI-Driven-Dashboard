@@ -1,0 +1,65 @@
+---
+title: Chat com Agente IA
+description: Painel lateral de chat com o agente de IA — layout, comportamento e integração com o backend
+---
+
+## Papel da tela
+
+Painel lateral (sidebar) que desliza pela direita do dashboard, permitindo que o usuário descreva campanhas em linguagem natural e receba recomendações de pontos de mídia OOH em tempo real. O chat mantém contexto entre mensagens via `thread_id` e exibe respostas com streaming token a token.
+
+Evolução da [tela dedicada da Sprint 3](/docs/sprint-3/frontend/agent): agora integrado ao dashboard como sidebar, com streaming SSE, memória de conversa e consultas diretas ao BigQuery.
+
+![Dashboard com botão "Agente IA" no menu lateral](/sprint-4/frontend/chat-closed.png)
+![Chat sidebar aberto com estado vazio](/sprint-4/frontend/chat-empty.png)
+
+## Estrutura visual
+
+| Elemento              | Descrição                                                       |
+| --------------------- | --------------------------------------------------------------- |
+| Header                | Título "Agente IA", botão fechar (✕) e novo chat (+)            |
+| Área de mensagens     | Histórico scrollável com mensagens do usuário e do agente       |
+| Estado vazio          | Mensagem de boas-vindas centralizada quando não há conversa     |
+| Animação de digitação | Três pontos pulsantes enquanto o agente está respondendo        |
+| Tabela de ranking     | Pontos recomendados renderizados como tabela dentro da mensagem |
+| Dashboard embed       | iframe do Looker Studio quando o agente retorna uma URL         |
+| Input bar             | Campo de texto + botão enviar, fixo na parte inferior           |
+
+## Comportamento
+
+- O sidebar abre ao clicar em "Agente IA" no menu lateral e fecha pelo botão ✕
+- Respostas chegam em tempo real via streaming (Server-Sent Events)
+- O agente pode retornar três tipos de conteúdo: texto, tabela de ranking ou embed de dashboard
+- Botão "novo chat" (+) aparece quando há mensagens — limpa o histórico e inicia conversa nova
+- Auto-scroll acompanha novas mensagens automaticamente
+- Input fica desabilitado enquanto o agente está respondendo
+
+## Integração com o backend
+
+| Ação            | Endpoint     | Descrição                                                                |
+| --------------- | ------------ | ------------------------------------------------------------------------ |
+| Enviar mensagem | `POST /chat` | Envia `message` e `thread_id`, recebe stream SSE com tokens e resultados |
+
+### Payload enviado
+
+```json
+{
+  "message": "Campanha para mulheres de 25-34 anos na Av Paulista",
+  "thread_id": "abc-123"
+}
+```
+
+### Eventos recebidos (SSE)
+
+| Evento        | Descrição                                             |
+| ------------- | ----------------------------------------------------- |
+| `metadata`    | Retorna `thread_id` para manter contexto              |
+| `token`       | Token de texto para concatenar na resposta            |
+| `tool_result` | Resultado de ferramenta (ranking ou URL de dashboard) |
+| `error`       | Mensagem de erro                                      |
+| `done`        | Fim do streaming                                      |
+
+## Ver também
+
+- [Arquitetura de IA](/docs/sprint-3/chatbot/arquitetura-ia) — design do agente e fluxo de dados
+- [Demo do Agente](/docs/sprint-3/chatbot/demo-agent) — versão CLI com dados locais
+- [Agente IA - Sprint 3](/docs/sprint-3/frontend/agent) — tela dedicada anterior

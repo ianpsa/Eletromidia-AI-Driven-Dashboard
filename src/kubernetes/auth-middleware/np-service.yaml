@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: auth-middleware-svc-np
+  name: auth-middleware-svc-np
+spec:
+  ports:
+  - name: 5000-8080
+    port: 5000
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: auth-middleware
+  type: NodePort
