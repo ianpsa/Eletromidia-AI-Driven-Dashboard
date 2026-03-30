@@ -65,6 +65,7 @@ dump.rdb
 *.key
 secrets/
 sa-key.json
+bq-ai-sa.json
 
 # Coverage
 coverage/
