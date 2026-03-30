@@ -4,7 +4,10 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "destination": "http://34.39.196.243/**"
+        "run": {
+          "serviceId": "firebase-proxy",
+          "region": "us-central1"
+        }
       },
       {
         "source": "**",
