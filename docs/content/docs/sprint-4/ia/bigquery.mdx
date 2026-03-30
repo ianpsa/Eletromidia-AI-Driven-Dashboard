@@ -1,0 +1,115 @@
+Bigquery
+---
+title: Integração BigQuery
+description: Cliente BigQuery thread-safe, validação SQL, queries parametrizadas e modelo de dados.
+---
+
+## Visão Geral
+
+A integração com o BigQuery é o ponto central de acesso a dados tanto para o **agente de IA** quanto para o **BFF do hexbin**. O agente consulta a view `vw_geodata_enriched` (dados enriquecidos) e as tabelas normalizadas (`geodata`, `target`, `age`, `gender`, `social_class`) para análises customizadas.
+
+---
+
+## Cliente BigQuery (`bigquery_client.py`)
+
+O módulo `core/bigquery_client.py` implementa um **singleton thread-safe** com double-checked locking para o cliente BigQuery.
+
+### Configuração via variáveis de ambiente
+
+| Variável | Descrição |
+| --- | --- |
+| `BQ_PROJECT_ID` | ID do projeto GCP (ex: `midia-in-da-house`) |
+| `BQ_DATASET_ID` | ID do dataset (ex: `eletromidia_bq`) |
+| `BQ_SA_CREDENTIALS` | Caminho para o JSON da Service Account |
+
+### Funções expostas
+
+| Função | Descrição |
+| --- | --- |
+| `get_bq_client()` | Retorna o cliente singleton autenticado via Service Account |
+| `get_dataset_ref()` | Retorna a referência qualificada `project.dataset` (validada por regex) |
+| `run_query(sql)` | Executa uma query simples e retorna `list[dict]` |
+| `run_query_with_params(sql, params)` | Executa query com parâmetros tipados (`ScalarQueryParameter`) |
+
+### Cap de custo
+
+Todas as queries são executadas com `maximum_bytes_billed=1_000_000_000` (1 GB), evitando scans acidentais de tabelas grandes.
+
+---
+
+## Validação de SQL
+
+A tool `query_bigquery` expõe acesso SQL direto ao agente, com múltiplas camadas de segurança:
+
+| Regra | Descrição |
+| --- | --- |
+| Somente `SELECT` / `WITH` | Queries devem começar com `SELECT` ou `WITH` |
+| Bloqueio de operações destrutivas | `INSERT`, `UPDATE`, `DELETE`, `DROP`, `CREATE`, `ALTER`, `TRUNCATE`, `MERGE`, `GRANT`, `REVOKE`, `EXEC` bloqueados via regex |
+| Proibição de múltiplos statements | Presença de `;` rejeita a query |
+| Limite automático | Se a query não tiver `LIMIT`, adiciona `LIMIT 100` |
+
+### Auto-qualificação de tabelas
+
+Os nomes de tabelas conhecidas (`enriched_screens`, `geodata`, `target`, `age`, `gender`, `social_class`) são automaticamente prefixados com `project.dataset` via substituição regex, permitindo que o agente escreva SQL sem precisar qualificar nomes.
+
+---
+
+## Query de `analyze_campaign`
+
+A ferramenta principal do agente constrói uma query dinâmica contra a view `vw_geodata_enriched`:
+
+```sql
+SELECT
+  s.location_id,
+  CONCAT(TRIM(s.endereco), ', ', CAST(s.numero AS STRING), ' — ', s.cidade) AS endereco_ref,
+  s.cidade,
+  ANY_VALUE(s.latitude) AS latitude,
+  ANY_VALUE(s.longitude) AS longitude,
+  ROUND(SUM(s.uniques), 0) AS total_flow,
+  ROUND(
+    (gender_sum / NULLIF(SUM(s.uniques), 0)) *
+    (age_sum / NULLIF(SUM(s.uniques), 0)) *
+    (class_sum / NULLIF(SUM(s.uniques), 0)) * 100,
+  2) AS affinity,
+  ...
+FROM `project.dataset.vw_geodata_enriched` s
+WHERE ...
+GROUP BY s.location_id, s.endereco, s.numero, s.cidade
+ORDER BY affinity DESC
+LIMIT @result_limit
+```
+
+Cada dimensão demográfica (`gender_sum`, `age_sum`, `class_sum`) é mapeada para as colunas corretas de contagem. Se um filtro não é especificado, a dimensão usa `SUM(s.uniques)` como denominador, resultando em 100% e não afetando o score.
+
+### Filtro geográfico
+
+Quando latitude/longitude são fornecidas, a query usa `ST_DISTANCE` + `ST_GEOGPOINT` para filtrar pontos dentro de um raio (default: 2 km). Todos os parâmetros numéricos e de texto são passados via `ScalarQueryParameter` para evitar SQL injection.
+
+---
+
+## Modelo de dados
+
+### View `vw_geodata_enriched`
+
+Agrega dados de audiência Claro com contagens demográficas por localização:
+
+| Coluna | Tipo | Descrição |
+| --- | --- | --- |
+| `location_id` | STRING | Identificador do ponto |
+| `latitude` / `longitude` | FLOAT64 | Coordenadas geográficas |
+| `cidade`, `endereco`, `numero` | STRING | Endereço do ponto |
+| `uniques` | FLOAT64 | Visitantes únicos estimados |
+| `feminine_count` / `masculine_count` | FLOAT64 | Contagens por gênero |
+| `age_18_19_count` ... `age_80_plus_count` | FLOAT64 | Contagens por faixa etária |
+| `class_a_count` ... `class_de_count` | FLOAT64 | Contagens por classe social |
+
+### Tabelas normalizadas (BFF)
+
+O BFF do hexbin consulta tabelas separadas com JOINs:
+
+```
+geodata → target (target_id = id)
+target → gender (gender_id = id)
+target → age (age_id = id)
+target → social_class (social_class_id = id)
+```
