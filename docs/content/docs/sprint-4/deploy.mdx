@@ -135,7 +135,7 @@ O repositório é posicionado na mesma região do cluster GKE, minimizando latê
 
 Os três módulos formam um pipeline de dependência bem definido no `main.tf` raiz:
 
-```
+```text
 vpc → gke (consome vpc_id e gke_subnet_id)
 artifact_registry → (URL consumida no pipeline de CI/CD)
 gke → iam (consome gke_sa_email)
