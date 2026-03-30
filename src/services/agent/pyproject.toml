@@ -29,4 +29,5 @@ ignore = ["UP045"]
 dev = [
     "ruff>=0.15.7",
     "pytest>=7.0",
+    "pytest-cov>=7.1.0",
 ]

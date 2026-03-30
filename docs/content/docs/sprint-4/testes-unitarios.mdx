@@ -1,11 +1,13 @@
 ---
 title: Testes Unitários
-description: Documentação dos testes unitários criados na Sprint 4 para os serviços bff-storage, bigquery-writer, bucket-consumer e agent
+description: Documentação dos testes unitários criados na Sprint 4 para os serviços bff-storage, bigquery-writer, bucket-consumer, agent e auth-middleware, incluindo dados de cobertura de código
 ---
 
 ## Visão geral
 
-Na Sprint 4, foram implementados testes unitários para **4 serviços** do projeto, totalizando aproximadamente **100 casos de teste**. O objetivo é garantir a corretude das funções internas de cada serviço, cobrindo caminhos felizes, erros esperados e casos de borda.
+Na Sprint 4, foram implementados testes unitários para **5 serviços** do projeto, totalizando aproximadamente **106 casos de teste**. O objetivo é garantir a corretude das funções internas de cada serviço, cobrindo caminhos felizes, erros esperados e casos de borda.
+
+Consideramos **testes unitários** aqueles que exercitam funções puras e lógica de negócio sem dependências externas. Código de inicialização (`main()`), configuração por variáveis de ambiente e clientes de serviços remotos (GCS, BigQuery, Kafka, Firebase) são cobertos por **testes de integração** e, portanto, excluídos da contagem de cobertura unitária.
 
 ## Resumo geral
 
@@ -18,6 +20,7 @@ Na Sprint 4, foram implementados testes unitários para **4 serviços** do proje
 | agent | Python | `tests/test_campaign.py` | 17 |
 | agent | Python | `tests/test_bigquery_tool.py` | 9 |
 | agent | Python | `tests/test_summarization.py` | 7 |
+| auth-middleware | Rust | `src/auth/iam.rs` (mod tests) | 6 |
 
 ---
 
@@ -257,6 +260,56 @@ Testa a estimativa de tokens e a determinação da janela de contexto por modelo
 
 ---
 
+## auth-middleware (Rust)
+
+### iam.rs — 6 casos
+
+Testa o mapeamento de roles IAM para permissões internas e a determinação da role de maior privilégio.
+
+#### Mapeamento de roles
+
+| Cenário | Resultado esperado |
+|---|---|
+| `test_map_admin_roles` — role admin | Retorna Admin, Editor e Viewer |
+| `test_map_editor_roles` — role editor | Retorna Editor e Viewer |
+| `test_map_viewer_roles` — role viewer | Retorna apenas Viewer |
+| `test_map_multiple_roles` — múltiplas roles | Retorna a combinação correta |
+| `test_map_unknown_roles` — role desconhecida | Retorna lista vazia |
+
+#### Maior privilégio
+
+| Cenário | Resultado esperado |
+|---|---|
+| `test_highest_role` — várias roles | Retorna a role de maior privilégio |
+
+---
+
+## Cobertura
+
+### O que é excluído da cobertura unitária
+
+| Tipo | Exemplos | Motivo |
+|---|---|---|
+| `main()` | `main.go`, `main.rs` | Inicialização do serviço |
+| Configs | `config.go` | Leitura de variáveis de ambiente |
+| Clientes externos | `storage.go`, `client.go`, `firebase.rs` | Chamadas a APIs remotas |
+
+### Cobertura por serviço
+
+| Serviço | Cobertura total | Cobertura lógica de negócio |
+|---|---|---|
+| bff-storage | 14,8% | ~96% (handler) |
+| bigquery-writer | 8,1% | 100% (writer) |
+| bucket-consumer | 8,5% | ~98% (storage) |
+| agent | 26% | 100% |
+| auth-middleware | — | 100% (iam) |
+| rust-producer | 0% | — (sem testes) |
+| frontend | 0% | — (sem testes) |
+
+> **Nota:** Os percentuais de cobertura total são baixos porque a maior parte do código de cada serviço é dedicada à integração com serviços externos (GCS, BigQuery, Kafka, Firebase), que por definição não é coberta por testes unitários. A lógica de negócio testável — handlers, writers, mapeamentos — possui cobertura próxima ou igual a 100%.
+
+---
+
 ## Como executar
 
 ### Serviços Go (bff-storage, bigquery-writer, bucket-consumer)
@@ -271,4 +324,11 @@ go test ./... -v
 ```bash
 cd services/agent
 python -m pytest tests/ -v
+```
+
+### Serviço Rust (auth-middleware)
+
+```bash
+cd services/auth-middleware
+cargo test
 ```
