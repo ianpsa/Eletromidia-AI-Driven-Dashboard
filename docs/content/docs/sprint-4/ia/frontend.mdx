@@ -1,4 +1,3 @@
-Frontend
 ---
 title: Frontend
 description: Chat sidebar com SSE streaming, rendering de rankings, embeds do Looker Studio e integração com o agente de IA.
@@ -65,7 +64,7 @@ O frontend faz `POST /chat` e lê o response body como stream via `ReadableStrea
 
 O resultado de `analyze_campaign` é parseado via regex:
 
-```
+```regex
 /^\d+\.\s+(.+?)\s+—\s+Afinidade:\s+([\d.]+)%.*?Público-alvo:\s+([\d.]+).*?Fluxo total:\s+([\d.]+)/
 ```
 

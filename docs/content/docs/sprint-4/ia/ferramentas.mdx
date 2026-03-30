@@ -29,7 +29,7 @@ A ferramenta principal do agente. Consulta a view `vw_geodata_enriched` no BigQu
 
 O score é o produto das proporções demográficas de cada dimensão filtrada:
 
-```
+```text
 affinity = (gender_sum / total) × (age_sum / total) × (class_sum / total) × 100
 ```
 
@@ -90,10 +90,10 @@ Todos os provedores adicionam automaticamente o sufixo `", São Paulo, Brasil"` 
 
 Gera uma URL do Looker Studio com filtros pré-aplicados via filter control parameters. Chamada **sempre após** `analyze_campaign` para mostrar os pontos recomendados no mapa do Looker. Recebe coordenadas dos pontos, cidade e ambiente como parâmetros, e monta a URL com encoding compatível com o Looker.
 
-Para detalhes completos sobre a construção da URL, separadores, embedding no frontend e configuração, veja [Integração Looker Studio](/docs/sprint-4/ia/integracao-lookerstudio).
+Para detalhes completos sobre a construção da URL, separadores, embedding no frontend e configuração, veja [Integração Looker Studio](/docs/sprint-4/ia/looker).
 
 ---
 
 ## Camada de dados
 
-As ferramentas `analyze_campaign` e `query_bigquery` dependem do cliente BigQuery singleton e da view `vw_geodata_enriched`. Para detalhes sobre o cliente, validação SQL, modelo de dados e queries geradas, veja [Integração BigQuery](/docs/sprint-4/ia/integracao-bigquery).
+As ferramentas `analyze_campaign` e `query_bigquery` dependem do cliente BigQuery singleton e da view `vw_geodata_enriched`. Para detalhes sobre o cliente, validação SQL, modelo de dados e queries geradas, veja [Integração BigQuery](/docs/sprint-4/ia/bigquery).

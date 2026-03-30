@@ -88,17 +88,20 @@ Todos retornam `(latitude, longitude)` ou `None` se não encontrar resultado.
 
 ### Detalhes por provedor
 
-**Nominatim (default)**
+#### Nominatim (default)
+
 - API pública do OpenStreetMap, sem API key
 - Header `User-Agent: EletromidiaAgent/1.0`
 - Timeout de 10 segundos
 
-**Mapbox**
+#### Mapbox
+
 - Mapbox Geocoding v5 API
 - Retorna `[lon, lat]` (invertido) - o provider normaliza para `(lat, lon)`
 - Suporte a idioma português (`language=pt`)
 
-**Google Maps**
+#### Google Maps
+
 - Google Geocoding API
 - Extrai coordenadas de `geometry.location` (`lat`, `lng`)
 

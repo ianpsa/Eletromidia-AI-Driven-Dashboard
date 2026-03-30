@@ -28,7 +28,7 @@ Gera uma URL do Looker Studio com filtros pré-aplicados via **filter control pa
 
 A URL é montada no formato:
 
-```
+```text
 https://lookerstudio.google.com/embed/reporting/{REPORT_ID}/page/{PAGE_ID}?params={ENCODED_JSON}
 ```
 
@@ -46,7 +46,7 @@ As keys são configuráveis via variáveis de ambiente (`LOOKER_KEY_PONTOS`, `LO
 
 O Looker Studio exige o separador `%EE%80%80` (U+E000, Private Use Area) entre os componentes de cada filtro. O formato de um filtro IN é:
 
-```
+```text
 include%EE%80%80 0%EE%80%80 IN%EE%80%80 valor1%EE%80%80 valor2%EE%80%80 ...
 ```
 

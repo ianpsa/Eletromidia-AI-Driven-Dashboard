@@ -13,7 +13,7 @@ O agente usa LangGraph com `MessagesState` (lista de mensagens) e três nós:
 
 ### Fluxo de execução
 
-```
+```text
 START → maybe_summarize → llm_call → [tool_calls?]
                                         ├─ sim → tool_node → llm_call (loop)
                                         └─ não → __end__
@@ -71,7 +71,7 @@ A API usa `agent.astream(..., stream_mode="messages")` e transmite os eventos:
 
 ### Headers de resposta
 
-```
+```text
 Content-Type: text/event-stream
 Cache-Control: no-cache
 X-Accel-Buffering: no
