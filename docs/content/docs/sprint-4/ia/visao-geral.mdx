@@ -1,6 +1,74 @@
 ---
 title: Visão Geral
-description: Placeholder
+description: Visão geral do agente de IA para planejamento de mídia OOH, incluindo pipeline de dados, ferramentas e integração com o frontend.
 ---
 
-Placeholder.
+## O que é
+
+O agente de IA é um **consultor de planejamento de mídia OOH** (Out-of-Home) que recomenda pontos de mídia da Eletromidia com base em dados reais de audiência. O usuário descreve uma campanha em linguagem natural - público-alvo, região, objetivo - e o agente consulta dados demográficos e geográficos para recomendar os melhores pontos.
+
+A stack é composta por:
+
+- **Agente LangGraph** - state machine com ferramentas (tools) que consulta BigQuery, geocodifica endereços e gera dashboards filtrados
+- **API FastAPI** - endpoint `/chat` com streaming via SSE (Server-Sent Events)
+- **Frontend React** - chat sidebar que consome o stream e renderiza texto, tabelas de ranking e iframes do Looker Studio
+- **Pipeline de enriquecimento** - script offline que cruza dados de audiência Claro com o inventário de telas Eletromidia
+
+---
+
+## Pipeline de dados
+
+Os dados de audiência vêm de duas fontes - **Claro** (fluxo de pessoas com perfil demográfico) e **Eletromidia** (inventário de telas OOH com coordenadas). O script `enrich.py` realiza um spatial join entre os dois datasets via Haversine vetorizado, com matching em três camadas (exato, fallback e global) para garantir 100% de cobertura. O resultado alimenta a view `vw_geodata_enriched` no BigQuery.
+
+Para detalhes completos do pipeline, veja [Juntar dados Claro e Eletromidia](/docs/sprint-4/ia/juntar-dados).
+
+---
+
+## Fluxo de ponta a ponta
+
+1. Usuário descreve campanha no chat sidebar
+2. Frontend faz `POST /chat` com a mensagem
+3. API cria/recupera thread e invoca o grafo do agente
+4. Agente interpreta filtros, geocodifica locais se necessário, consulta BigQuery
+5. Resultado é transmitido como SSE (tokens de texto + resultados de ferramentas)
+6. Frontend renderiza texto, tabela de ranking e iframe do Looker Studio
+7. Contexto da conversa é mantido via `thread_id` e sumarização automática
+
+---
+
+## Estrutura do serviço
+
+```
+src/services/agent/
+├── api.py                    # FastAPI + SSE streaming
+├── main.py                   # CLI para testes locais
+├── Dockerfile
+├── pyproject.toml
+├── core/
+│   ├── agent.py              # Grafo LangGraph (nodes, edges, state)
+│   ├── prompt.py             # System prompt do agente
+│   ├── llm_provider.py       # Provedores de LLM (Groq, Google)
+│   ├── bigquery_client.py    # Cliente BigQuery singleton
+│   ├── summarization.py      # Sumarização de contexto
+│   └── tools/
+│       ├── campaign.py       # analyze_campaign
+│       ├── bigquery.py       # query_bigquery
+│       ├── metadata.py       # get_available_filters
+│       ├── geocoding.py      # geocode_location
+│       └── looker.py         # filter_looker_dashboard
+└── scripts/
+    └── enrich.py             # Pipeline de enriquecimento offline
+```
+
+---
+
+## Dependências principais
+
+| Dependência | Uso |
+| --- | --- |
+| `fastapi` + `uvicorn` | API HTTP com SSE streaming |
+| `langchain-core` + `langgraph` | Framework do agente e state machine |
+| `langchain-groq` + `langchain-google-genai` | Provedores de LLM |
+| `google-cloud-bigquery` | Acesso ao BigQuery |
+| `httpx` | Requisições HTTP para geocoding providers |
+| `numpy` + `pandas` + `pyarrow` | Processamento de dados e pipeline de enriquecimento |

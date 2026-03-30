@@ -1,6 +1,124 @@
 ---
 title: LLM Providers
-description: Placeholder
+description: Provedores intercambiáveis de LLM e geocoding, configuráveis via variáveis de ambiente, com singletons thread-safe.
 ---
 
-Placeholder.
+## Visão Geral
+
+O agente utiliza uma arquitetura de **provedores intercambiáveis** para dois serviços externos: **LLM** (modelo de linguagem) e **geocoding** (conversão de endereços para coordenadas). Ambos seguem o mesmo padrão de design e podem ser trocados sem alterar código - basta mudar uma variável de ambiente.
+
+---
+
+## Padrão de implementação
+
+Ambos os sistemas seguem o mesmo padrão:
+
+1. **Protocol** - define a interface que todo provedor deve implementar
+2. **Registry** - dicionário `{ "nome": ClasseProvedor }` com todos os provedores disponíveis
+3. **Factory** - função `get_*_provider()` que lê a variável de ambiente, instancia o provedor e cacheia com double-checked locking
+4. **Singleton thread-safe** - `threading.Lock` + verificação dupla garante que apenas uma instância é criada mesmo com requests concorrentes
+
+```python
+_cached = None
+_lock = threading.Lock()
+
+def get():
+    global _cached
+    if _cached is not None:
+        return _cached
+    with _lock:
+        if _cached is not None:
+            return _cached
+        _cached = create()
+        return _cached
+```
+
+Este padrão é aplicado em: cliente BigQuery, provedor de geocoding, provedor de LLM, LLM de sumarização e grafo compilado do agente.
+
+---
+
+## Provedores de LLM
+
+O módulo `core/llm_provider.py` implementa dois provedores:
+
+| Provedor | Variável | API Key | Modelo default |
+| --- | --- | --- | --- |
+| `groq` | `LLM_PROVIDER=groq` | `GROQ_API_KEY` | `llama-3.3-70b-versatile` |
+| `google` | `LLM_PROVIDER=google` | `GOOGLE_API_KEY` | `gemini-2.0-flash` |
+
+### Interface (Protocol)
+
+```python
+class LLMProvider(Protocol):
+    def build(self) -> BaseChatModel: ...
+```
+
+Cada provedor retorna uma instância de `BaseChatModel` do LangChain, permitindo uso transparente pelo agente.
+
+### Configuração
+
+| Variável | Default | Descrição |
+| --- | --- | --- |
+| `LLM_PROVIDER` | `groq` | Provedor a utilizar |
+| `LLM_MODEL` | Depende do provider | Nome do modelo |
+| `LLM_TEMPERATURE` | `0.3` | Temperatura de geração |
+
+O modelo configurado é vinculado às ferramentas via `bind_tools(TOOLS)` para o agente, e também é usado pelo sistema de sumarização (instância separada sem tool bindings).
+
+---
+
+## Provedores de geocoding
+
+O módulo `core/tools/geocoding.py` implementa três provedores para a tool `geocode_location`:
+
+| Provedor | Variável | API Key | Descrição |
+| --- | --- | --- | --- |
+| `nominatim` | `GEOCODING_PROVIDER=nominatim` | Não requer | OpenStreetMap (default) |
+| `mapbox` | `GEOCODING_PROVIDER=mapbox` | `MAPBOX_API_KEY` | Mapbox Geocoding API |
+| `google` | `GEOCODING_PROVIDER=google` | `GOOGLE_MAPS_API_KEY` | Google Maps Geocoding |
+
+### Interface (Protocol)
+
+```python
+class GeocodingProvider(Protocol):
+    def geocode(self, query: str) -> tuple[float, float] | None: ...
+```
+
+Todos retornam `(latitude, longitude)` ou `None` se não encontrar resultado.
+
+### Detalhes por provedor
+
+**Nominatim (default)**
+- API pública do OpenStreetMap, sem API key
+- Header `User-Agent: EletromidiaAgent/1.0`
+- Timeout de 10 segundos
+
+**Mapbox**
+- Mapbox Geocoding v5 API
+- Retorna `[lon, lat]` (invertido) - o provider normaliza para `(lat, lon)`
+- Suporte a idioma português (`language=pt`)
+
+**Google Maps**
+- Google Geocoding API
+- Extrai coordenadas de `geometry.location` (`lat`, `lng`)
+
+---
+
+## Sumarização de contexto
+
+O módulo `core/summarization.py` gerencia o tamanho do histórico de mensagens para evitar ultrapassar o context window do modelo.
+
+### Context windows por modelo
+
+| Modelo | Context window |
+| --- | --- |
+| `llama-3.3-70b-versatile` | 128.000 tokens |
+| `llama-3.1-70b-versatile` | 128.000 tokens |
+| `gemini-2.0-flash` | 1.048.576 tokens |
+
+### Comportamento
+
+- A sumarização é acionada quando o histórico atinge **75%** do context window
+- As **3 mensagens mais recentes** são sempre preservadas
+- As mensagens antigas são resumidas por uma instância separada do LLM (sem tools), usando um prompt estruturado que captura: objetivo do usuário, filtros aplicados, ferramentas usadas e resultados, correções/feedback, solicitações pendentes e estado atual da conversa
+- O default para modelos não mapeados é 128.000 tokens

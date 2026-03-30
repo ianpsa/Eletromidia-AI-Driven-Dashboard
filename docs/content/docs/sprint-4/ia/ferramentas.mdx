@@ -1,6 +1,99 @@
 ---
 title: Ferramentas
-description: Placeholder
+description: As 5 ferramentas do agente - analyze_campaign, query_bigquery, get_available_filters, geocode_location e filter_looker_dashboard.
 ---
 
-Placeholder.
+## Visão Geral
+
+O agente possui 5 ferramentas registradas via `@tool` do LangChain e vinculadas ao LLM com `bind_tools`. Cada ferramenta é chamada automaticamente pelo modelo quando identifica a necessidade no prompt do usuário.
+
+---
+
+## `analyze_campaign`
+
+A ferramenta principal do agente. Consulta a view `vw_geodata_enriched` no BigQuery, agrega por `location_id` e calcula o score de afinidade demográfica.
+
+### Parâmetros
+
+| Parâmetro | Tipo | Descrição |
+| --- | --- | --- |
+| `gender` | `string \| None` | `"female"` ou `"male"` |
+| `age_min` / `age_max` | `int \| None` | Faixa etária (18–120) |
+| `classes` | `list[string] \| None` | Classes sociais (`A`, `B1`, `B2`, `C1`, `C2`, `DE`) |
+| `city` | `string \| None` | Filtro de cidade |
+| `latitude` / `longitude` | `float \| None` | Centro do raio geográfico |
+| `radius_km` | `float` | Raio em km (default: 2) |
+| `result_limit` | `int` | Máximo de resultados (default: 10) |
+
+### Score de afinidade
+
+O score é o produto das proporções demográficas de cada dimensão filtrada:
+
+```
+affinity = (gender_sum / total) × (age_sum / total) × (class_sum / total) × 100
+```
+
+Se uma dimensão não é filtrada, usa `SUM(uniques)` como numerador, resultando em 100% e não afetando o score.
+
+### Filtro geográfico
+
+Quando coordenadas são fornecidas, a query usa `ST_DISTANCE` + `ST_GEOGPOINT` para filtrar pontos dentro do raio. Todos os parâmetros são passados via `ScalarQueryParameter` para evitar SQL injection.
+
+---
+
+## `query_bigquery`
+
+Acesso SQL direto ao BigQuery, com múltiplas camadas de segurança.
+
+### Validação de SQL
+
+| Regra | Descrição |
+| --- | --- |
+| Somente `SELECT` / `WITH` | Queries devem começar com `SELECT` ou `WITH` |
+| Bloqueio de operações destrutivas | `INSERT`, `UPDATE`, `DELETE`, `DROP`, `CREATE`, `ALTER`, `TRUNCATE`, `MERGE`, `GRANT`, `REVOKE`, `EXEC` bloqueados via regex |
+| Proibição de múltiplos statements | Presença de `;` rejeita a query |
+| Limite automático | Se a query não tiver `LIMIT`, adiciona `LIMIT 100` |
+
+### Auto-qualificação de tabelas
+
+Nomes de tabelas conhecidas (`enriched_screens`, `geodata`, `target`, `age`, `gender`, `social_class`) são automaticamente prefixados com `project.dataset` via substituição regex.
+
+### Cap de custo
+
+Todas as queries são executadas com `maximum_bytes_billed=1_000_000_000` (1 GB).
+
+---
+
+## `get_available_filters`
+
+Consulta a view `vw_geodata_enriched` e retorna as opções disponíveis para o agente validar antes de aplicar filtros:
+
+- Total de pontos de mídia
+- Lista de cidades disponíveis
+- Classes sociais, faixas etárias e gêneros fixos
+
+O agente usa esta ferramenta quando o usuário pergunta "quais cidades têm dados?" ou antes de aplicar filtros para garantir que os valores existem.
+
+---
+
+## `geocode_location`
+
+Converte endereços e nomes de locais para coordenadas geográficas `(latitude, longitude)`. Suporta três provedores intercambiáveis (Nominatim, Mapbox, Google Maps).
+
+O agente chama esta ferramenta **antes** de `analyze_campaign` quando o usuário menciona um local específico (bairro, rua, ponto de referência). As coordenadas resultantes são passadas para o filtro geográfico.
+
+Todos os provedores adicionam automaticamente o sufixo `", São Paulo, Brasil"` à query para desambiguação.
+
+---
+
+## `filter_looker_dashboard`
+
+Gera uma URL do Looker Studio com filtros pré-aplicados via filter control parameters. Chamada **sempre após** `analyze_campaign` para mostrar os pontos recomendados no mapa do Looker. Recebe coordenadas dos pontos, cidade e ambiente como parâmetros, e monta a URL com encoding compatível com o Looker.
+
+Para detalhes completos sobre a construção da URL, separadores, embedding no frontend e configuração, veja [Integração Looker Studio](/docs/sprint-4/ia/integracao-lookerstudio).
+
+---
+
+## Camada de dados
+
+As ferramentas `analyze_campaign` e `query_bigquery` dependem do cliente BigQuery singleton e da view `vw_geodata_enriched`. Para detalhes sobre o cliente, validação SQL, modelo de dados e queries geradas, veja [Integração BigQuery](/docs/sprint-4/ia/integracao-bigquery).
