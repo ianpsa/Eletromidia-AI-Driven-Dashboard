@@ -2,9 +2,14 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: bff-storage-ingress
-  namespace: default            # ajuste se o Service estiver em outro namespace
+  namespace: dev            # ajuste se o Service estiver em outro namespace
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://midia-in-da-house.web.app"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
     # nginx.ingress.kubernetes.io/ssl-redirect: "true"   # descomente se usar TLS
 spec:
   ingressClassName: nginx       # deve bater com o IngressClass instalado pelo controller
@@ -16,8 +21,7 @@ spec:
   #     secretName: bff-storage-tls   # Secret com cert + key
  
   rules:
-    - host: bff-storage.seu-dominio.com   # substitua pelo seu domínio / IP
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix

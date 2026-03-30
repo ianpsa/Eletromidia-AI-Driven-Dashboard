@@ -1,12 +1,11 @@
 {
   "hosting": {
     "public": "src/frontend/dist",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
     "rewrites": [
+      {
+        "source": "/api/**",
+        "destination": "http://34.39.196.243/**"
+      },
       {
         "source": "**",
         "destination": "/index.html"
