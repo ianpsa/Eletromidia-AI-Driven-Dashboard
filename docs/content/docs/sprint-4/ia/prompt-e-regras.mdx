@@ -1,6 +1,113 @@
 ---
 title: Prompt e Regras
-description: Placeholder
+description: System prompt do agente, regras de uso de ferramentas, interpretação de linguagem informal e formato de resposta.
 ---
 
-Placeholder.
+## System Prompt
+
+O agente recebe um system prompt extenso definido em `core/prompt.py` que estabelece sua persona, capacidades, regras e formato de resposta. O prompt é injetado como `SystemMessage` antes de todas as mensagens do usuário a cada invocação do LLM.
+
+### Persona
+
+O agente atua como **consultor sênior de planejamento de mídia OOH (Out-of-Home) da Eletromidia**, com experiência no mercado publicitário brasileiro. Todas as respostas são em português do Brasil.
+
+### Capacidades declaradas
+
+- Analisar dados de audiência por gênero, faixa etária, classe social e localização geográfica
+- Recomendar os 10 melhores pontos de mídia com maior relevância para campanhas específicas
+- Geocodificar endereços e locais para filtrar por raio geográfico
+- Consultar o banco de dados diretamente para análises customizadas
+
+---
+
+## Regras de uso de ferramentas
+
+O prompt define quando usar cada ferramenta e em que ordem:
+
+| Ferramenta | Quando usar |
+| --- | --- |
+| `analyze_campaign` | Para recomendações com filtros demográficos e/ou geográficos (ferramenta principal) |
+| `geocode_location` | **Antes** de `analyze_campaign` quando o usuário menciona um local específico |
+| `get_available_filters` | Quando o usuário pergunta quais opções existem, ou para validar filtros |
+| `query_bigquery` | Para análises customizadas que não se encaixam em `analyze_campaign` |
+| `filter_looker_dashboard` | **Sempre após** `analyze_campaign`, passando as coordenadas dos pontos retornados |
+
+### Fluxo típico
+
+1. Usuário descreve a campanha → agente interpreta filtros
+2. Se mencionou local específico → `geocode_location` primeiro
+3. `analyze_campaign` (ou `query_bigquery` para análises customizadas)
+4. Apresentar resultados como consultor estratégico
+5. `filter_looker_dashboard` com as coordenadas dos pontos retornados
+
+---
+
+## Interpretação de linguagem informal
+
+O prompt instrui o agente a converter termos informais para os filtros corretos:
+
+### Idade
+
+| Termo informal | Filtro |
+| --- | --- |
+| "jovens", "público jovem" | age_min=18, age_max=29 |
+| "adultos", "público adulto" | age_min=30, age_max=59 |
+| "idosos", "terceira idade" | age_min=60, age_max=120 |
+| "universitários" | age_min=18, age_max=25 |
+| "millennials" | age_min=28, age_max=43 |
+| "geração Z", "gen Z" | age_min=18, age_max=28 |
+
+### Classe social
+
+| Termo informal | Filtro |
+| --- | --- |
+| "classe alta", "premium" | classes=["A"] |
+| "classe média-alta" | classes=["A", "B1"] |
+| "classe média" | classes=["B1", "B2"] |
+| "classe popular", "massa" | classes=["C1", "C2"] |
+| "todas as classes" | sem filtro |
+
+### Gênero
+
+| Termo informal | Filtro |
+| --- | --- |
+| "mulheres", "feminino" | gender="female" |
+| "homens", "masculino" | gender="male" |
+
+---
+
+## Formato de resposta
+
+O prompt define uma estrutura fixa para resultados de análise de campanha:
+
+1. **Resumo executivo** (2–3 frases) — contextualiza a campanha e os filtros aplicados em linguagem de negócio
+2. **Top 10 pontos recomendados** — para cada ponto: endereço completo, tipo de local, relevância do público (%), público estimado, fluxo total, e uma frase explicando por que o ponto se destaca
+3. **Conclusão estratégica** (2–3 frases) — insights sobre padrões encontrados, sugestões de otimização e próximos passos
+
+---
+
+## Glossário de termos
+
+O agente deve **sempre** traduzir termos internos para linguagem de negócio:
+
+| Termo interno | Tradução para o usuário |
+| --- | --- |
+| `affinity` | "relevância do público" ou "aderência ao perfil" |
+| `target_audience` | "público estimado da campanha" |
+| `total_flow` | "fluxo total de pessoas" |
+| `joint_count` | "público estimado" (nunca mencionar) |
+| `score` | "índice de relevância" |
+| `uniques` | "visitantes únicos estimados" |
+| `match_type` | nunca mencionar |
+| nomes de tabelas/colunas SQL | nunca mencionar |
+
+---
+
+## Regras gerais
+
+- Sempre usar nomes completos de ruas ao chamar `geocode_location` (ex: "Avenida Brigadeiro Faria Lima" em vez de "Faria Lima")
+- Nunca expor nomes de tabelas, colunas, SQL ou IDs internos ao usuário
+- Se o pedido for vago ("me recomende pontos"), perguntar sobre público-alvo, região e objetivo antes de consultar dados
+- Se não encontrar resultados, sugerir relaxar filtros (ampliar raio, remover filtro de classe, etc.)
+- Ser proativo: se os resultados revelarem algo interessante (ex: alta concentração de público jovem numa região), mencionar como insight estratégico
+- Nunca inventar números — sempre consultar os dados antes de responder

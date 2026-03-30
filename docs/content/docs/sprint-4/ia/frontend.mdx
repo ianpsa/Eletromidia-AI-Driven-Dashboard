@@ -1,0 +1,144 @@
+---
+title: Frontend
+description: Chat sidebar com SSE streaming, rendering de rankings, embeds do Looker Studio e integração com o agente de IA.
+---
+
+## Visão Geral
+
+O frontend React integra o agente de IA via um **chat sidebar** lateral que consome a API `/chat` com **Server-Sent Events (SSE)** e renderiza respostas ricas: texto formatado, tabelas de ranking de pontos e iframes do Looker Studio com filtros pré-aplicados.
+
+---
+
+## Componente `ChatSidebar`
+
+### Props
+
+| Prop | Tipo | Descrição |
+| --- | --- | --- |
+| `open` | `boolean` | Controla visibilidade do sidebar |
+| `onClose` | `() => void` | Callback para fechar o sidebar |
+| `onLookerUrl` | `(url: string) => void` | Callback quando o agente retorna URL do Looker (opcional) |
+
+### Estado interno
+
+| Estado | Tipo | Descrição |
+| --- | --- | --- |
+| `messages` | `Message[]` | Histórico de mensagens (user + agent) |
+| `input` | `string` | Texto do input do usuário |
+| `loading` | `boolean` | Flag de loading durante streaming |
+| `threadId` | `string \| null` | ID da thread para manter contexto entre mensagens |
+
+### Tipos de conteúdo
+
+Cada mensagem pode conter múltiplos blocos de conteúdo:
+
+| Tipo | Renderização |
+| --- | --- |
+| `text` | Parágrafo de texto |
+| `ranking` | Tabela com colunas: Ponto, Afinidade, Público, Fluxo |
+| `dashboard` | iframe com URL do Looker Studio |
+
+---
+
+## Consumo de SSE
+
+O frontend faz `POST /chat` e lê o response body como stream via `ReadableStream` (não usa `EventSource`, que só suporta GET):
+
+1. `fetch(buildApiUrl("/chat"), { method: "POST", body })` → obtém o `reader` do body
+2. Decodifica chunks com `TextDecoder({ stream: true })`
+3. Acumula em um buffer, split por `\n`, mantém última linha parcial
+4. Parseia pares `event:` / `data:` e despacha para `handleSSEEvent`
+
+### Mapeamento de eventos
+
+| Evento SSE | Ação no frontend |
+| --- | --- |
+| `metadata` | Salva o `thread_id` para reutilizar na próxima mensagem |
+| `token` | Concatena texto ao último bloco de texto da mensagem do agente |
+| `tool_start` | Ignorado (pode ser usado para indicar loading) |
+| `tool_result` | Parseia conforme a ferramenta (ranking, dashboard ou texto) |
+| `error` | Exibe mensagem de erro |
+| `done` | Finaliza o streaming |
+
+### Parsing de rankings
+
+O resultado de `analyze_campaign` é parseado via regex:
+
+```regex
+/^\d+\.\s+(.+?)\s+—\s+Afinidade:\s+([\d.]+)%.*?Público-alvo:\s+([\d.]+).*?Fluxo total:\s+([\d.]+)/
+```
+
+Se o parsing encontra itens, renderiza como tabela. Caso contrário, exibe como texto puro.
+
+### Rendering de dashboards
+
+Quando o evento `tool_result` vem de `filter_looker_dashboard`:
+
+```tsx
+case "filter_looker_dashboard": {
+  const urlMatch = content.match(/https?:\/\/\S+/);
+  if (urlMatch) {
+    onLookerUrl?.(urlMatch[0]);
+    appendToAgentMessage(msgId, { type: "dashboard", url: urlMatch[0] });
+  }
+}
+```
+
+A URL é propagada via `onLookerUrl` para que a `AnalyticsPage` também atualize seu iframe.
+
+---
+
+## Integração com o App
+
+O `AppShell` em `App.tsx` gerencia o estado do chat:
+
+- `chatOpen` controla a visibilidade do sidebar
+- `handleLookerUrl` recebe URLs do Looker e navega para a página de analytics
+- O `Sidebar` de navegação tem um botão "Agente IA" que abre/fecha o chat
+
+### Páginas que interagem com o agente
+
+| Componente | Relação com o agente |
+| --- | --- |
+| `ChatSidebar` | Interface conversacional principal |
+| `AnalyticsPage` | Renderiza iframe do Looker — recebe URL filtrada do chat |
+| `Sidebar` | Botão para abrir/fechar o chat |
+
+---
+
+## UX
+
+### Estado vazio
+
+Quando não há mensagens, o chat exibe uma mensagem de boas-vindas:
+
+> "Descreva sua campanha e receba recomendações baseadas em dados reais."
+>
+> Ex: Mulheres 25–34, classe A, perto da Faria Lima
+
+### Indicador de typing
+
+Enquanto o agente está processando (antes de receber tokens), três dots animados são exibidos na bolha de mensagem.
+
+### Nova conversa
+
+O botão "+" limpa o histórico de mensagens e reseta o `thread_id`, iniciando uma conversa nova.
+
+### Auto-scroll e auto-focus
+
+- Scroll automático para o final quando novas mensagens são adicionadas
+- Input recebe foco automaticamente quando o sidebar é aberto
+
+---
+
+## Configuração de rede
+
+### Desenvolvimento
+
+O Vite proxy em `vite.config.ts` redireciona `/api/chat` para o agente (default `http://localhost:8001`), removendo o prefixo `/api`.
+
+### Produção
+
+O `nginx.conf` do frontend roteia `location /api/chat` para o serviço do agente no Docker Compose.
+
+A URL base da API é configurável via `VITE_BASE_URL` e acessada pelo helper `buildApiUrl` em `utils/url.ts`.

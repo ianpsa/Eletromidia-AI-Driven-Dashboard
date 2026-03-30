@@ -1,0 +1,109 @@
+---
+title: Integração Looker Studio
+description: Embedding do Looker Studio no frontend e geração dinâmica de URLs filtradas pelo agente de IA.
+---
+
+## Visão Geral
+
+A integração com o Looker Studio funciona em duas frentes:
+
+1. **Embedding no frontend** - o dashboard do Looker Studio é embutido diretamente na interface do usuário via iframe, permitindo visualização interativa dos dados sem sair da aplicação
+2. **URLs filtradas pelo agente** - após recomendar pontos de mídia, o agente gera automaticamente uma URL do Looker Studio com os pontos já filtrados, que é renderizada como iframe no chat
+
+---
+
+## Tool `filter_looker_dashboard`
+
+Gera uma URL do Looker Studio com filtros pré-aplicados via **filter control parameters** da API do Looker. Chamada **sempre após** `analyze_campaign` para mostrar os pontos recomendados no mapa.
+
+### Parâmetros
+
+| Parâmetro | Tipo | Descrição |
+| --- | --- | --- |
+| `pontos` | `list[string]` | Coordenadas como `"lat,lng"` (extraídas do output de `analyze_campaign`) |
+| `city` | `string` | Filtro de cidade (opcional) |
+| `ambiente` | `string` | Filtro de subtipo de local (opcional) |
+
+### Construção da URL
+
+A URL é montada no formato:
+
+```text
+https://lookerstudio.google.com/embed/reporting/{REPORT_ID}/page/{PAGE_ID}?params={ENCODED_JSON}
+```
+
+O JSON de filtros usa as **filter control keys** do Looker Studio:
+
+| Key | Filtro | Tipo |
+| --- | --- | --- |
+| `df50` | Pontos (coordenadas) | `IN` - múltiplos valores |
+| `df49` | Cidade | `EQ` - valor único |
+| `df48` | Ambiente | `EQ` - valor único |
+
+As keys são configuráveis via variáveis de ambiente (`LOOKER_KEY_PONTOS`, `LOOKER_KEY_CIDADE`, `LOOKER_KEY_AMBIENTE`).
+
+### Separador de filtros
+
+O Looker Studio exige o separador `%EE%80%80` (U+E000, Private Use Area) entre os componentes de cada filtro. O formato de um filtro IN é:
+
+```text
+include%EE%80%80 0%EE%80%80 IN%EE%80%80 valor1%EE%80%80 valor2%EE%80%80 ...
+```
+
+A vírgula nas coordenadas (`lat,lng`) é codificada como `%2C` para não conflitar com a sintaxe de filtros. A URL final é percent-encoded via `urllib.parse.quote`.
+
+### Tratamento de unicode
+
+O LLM às vezes emite sequências `\uXXXX` literais nos argumentos de tool call. A função `_decode_unicode_escapes` converte essas sequências para os caracteres corretos antes de encodar a URL.
+
+---
+
+## Configuração
+
+| Variável de ambiente | Default | Descrição |
+| --- | --- | --- |
+| `LOOKER_REPORT_ID` | `1776f716-b7de-...` | ID do relatório Looker Studio |
+| `LOOKER_PAGE_ID` | `p_dmgnzqj61d` | ID da página (Campaign Planning) |
+| `LOOKER_KEY_PONTOS` | `df50` | Filter control key para pontos |
+| `LOOKER_KEY_CIDADE` | `df49` | Filter control key para cidade |
+| `LOOKER_KEY_AMBIENTE` | `df48` | Filter control key para ambiente |
+
+---
+
+## Embedding no frontend
+
+O Looker Studio é embutido no frontend de duas formas:
+
+### 1. Dashboard page (embed estático)
+
+A página de analytics (`AnalyticsPage`) embute o dashboard do Looker Studio diretamente em um iframe sem filtros pré-aplicados. O usuário interage com os filtros nativos do Looker.
+
+### 2. Chat sidebar (embed dinâmico)
+
+Quando o agente retorna uma URL do Looker Studio no chat:
+
+1. O `ChatSidebar` detecta o evento `tool_result` com nome `filter_looker_dashboard`
+2. Extrai a URL via regex (`/https?:\/\/\S+/`)
+3. Renderiza um iframe com a URL filtrada dentro da bolha de mensagem do agente
+4. Também propaga a URL via callback `onLookerUrl` para que a `AnalyticsPage` atualize seu iframe
+
+```tsx
+case "filter_looker_dashboard": {
+  const urlMatch = content.match(/https?:\/\/\S+/);
+  if (urlMatch) {
+    onLookerUrl?.(urlMatch[0]);
+    appendToAgentMessage(msgId, { type: "dashboard", url: urlMatch[0] });
+  }
+}
+```
+
+---
+
+## Fluxo completo
+
+1. Usuário descreve campanha no chat
+2. Agente chama `analyze_campaign` → retorna ranking com coordenadas `[coords: lat,lng]`
+3. Agente chama `filter_looker_dashboard` passando as coordenadas extraídas
+4. Tool monta URL com filtros IN para os pontos + filtros EQ para cidade/ambiente
+5. URL é retornada como `tool_result`
+6. Frontend renderiza iframe com o dashboard filtrado

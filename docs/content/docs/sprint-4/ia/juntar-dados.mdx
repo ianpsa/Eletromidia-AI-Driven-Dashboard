@@ -1,0 +1,88 @@
+---
+title: Juntar dados Claro e Eletromidia
+description: Pipeline de enriquecimento que realiza spatial join entre os pontos de mídia da Eletromidia e os dados de audiência da Claro.
+---
+
+## Visão Geral
+
+Os dados de audiência vêm de duas fontes distintas:
+
+- **Claro** - dados de fluxo de pessoas com perfil demográfico (gênero, faixa etária, classe social) por localização geográfica
+- **Eletromidia** - inventário de telas OOH (Out-of-Home) com coordenadas, vertical (tipo de mídia) e ambiente (subtipo de local)
+
+O script `enrich.py` realiza um **spatial join** entre os dois datasets, associando a cada tela da Eletromidia o perfil demográfico dos pontos Claro mais próximos. O resultado é um CSV enriquecido que alimenta tanto o BigQuery quanto o agente de IA.
+
+---
+
+## Matching em três camadas
+
+O algoritmo garante **100% de cobertura** - toda tela da Eletromidia recebe um perfil demográfico, mesmo que não haja dados Claro nas proximidades.
+
+### 1. Match exato (raio primário)
+
+Encontra pontos Claro dentro de **500 metros** da tela. As proporções demográficas são calculadas como **média ponderada por `uniques`** (visitantes únicos), dando mais peso a locais com maior volume de dados.
+
+### 2. Match fallback (raio expandido)
+
+Se não houver pontos dentro de 500m, o raio é expandido para **5 km**. Neste caso, usa **ponderação por inverso da distância** (`uniques / distância`), privilegiando pontos mais próximos mesmo que tenham menos volume.
+
+### 3. Match global (média geral)
+
+Se não houver nenhum ponto Claro dentro de 5 km, a tela recebe a **média ponderada global** de todas as proporções demográficas do dataset Claro. Isso garante que nenhuma tela fique sem dados, usando o perfil geral como fallback.
+
+---
+
+## Dados demográficos (colunas de proporção)
+
+Cada tela enriquecida recebe 16 colunas de proporção, todas no intervalo `[0, 1]`:
+
+| Categoria | Colunas |
+| --- | --- |
+| Faixa etária | `p_18_19`, `p_20_29`, `p_30_39`, `p_40_49`, `p_50_59`, `p_60_69`, `p_70_79`, `p_80_plus` |
+| Gênero | `p_f` (feminino), `p_m` (masculino) |
+| Classe social | `p_a`, `p_b1`, `p_b2`, `p_c1`, `p_c2`, `p_de` |
+
+---
+
+## Cálculo de distâncias (Haversine)
+
+A função `haversine_matrix` calcula a distância em metros entre todos os pares tela–ponto de forma **vetorizada com NumPy**, gerando uma matriz `(N_telas × N_pontos)` em uma única operação. Isso evita loops Python e permite processar milhares de telas em segundos.
+
+---
+
+## Carregamento dos dados Claro
+
+O CSV da Claro contém uma coluna `target` com um dicionário Python serializado como string. O pipeline:
+
+1. Parseia a coluna `target` com `ast.literal_eval`, extraindo as proporções de idade, gênero e classe social
+2. Agrupa por `location_id` e calcula a **média ponderada por `uniques`** das proporções
+3. Retorna um DataFrame com uma linha por localização
+
+---
+
+## Uso
+
+```bash
+python scripts/enrich.py \
+    --claro  ../../data/fluxo_claro.csv \
+    --eletro ../../data/eletromidia_pontos.csv \
+    --output ../../data/eletromidia_enriched.csv
+```
+
+| Parâmetro | Default | Descrição |
+| --- | --- | --- |
+| `--claro` | - | Caminho do CSV Claro |
+| `--eletro` | - | Caminho do CSV Eletromidia |
+| `--output` | - | Caminho de saída do CSV enriquecido |
+| `--radius` | 500 | Raio primário em metros |
+| `--fallback-radius` | 5000 | Raio de fallback em metros |
+
+O script reporta estatísticas de matching ao final:
+
+```text
+Match types:
+exact       8234
+fallback    1456
+global_avg   310
+Total: 10000 rows (100.0% coverage)
+```

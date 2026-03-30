@@ -1,0 +1,115 @@
+---
+title: Dockerizar e finalizar API
+description: Containerização do agente com Docker, orquestração via Docker Compose e variáveis de ambiente.
+---
+
+## Visão Geral
+
+O agente de IA foi containerizado para deploy em produção com:
+
+- **Dockerfile** otimizado com cache de dependências e execução como non-root
+- **Docker Compose** orquestrando agent, frontend e serviços de suporte
+- **Health check** nativo para readiness probes
+
+---
+
+## Dockerfile
+
+```dockerfile
+FROM python:3.11-slim
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+COPY . .
+RUN uv sync --frozen --no-dev
+
+RUN groupadd --system appgroup && useradd --system --gid appgroup --no-create-home appuser \
+    && chown -R appuser:appgroup /app
+USER appuser
+
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+CMD ["/app/.venv/bin/uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### Decisões de design
+
+| Aspecto | Decisão |
+| --- | --- |
+| **Base image** | `python:3.11-slim` - compatível com dependências nativas, menor que a full image |
+| **Package manager** | `uv` (instalado via multi-stage copy) - resolução rápida e lockfile determinístico |
+| **Cache de layers** | `pyproject.toml` e `uv.lock` copiados antes do código; dependências instaladas primeiro |
+| **Segurança** | Execução como `appuser` (non-root) com grupo dedicado `appgroup` |
+| **Health check** | Probe HTTP nativa verificando `/health` a cada 30s |
+| **Entrypoint** | Uvicorn executado diretamente do `.venv` sem ativação do virtualenv |
+
+---
+
+## Docker Compose
+
+```yaml
+services:
+  agent:
+    build:
+      context: ./services/agent
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./services/agent/.env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      agent:
+        condition: service_healthy
+```
+
+### Dependências entre serviços
+
+O frontend espera o agente ficar healthy (`condition: service_healthy`) antes de iniciar, garantindo que a API esteja pronta para requests.
+
+---
+
+## Variáveis de ambiente
+
+As configurações do agente são carregadas via `env_file` apontando para `./services/agent/.env`:
+
+| Variável | Descrição |
+| --- | --- |
+| `LLM_PROVIDER` / `LLM_MODEL` | Provedor e modelo de LLM |
+| `GROQ_API_KEY` / `GOOGLE_API_KEY` | API key do provedor |
+| `GEOCODING_PROVIDER` | Provedor de geocoding |
+| `BQ_PROJECT_ID` / `BQ_DATASET_ID` / `BQ_SA_CREDENTIALS` | Acesso ao BigQuery |
+| `CORS_ORIGINS` | Origens permitidas para CORS |
+| `LOOKER_REPORT_ID` / `LOOKER_PAGE_ID` | Configuração do Looker Studio |
+
+---
+
+## Dependências (Python 3.11+)
+
+O projeto usa `pyproject.toml` com `uv` para gerenciamento de dependências:
+
+| Dependência | Uso |
+| --- | --- |
+| `fastapi` + `uvicorn` | API HTTP com SSE streaming |
+| `langchain-core` + `langgraph` | Framework do agente e state machine |
+| `langchain-groq` + `langchain-google-genai` | Provedores de LLM |
+| `google-cloud-bigquery` | Acesso ao BigQuery |
+| `httpx` | Requisições HTTP para geocoding providers |
+| `python-dotenv` | Carregamento de `.env` |
+| `numpy` + `pandas` + `pyarrow` | Processamento de dados e resultados BigQuery |

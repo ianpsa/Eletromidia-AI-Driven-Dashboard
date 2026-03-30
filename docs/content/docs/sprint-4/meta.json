@@ -8,6 +8,7 @@
     "frontend",
     "ia",
     "auth",
-    "autenticacao"
+    "autenticacao",
+    "testes-unitarios"
   ]
 }

@@ -41,6 +41,10 @@ func (c *Client) Close() error {
 	return c.client.Close()
 }
 
+func (c *Client) GetBucketName() string {
+	return c.BucketName
+}
+
 func (c *Client) CheckBucket(ctx context.Context) error {
 	_, err := c.bucket.Attrs(ctx)
 	return err

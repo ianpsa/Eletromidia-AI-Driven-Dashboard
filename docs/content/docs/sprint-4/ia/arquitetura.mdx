@@ -1,6 +1,92 @@
 ---
 title: Arquitetura
-description: Placeholder
+description: Grafo LangGraph com state machine e API FastAPI com SSE streaming.
 ---
 
-Placeholder.
+## Grafo do agente (LangGraph)
+
+O agente usa LangGraph com `MessagesState` (lista de mensagens) e três nós:
+
+- **`maybe_summarize`** - verifica se o contexto ultrapassou 75% do context window do modelo e, se necessário, resume as mensagens antigas preservando as 3 mais recentes
+- **`llm_call`** - injeta o `SYSTEM_PROMPT` como `SystemMessage` e invoca o LLM com as ferramentas vinculadas via `bind_tools`
+- **`tool_node`** - `ToolNode` do LangGraph que executa as ferramentas chamadas pelo LLM
+
+### Fluxo de execução
+
+```text
+START → maybe_summarize → llm_call → [tool_calls?]
+                                        ├─ sim → tool_node → llm_call (loop)
+                                        └─ não → __end__
+```
+
+O roteamento condicional em `should_continue` verifica se a última mensagem tem `tool_calls`. Se sim, vai para `tool_node`; caso contrário, encerra.
+
+### Persistência
+
+O grafo é compilado com `MemorySaver()` como checkpointer, permitindo que conversas sejam retomadas via `thread_id`. Cada invocação recebe um `config` com `configurable.thread_id`.
+
+### Singleton thread-safe
+
+O grafo compilado é cacheado em memória com double-checked locking via `threading.Lock`, evitando recompilação a cada request.
+
+---
+
+## API FastAPI (`api.py`)
+
+### Endpoints
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| `GET` | `/health` | Health check - retorna `{"status": "ok"}` |
+| `POST` | `/chat` | Endpoint principal - recebe mensagem e retorna SSE stream |
+
+### Request `/chat`
+
+```json
+{
+  "message": "Campanha para mulheres jovens classe A em São Paulo",
+  "thread_id": "opcional-id-da-conversa"
+}
+```
+
+| Campo | Tipo | Validação |
+| --- | --- | --- |
+| `message` | `string` | Mínimo 1 caractere, máximo 10.000 |
+| `thread_id` | `string \| null` | Regex `^[a-zA-Z0-9_\-]+$`, máximo 100 caracteres |
+
+Se `thread_id` não é fornecido, um UUID v4 é gerado automaticamente.
+
+### Response (SSE Stream)
+
+A API usa `agent.astream(..., stream_mode="messages")` e transmite os eventos:
+
+| Evento | Payload | Descrição |
+| --- | --- | --- |
+| `metadata` | `{ "thread_id": "..." }` | ID da thread (novo ou reutilizado) |
+| `tool_start` | `{ "tool": "analyze_campaign" }` | Agente iniciou uma chamada de ferramenta |
+| `tool_result` | `{ "tool": "...", "content": "..." }` | Resultado da ferramenta |
+| `token` | `{ "content": "..." }` | Token de texto gerado pelo LLM |
+| `error` | `{ "error": "..." }` | Erro durante o processamento |
+| `done` | `{}` | Stream finalizado |
+
+### Headers de resposta
+
+```text
+Content-Type: text/event-stream
+Cache-Control: no-cache
+X-Accel-Buffering: no
+```
+
+O header `X-Accel-Buffering: no` desabilita buffering no Nginx/reverse proxy, essencial para SSE em tempo real.
+
+### CORS
+
+Configurado via variável de ambiente `CORS_ORIGINS` (lista separada por vírgula). Default: `http://localhost:5173`. Apenas o método `POST` é permitido.
+
+### Tratamento de erros
+
+Exceções durante o streaming são capturadas, logadas server-side e enviadas como evento `error` ao cliente, sem expor stack traces.
+
+---
+
+Para detalhes sobre containerização, Dockerfile, Docker Compose e variáveis de ambiente, veja [Dockerizar e finalizar API](/docs/sprint-4/ia/dockerizar-api).
