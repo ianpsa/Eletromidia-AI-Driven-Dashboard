@@ -3,189 +3,62 @@ package writer
 import (
 	"bigquery-writer/internal/metrics"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"sync"
 	"time"
 
+	json "github.com/goccy/go-json"
+
 	"cloud.google.com/go/bigquery"
-	"github.com/google/uuid"
+	"cloud.google.com/go/bigquery/storage/managedwriter"
 )
 
-type ageRow struct {
-	ID      string  `bigquery:"id"`
-	X1819   float64 `bigquery:"x18_19"`
-	X2029   float64 `bigquery:"x20_29"`
-	X3039   float64 `bigquery:"x30_39"`
-	X4049   float64 `bigquery:"x40_49"`
-	X5059   float64 `bigquery:"x50_59"`
-	X6069   float64 `bigquery:"x60_69"`
-	X7079   float64 `bigquery:"x70_79"`
-	X80Plus float64 `bigquery:"x80_plus"`
-}
-
-type genderRow struct {
-	ID        string  `bigquery:"id"`
-	Feminine  float64 `bigquery:"feminine"`
-	Masculine float64 `bigquery:"masculine"`
-}
-
-type socialClassRow struct {
-	ID      string  `bigquery:"id"`
-	AClass  float64 `bigquery:"a_class"`
-	B1Class float64 `bigquery:"b1_class"`
-	B2Class float64 `bigquery:"b2_class"`
-	C1Class float64 `bigquery:"c1_class"`
-	C2Class float64 `bigquery:"c2_class"`
-	DEClass float64 `bigquery:"de_class"`
-}
-
-type targetRow struct {
-	ID            string `bigquery:"id"`
-	AgeID         string `bigquery:"age_id"`
-	GenderID      string `bigquery:"gender_id"`
-	SocialClassID string `bigquery:"social_class_id"`
-}
-
-type geodataRow struct {
-	ID             string  `bigquery:"id"`
-	ImpressionHour int64   `bigquery:"impression_hour"`
-	LocationID     int64   `bigquery:"location_id"`
-	Uniques        float64 `bigquery:"uniques"`
-	Latitude       string  `bigquery:"latitude"`
-	Longitude      string  `bigquery:"longitude"`
-	UfEstado       string  `bigquery:"uf_estado"`
-	Cidade         string  `bigquery:"cidade"`
-	Endereco       string  `bigquery:"endereco"`
-	Numero         int64   `bigquery:"numero"`
-	TargetID       string  `bigquery:"target_id"`
-}
-
-type KafkaEvent struct {
-	ImpressionHour int64                         `json:"impression_hour"`
-	LocationID     int64                         `json:"location_id"`
-	Uniques        float64                       `json:"uniques"`
-	Latitude       string                        `json:"latitude"`
-	Longitude      string                        `json:"longitude"`
-	UfEstado       string                        `json:"uf_estado"`
-	Cidade         string                        `json:"cidade"`
-	Endereco       string                        `json:"endereco"`
-	Numero         int64                         `json:"numero"`
-	Target         map[string]map[string]float64 `json:"target"`
-}
-
-type TargetData struct {
-	Idade        map[string]float64 `json:"idade"`
-	Genero       map[string]float64 `json:"genero"`
-	ClasseSocial map[string]float64 `json:"classe_social"`
-}
-
-type bqInserters struct {
-	age               *bigquery.Inserter
-	ageSchema         bigquery.Schema
-	gender            *bigquery.Inserter
-	genderSchema      bigquery.Schema
-	socialClass       *bigquery.Inserter
-	socialClassSchema bigquery.Schema
-	target            *bigquery.Inserter
-	targetSchema      bigquery.Schema
-	geodata           *bigquery.Inserter
-	geodataSchema     bigquery.Schema
-}
-
-func initInserters(ds *bigquery.Dataset) (*bqInserters, error) {
-	ins := &bqInserters{}
-	var err error
-
-	if ins.ageSchema, err = bigquery.InferSchema(ageRow{}); err != nil {
-		return nil, fmt.Errorf("InferSchema age: %w", err)
-	}
-	if ins.genderSchema, err = bigquery.InferSchema(genderRow{}); err != nil {
-		return nil, fmt.Errorf("InferSchema gender: %w", err)
-	}
-	if ins.socialClassSchema, err = bigquery.InferSchema(socialClassRow{}); err != nil {
-		return nil, fmt.Errorf("InferSchema social_class: %w", err)
-	}
-	if ins.targetSchema, err = bigquery.InferSchema(targetRow{}); err != nil {
-		return nil, fmt.Errorf("InferSchema target: %w", err)
-	}
-	if ins.geodataSchema, err = bigquery.InferSchema(geodataRow{}); err != nil {
-		return nil, fmt.Errorf("InferSchema geodata: %w", err)
-	}
-
-	ins.age = ds.Table("age").Inserter()
-	ins.gender = ds.Table("gender").Inserter()
-	ins.socialClass = ds.Table("social_class").Inserter()
-	ins.target = ds.Table("target").Inserter()
-	ins.geodata = ds.Table("geodata").Inserter()
-
-	return ins, nil
-}
-
-var bqNamespace = uuid.MustParse("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-
-func deterministicID(topic string, partition int, offset int64, table string) string {
-	seed := fmt.Sprintf("%s:%d:%d:%s", topic, partition, offset, table)
-	return uuid.NewSHA1(bqNamespace, []byte(seed)).String()
-}
-
-func validateMapKeys(td TargetData) error {
-	for _, k := range []string{"18-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"} {
-		if _, ok := td.Idade[k]; !ok {
-			return fmt.Errorf("missing idade key %q", k)
-		}
-	}
-	for _, k := range []string{"F", "M"} {
-		if _, ok := td.Genero[k]; !ok {
-			return fmt.Errorf("missing genero key %q", k)
-		}
-	}
-	for _, k := range []string{"A", "B1", "B2", "C1", "C2", "DE"} {
-		if _, ok := td.ClasseSocial[k]; !ok {
-			return fmt.Errorf("missing classe_social key %q", k)
-		}
-	}
-	return nil
-}
-
-type BufferedMessage struct {
-	Topic         string
-	Partition     int
-	Offset        int64
-	Value         []byte
-	HighWatermark int64
-}
-
 type Writer struct {
-	ins     *bqInserters
-	client  *bigquery.Client
-	dataset string
-	flushSz int
+	streams   *bqStreams
+	bqClient  *bigquery.Client
+	mwClient  *managedwriter.Client
+	dataset   string
+	projectID string
+	flushSz   int
 
 	mu     sync.Mutex
 	buffer []BufferedMessage
 }
 
 func NewWriter(ctx context.Context, projectID, datasetID string, flushSize int) (*Writer, error) {
-	client, err := bigquery.NewClient(ctx, projectID)
+	bqClient, err := bigquery.NewClient(ctx, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("bigquery.NewClient: %w", err)
 	}
 
-	ins, err := initInserters(client.Dataset(datasetID))
+	mwClient, err := managedwriter.NewClient(ctx, projectID)
 	if err != nil {
-		if closeErr := client.Close(); closeErr != nil {
+		if closeErr := bqClient.Close(); closeErr != nil {
 			log.Printf("error closing bigquery client: %v", closeErr)
 		}
-		return nil, fmt.Errorf("initInserters: %w", err)
+		return nil, fmt.Errorf("managedwriter.NewClient: %w", err)
+	}
+
+	streams, err := initStreams(ctx, mwClient, projectID, datasetID)
+	if err != nil {
+		if closeErr := mwClient.Close(); closeErr != nil {
+			log.Printf("error closing managedwriter client: %v", closeErr)
+		}
+		if closeErr := bqClient.Close(); closeErr != nil {
+			log.Printf("error closing bigquery client: %v", closeErr)
+		}
+		return nil, fmt.Errorf("initStreams: %w", err)
 	}
 
 	return &Writer{
-		ins:     ins,
-		client:  client,
-		dataset: datasetID,
-		flushSz: flushSize,
+		streams:   streams,
+		bqClient:  bqClient,
+		mwClient:  mwClient,
+		dataset:   datasetID,
+		projectID: projectID,
+		flushSz:   flushSize,
 	}, nil
 }
 
@@ -204,7 +77,6 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 		return nil
 	}
 
-	// Metrics Data
 	start := time.Now()
 
 	batch := w.buffer
@@ -218,11 +90,11 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 	}
 
 	var (
-		ageSavers         []*bigquery.StructSaver
-		genderSavers      []*bigquery.StructSaver
-		socialClassSavers []*bigquery.StructSaver
-		targetSavers      []*bigquery.StructSaver
-		geodataSavers     []*bigquery.StructSaver
+		ageRows         [][]byte
+		genderRows      [][]byte
+		socialClassRows [][]byte
+		targetRows      [][]byte
+		geodataRows     [][]byte
 	)
 
 	type waterMarkSnapshots struct {
@@ -273,52 +145,73 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 		targetID := deterministicID(msg.Topic, msg.Partition, msg.Offset, "target")
 		geodataID := deterministicID(msg.Topic, msg.Partition, msg.Offset, "geodata")
 
-		ageSavers = append(ageSavers, &bigquery.StructSaver{
-			Schema: w.ins.ageSchema, InsertID: ageID,
-			Struct: ageRow{
-				ID: ageID, X1819: td.Idade["18-19"], X2029: td.Idade["20-29"],
-				X3039: td.Idade["30-39"], X4049: td.Idade["40-49"],
-				X5059: td.Idade["50-59"], X6069: td.Idade["60-69"],
-				X7079: td.Idade["70-79"], X80Plus: td.Idade["80+"],
-			},
-		})
+		ageBytes, err := encodeRow(w.streams.age.msgDesc, ageRowToData(ageRow{
+			ID: ageID, X1819: td.Idade["18-19"], X2029: td.Idade["20-29"],
+			X3039: td.Idade["30-39"], X4049: td.Idade["40-49"],
+			X5059: td.Idade["50-59"], X6069: td.Idade["60-69"],
+			X7079: td.Idade["70-79"], X80Plus: td.Idade["80+"],
+		}))
+		if err != nil {
+			log.Printf("flush: encode age error | partition=%d offset=%d: %v",
+				msg.Partition, msg.Offset, err)
+			m.FlushErrorTotal.WithLabelValues(topic).Inc()
+			continue
+		}
 
-		genderSavers = append(genderSavers, &bigquery.StructSaver{
-			Schema: w.ins.genderSchema, InsertID: genderID,
-			Struct: genderRow{
-				ID: genderID, Feminine: td.Genero["F"], Masculine: td.Genero["M"],
-			},
-		})
+		genderBytes, err := encodeRow(w.streams.gender.msgDesc, genderRowToData(genderRow{
+			ID: genderID, Feminine: td.Genero["F"], Masculine: td.Genero["M"],
+		}))
+		if err != nil {
+			log.Printf("flush: encode gender error | partition=%d offset=%d: %v",
+				msg.Partition, msg.Offset, err)
+			m.FlushErrorTotal.WithLabelValues(topic).Inc()
+			continue
+		}
 
-		socialClassSavers = append(socialClassSavers, &bigquery.StructSaver{
-			Schema: w.ins.socialClassSchema, InsertID: socialClassID,
-			Struct: socialClassRow{
-				ID: socialClassID, AClass: td.ClasseSocial["A"],
-				B1Class: td.ClasseSocial["B1"], B2Class: td.ClasseSocial["B2"],
-				C1Class: td.ClasseSocial["C1"], C2Class: td.ClasseSocial["C2"],
-				DEClass: td.ClasseSocial["DE"],
-			},
-		})
+		scBytes, err := encodeRow(w.streams.socialClass.msgDesc, socialClassRowToData(socialClassRow{
+			ID: socialClassID, AClass: td.ClasseSocial["A"],
+			B1Class: td.ClasseSocial["B1"], B2Class: td.ClasseSocial["B2"],
+			C1Class: td.ClasseSocial["C1"], C2Class: td.ClasseSocial["C2"],
+			DEClass: td.ClasseSocial["DE"],
+		}))
+		if err != nil {
+			log.Printf("flush: encode social_class error | partition=%d offset=%d: %v",
+				msg.Partition, msg.Offset, err)
+			m.FlushErrorTotal.WithLabelValues(topic).Inc()
+			continue
+		}
 
-		targetSavers = append(targetSavers, &bigquery.StructSaver{
-			Schema: w.ins.targetSchema, InsertID: targetID,
-			Struct: targetRow{
-				ID: targetID, AgeID: ageID,
-				GenderID: genderID, SocialClassID: socialClassID,
-			},
-		})
+		tgtBytes, err := encodeRow(w.streams.target.msgDesc, targetRowToData(targetRow{
+			ID: targetID, AgeID: ageID,
+			GenderID: genderID, SocialClassID: socialClassID,
+		}))
+		if err != nil {
+			log.Printf("flush: encode target error | partition=%d offset=%d: %v",
+				msg.Partition, msg.Offset, err)
+			m.FlushErrorTotal.WithLabelValues(topic).Inc()
+			continue
+		}
 
-		geodataSavers = append(geodataSavers, &bigquery.StructSaver{
-			Schema: w.ins.geodataSchema, InsertID: geodataID,
-			Struct: geodataRow{
-				ID: geodataID, ImpressionHour: event.ImpressionHour,
-				LocationID: event.LocationID, Uniques: event.Uniques,
-				Latitude: event.Latitude, Longitude: event.Longitude,
-				UfEstado: event.UfEstado, Cidade: event.Cidade,
-				Endereco: event.Endereco, Numero: event.Numero,
-				TargetID: targetID,
-			},
-		})
+		geoBytes, err := encodeRow(w.streams.geodata.msgDesc, geodataRowToData(geodataRow{
+			ID: geodataID, ImpressionHour: event.ImpressionHour,
+			LocationID: event.LocationID, Uniques: event.Uniques,
+			Latitude: event.Latitude, Longitude: event.Longitude,
+			UfEstado: event.UfEstado, Cidade: event.Cidade,
+			Endereco: event.Endereco, Numero: event.Numero,
+			TargetID: targetID,
+		}))
+		if err != nil {
+			log.Printf("flush: encode geodata error | partition=%d offset=%d: %v",
+				msg.Partition, msg.Offset, err)
+			m.FlushErrorTotal.WithLabelValues(topic).Inc()
+			continue
+		}
+
+		ageRows = append(ageRows, ageBytes)
+		genderRows = append(genderRows, genderBytes)
+		socialClassRows = append(socialClassRows, scBytes)
+		targetRows = append(targetRows, tgtBytes)
+		geodataRows = append(geodataRows, geoBytes)
 
 		parsed++
 	}
@@ -333,42 +226,70 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 		m.PartitionLagHistogram.WithLabelValues(snap.topic, fmt.Sprintf("%d", snap.partition)).Observe(lag)
 	}
 
-	type tableInsert struct {
-		name     string
-		inserter *bigquery.Inserter
-		savers   []*bigquery.StructSaver
+	type tableAppend struct {
+		ts   *tableStream
+		rows [][]byte
 	}
 
-	tables := []tableInsert{
-		{"age", w.ins.age, ageSavers},
-		{"gender", w.ins.gender, genderSavers},
-		{"social_class", w.ins.socialClass, socialClassSavers},
-		{"target", w.ins.target, targetSavers},
-		{"geodata", w.ins.geodata, geodataSavers},
+	appends := []tableAppend{
+		{w.streams.age, ageRows},
+		{w.streams.gender, genderRows},
+		{w.streams.socialClass, socialClassRows},
+		{w.streams.target, targetRows},
+		{w.streams.geodata, geodataRows},
 	}
 
-	var insertErr error
-	for _, t := range tables {
-		if err := t.inserter.Put(ctx, t.savers); err != nil {
-			log.Printf("flush: insert %s error (%d rows): %v", t.name, len(t.savers), err)
-			insertErr = err
-			m.FlushErrorTotal.WithLabelValues(topic).Inc()
-			duration := time.Since(start).Seconds()
-			m.FlushDuration.WithLabelValues(topic, "error").Observe(duration)
-			m.FlushTotal.WithLabelValues(topic).Inc()
-		} else {
-			log.Printf("flush: %s inserted %d rows", t.name, len(t.savers))
-			m.FlushTotal.WithLabelValues(topic).Inc()
-		}
+	var (
+		appendErrors []error
+		errMu        sync.Mutex
+		wg           sync.WaitGroup
+	)
+
+	for _, a := range appends {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			tStart := time.Now()
+
+			result, err := a.ts.stream.AppendRows(ctx, a.rows)
+			if err != nil {
+				errMu.Lock()
+				appendErrors = append(appendErrors, fmt.Errorf("%s: %w", a.ts.name, err))
+				errMu.Unlock()
+				log.Printf("flush: append %s error (%d rows): %v", a.ts.name, len(a.rows), err)
+				m.FlushErrorTotal.WithLabelValues(topic).Inc()
+				return
+			}
+
+			_, err = result.GetResult(ctx)
+			if err != nil {
+				errMu.Lock()
+				appendErrors = append(appendErrors, fmt.Errorf("%s result: %w", a.ts.name, err))
+				errMu.Unlock()
+				log.Printf("flush: append %s result error: %v", a.ts.name, err)
+				m.FlushErrorTotal.WithLabelValues(topic).Inc()
+				return
+			}
+
+			log.Printf("flush: %s appended %d rows", a.ts.name, len(a.rows))
+			m.AppendLatency.WithLabelValues(topic, a.ts.name).Observe(time.Since(tStart).Seconds())
+			m.AppendRowsTotal.WithLabelValues(topic, a.ts.name).Add(float64(len(a.rows)))
+		}()
 	}
+
+	wg.Wait()
 
 	log.Printf("flush complete: %d/%d messages processed, 5 tables", parsed, len(batch))
 
 	duration := time.Since(start).Seconds()
-	m.FlushDuration.WithLabelValues(topic, "sucess").Observe(duration)
+	m.FlushDuration.WithLabelValues(topic, "success").Observe(duration)
 	m.FlushEventCount.WithLabelValues(topic).Observe(float64(parsed))
+	m.FlushTotal.WithLabelValues(topic).Inc()
 
-	return insertErr
+	if len(appendErrors) > 0 {
+		return errors.Join(appendErrors...)
+	}
+	return nil
 }
 
 func (w *Writer) Pending() int {
@@ -378,11 +299,23 @@ func (w *Writer) Pending() int {
 }
 
 func (w *Writer) Close() error {
-	return w.client.Close()
+	var errs []error
+	for _, ts := range w.streams.all() {
+		if err := ts.stream.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close stream %s: %w", ts.name, err))
+		}
+	}
+	if err := w.mwClient.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("close managedwriter client: %w", err))
+	}
+	if err := w.bqClient.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("close bigquery client: %w", err))
+	}
+	return errors.Join(errs...)
 }
 
 func (w *Writer) HealthCheck(ctx context.Context) error {
-	_, err := w.client.Dataset(w.dataset).Metadata(ctx)
+	_, err := w.bqClient.Dataset(w.dataset).Metadata(ctx)
 	if err != nil {
 		return fmt.Errorf("bigquery health check: %w", err)
 	}

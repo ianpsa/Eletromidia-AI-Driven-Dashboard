@@ -25,6 +25,12 @@ type FlushMetrics struct {
 
 	// 7. Janela de pŕocessamento do Flush (O quanto o flush processou comparado ao )
 	FlushBatchSpread *prometheus.HistogramVec
+
+	// 8. Latência por tabela de cada AppendRows (Storage Write API).
+	AppendLatency *prometheus.HistogramVec
+
+	// 9. Total de linhas escritas por tabela via AppendRows.
+	AppendRowsTotal *prometheus.CounterVec
 }
 
 func NewFlushMetrics(reg *prometheus.Registry) *FlushMetrics {
@@ -88,6 +94,23 @@ func NewFlushMetrics(reg *prometheus.Registry) *FlushMetrics {
 		[]string{"topic"},
 	)
 
+	appendLatency := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "kafka_consumer_append_latency_seconds",
+			Help:    "Latência de cada AppendRows por tabela (Storage Write API).",
+			Buckets: []float64{0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
+		},
+		[]string{"topic", "table"},
+	)
+
+	appendRowsTotal := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "kafka_consumer_append_rows_total",
+			Help: "Total de linhas escritas por tabela via AppendRows.",
+		},
+		[]string{"topic", "table"},
+	)
+
 	reg.MustRegister(
 		flushEventCount,
 		flushDuration,
@@ -95,6 +118,8 @@ func NewFlushMetrics(reg *prometheus.Registry) *FlushMetrics {
 		partitionLagHistogram,
 		flushTotal,
 		flushErrorTotal,
+		appendLatency,
+		appendRowsTotal,
 	)
 
 	return &FlushMetrics{
@@ -104,5 +129,7 @@ func NewFlushMetrics(reg *prometheus.Registry) *FlushMetrics {
 		PartitionLagHistogram: partitionLagHistogram,
 		FlushTotal:            flushTotal,
 		FlushErrorTotal:       flushErrorTotal,
+		AppendLatency:         appendLatency,
+		AppendRowsTotal:       appendRowsTotal,
 	}
 }
