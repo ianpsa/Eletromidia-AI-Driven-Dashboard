@@ -24,10 +24,12 @@ class TestOverlappingAgeColumns:
         assert result[-1] == "age_80_plus_count"
 
     def test_partial_range(self):
-        assert _overlapping_age_columns(25, 45) == ["age_20_29_count", "age_30_39_count", "age_40_49_count"]
+        expected = ["age_20_29_count", "age_30_39_count", "age_40_49_count"]
+        assert _overlapping_age_columns(25, 45) == expected
 
     def test_boundary_overlap(self):
-        assert _overlapping_age_columns(19, 20) == ["age_18_19_count", "age_20_29_count"]
+        expected = ["age_18_19_count", "age_20_29_count"]
+        assert _overlapping_age_columns(19, 20) == expected
 
     def test_min_greater_than_max(self):
         assert _overlapping_age_columns(50, 10) == []
