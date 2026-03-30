@@ -1,0 +1,12 @@
+# Release v0.4.0
+
+## What's New
+- Sprint 4 documentation
+- CI/CD pipeline setup
+- Deploy configuration
+- Observability (monitoring and metrics)
+- Load testing (teste de carga)
+- Frontend: hexbin visualization, sidebar chat
+- AI: architecture, BigQuery integration, Looker, LLM providers, tools/ferramentas, prompt & rules, data joining, Dockerized API, frontend integration
+- Authentication system
+- Unit tests
