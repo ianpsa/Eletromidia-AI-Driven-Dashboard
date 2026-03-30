@@ -67,3 +67,18 @@ services:
     depends_on:
       agent:
         condition: service_healthy
+
+  auth-middleware:
+    build:
+      context: ./services/auth-middleware
+      dockerfile: Dockerfile
+    container_name: auth-middleware
+    ports:
+      - "5001:5000"
+    environment:
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-your-firebase-project-id}
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID:-your-gcp-project-id}
+    deploy:
+      resources:
+        limits:
+          memory: 128M

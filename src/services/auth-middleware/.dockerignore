@@ -1,0 +1,7 @@
+.git
+.env
+.env.*
+target/
+Cargo.lock
+README.md
+tests/

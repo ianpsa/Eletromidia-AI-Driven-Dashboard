@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: auth-middleware
+  name: auth-middleware
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-middleware
+  template:
+    metadata:
+      labels:
+        app: auth-middleware
+    spec:
+      # securityContext:
+      #   runAsUser: 1010
+      #   runAsNonRoot: true
+      containers:
+      - image: auth-middleware:latest
+        name: auth-middleware
+        imagePullPolicy: Never
+        ports: 
+          - containerPort: 5000
+            name: http-web-svc
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources: 
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi" # Slightly higher memory for Rust app depending on usage
+            cpu: "500m"
+        envFrom:
+          - configMapRef:
+              name: auth-middleware-cm
+        # Optional: GCP SA Key volume mount if not using workload identity
+        # volumeMounts:
+        #   - name: gcp-sa-key
+        #     mountPath: /secrets/gcp-sa-key.json
+        #     subPath: gcp-sa-key.json
+        #     readOnly: true
+      # volumes:
+      #   - name: gcp-sa-key
+      #     secret:
+      #       secretName: gcp-sa-key 
