@@ -6,6 +6,7 @@
     "ferramentas",
     "llm-providers",
     "prompt-e-regras",
-    "dockerizar-api"
+    "dockerizar-api",
+    "frontend"
   ]
 }
