@@ -6,7 +6,7 @@ data:
   HTTP_HOST: "0.0.0.0"
   HTTP_PORT: "5000"
   FIREBASE_PROJECT_ID: "dev-firebase-project"
-  GCP_PROJECT_ID: "dev-gcp-project"
+  GCP_PROJECT_ID: "midia-in-da-house"
   # Default development roles
   ROLE_ADMIN: "roles/resourcemanager.projectIamAdmin"
   ROLE_EDITOR: "roles/looker.developer"

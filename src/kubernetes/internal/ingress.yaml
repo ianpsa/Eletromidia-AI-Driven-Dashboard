@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bff-storage-ingress
+  namespace: default            # ajuste se o Service estiver em outro namespace
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"   # descomente se usar TLS
+spec:
+  ingressClassName: nginx       # deve bater com o IngressClass instalado pelo controller
+ 
+  # ── TLS (opcional) ────────────────────────────────────────
+  # tls:
+  #   - hosts:
+  #       - bff-storage.seu-dominio.com
+  #     secretName: bff-storage-tls   # Secret com cert + key
+ 
+  rules:
+    - host: bff-storage.seu-dominio.com   # substitua pelo seu domínio / IP
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: bff-storage-svc-ci  # nome exato do seu Service
+                port:
+                  number: 80

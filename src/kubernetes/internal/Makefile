@@ -24,3 +24,7 @@ install-prometheus:
 	helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 	helm repo update
 	helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring
+
+.PHONY: install-nginx
+install-nginx:
+	kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml

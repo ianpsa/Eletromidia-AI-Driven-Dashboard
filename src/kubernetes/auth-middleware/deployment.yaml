@@ -46,13 +46,13 @@ spec:
         envFrom:
           - configMapRef:
               name: auth-middleware-cm
-        # Optional: GCP SA Key volume mount if not using workload identity
-        # volumeMounts:
-        #   - name: gcp-sa-key
-        #     mountPath: /secrets/gcp-sa-key.json
-        #     subPath: gcp-sa-key.json
-        #     readOnly: true
-      # volumes:
-      #   - name: gcp-sa-key
-      #     secret:
-      #       secretName: gcp-sa-key 
+        Optional: GCP SA Key volume mount if not using workload identity
+        volumeMounts:
+          - name: playstation-secret
+            mountPath: /secrets/gcp-sa-key.json
+            subPath: gcp-sa-key.json
+            readOnly: true
+      volumes:
+        - name: playstation-secret
+          secret:
+            secretName: playstation-secret 
