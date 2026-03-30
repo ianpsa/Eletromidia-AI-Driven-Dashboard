@@ -1,6 +1,64 @@
 ---
 title: Hexbin Dashboard
-description: Placeholder 
+description: Nova visão analítica em mapa hexbin na página Analytics, com filtros e comparação por perfil
 ---
 
-Placeholder.
+## Papel da tela
+
+Tela de análise geoespacial integrada à página **Analytics**. Permite visualizar concentração de público por área usando agregação hexbin, aplicar filtros e comparar segmentos lado a lado.
+
+Evolução da experiência analítica: o dashboard em **Looker Studio continua existindo** e permanece disponível na página Analytics; a visão hexbin foi adicionada como camada complementar para análise territorial e segmentação.
+
+![Página Analytics com visão Hexbin](/sprint-4/frontend/dashboard.png)
+
+## Estrutura visual
+
+| Elemento | Descrição |
+| -------- | --------- |
+| Mapa principal | Visualização hexbin com legenda de densidade |
+| Painel de filtros | Filtros de localização, perfil e distância máxima |
+| Barra de comparação | Botão `Comparar gráficos` e tags de configuração ativa |
+| Grade comparativa | Um gráfico por grupo (gênero, idade ou classe social) |
+| Legenda de densidade | Escala numérica para leitura de concentração |
+
+![Mapa Hexbin com filtros aplicados](/sprint-4/frontend/dashboard-com-filtros.png)
+![Comparação com múltiplos gráficos](/sprint-4/frontend/dashboard-comparacao.png)
+
+## Comportamento
+
+### Filtros
+
+O usuário pode refinar o mapa por:
+
+- **Localização**: estado, cidade e endereço;
+- **Perfil**: gênero, faixa etária e classe social;
+- **Distância máxima**: controla granularidade e alcance da agregação;
+- **Hora**: permite restringir a análise por faixa de horário.
+
+### Comparação de gráficos
+
+- O modo de comparação permite segmentar por **gênero**, **idade** ou **classe social**.
+- Cada grupo selecionado gera um gráfico na grade comparativa.
+- Também é possível adicionar gráficos na comparação conforme os grupos e filtros selecionados.
+- A comparação utiliza a mesma escala de densidade entre os gráficos para leitura proporcional.
+- Quando um grupo não retorna pontos, o card exibe estado de “sem dados”.
+
+## Integração com o backend
+
+| Ação | Endpoint | Descrição |
+| ---- | -------- | --------- |
+| Buscar pontos geográficos | `GET /geodata/points` | Retorna pontos para renderização hexbin (mapa principal e comparação) |
+| Carregar opções de filtro | `GET /geodata/filter-options` | Retorna listas de estados, cidades e segmentações |
+| Comparar grupos (apoio analítico) | `GET /geodata/compare` | Retorna agregados por `genero`, `faixa_etaria` ou `classe_social` |
+
+### Exemplo de uso na comparação
+
+Quando o usuário escolhe comparar por gênero, a interface renderiza gráficos separados para cada grupo selecionado e mantém a escala alinhada para leitura justa.
+
+## Ver também
+
+- [Dashboard da Sprint 3](/docs/sprint-3/frontend/dashboard) — histórico da tela analítica baseada em embed Looker
+- [Frontend — visão geral Sprint 3](/docs/sprint-3/frontend/frontend) — arquitetura de navegação da camada web
+- [Chat com Agente IA](/docs/sprint-4/frontend/sidebar-chat) — integração de análise assistida no painel lateral
+- [Arquitetura de IA](/docs/sprint-3/chatbot/arquitetura-ia) — contexto de consumo de dados e geração de insights
+
