@@ -5,9 +5,10 @@
     "arquitetura",
     "ferramentas",
     "llm-providers",
+    "bigquery",
     "prompt-e-regras",
-    "dockerizar-api",
+    "looker",
     "frontend",
-    "bigquery"
+    "dockerizar-api"
   ]
 }
