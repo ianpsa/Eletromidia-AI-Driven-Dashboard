@@ -6,7 +6,7 @@ data:
   HTTP_HOST: "0.0.0.0"
   HTTP_PORT: "5000"
   # Replace these with your actual IDs or use configmap-dev.yaml for dev
-  FIREBASE_PROJECT_ID: "your-firebase-project-id"
+  FIREBASE_PROJECT_ID: "midia-in-da-house"
   GCP_PROJECT_ID: "midia-in-da-house"
   # Default role mappings following the documentation provided by the user
   ROLE_ADMIN: "roles/resourcemanager.projectIamAdmin"

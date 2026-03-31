@@ -18,9 +18,9 @@ spec:
       #   runAsUser: 1010
       #   runAsNonRoot: true
       containers:
-      - image: auth-middleware:latest
+      - image: southamerica-east1-docker.pkg.dev/midia-in-da-house/gke-cr/auth-middleware:latest
         name: auth-middleware
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         ports: 
           - containerPort: 5000
             name: http-web-svc
@@ -39,14 +39,13 @@ spec:
         resources: 
           requests:
             memory: "64Mi"
-            cpu: "250m"
+            cpu: "100m"
           limits:
             memory: "256Mi" # Slightly higher memory for Rust app depending on usage
-            cpu: "500m"
+            cpu: "250m"
         envFrom:
           - configMapRef:
               name: auth-middleware-cm
-        Optional: GCP SA Key volume mount if not using workload identity
         volumeMounts:
           - name: playstation-secret
             mountPath: /secrets/gcp-sa-key.json
