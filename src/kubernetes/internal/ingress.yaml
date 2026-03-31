@@ -2,31 +2,30 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: bff-storage-ingress
-  namespace: dev            # ajuste se o Service estiver em outro namespace
+  namespace: dev
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "https://midia-in-da-house.web.app"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://firebase-proxy-366439475517.us-central1.run.app"
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
     nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
-    # nginx.ingress.kubernetes.io/ssl-redirect: "true"   # descomente se usar TLS
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
-  ingressClassName: nginx       # deve bater com o IngressClass instalado pelo controller
- 
-  # ── TLS (opcional) ────────────────────────────────────────
-  # tls:
-  #   - hosts:
-  #       - bff-storage.seu-dominio.com
-  #     secretName: bff-storage-tls   # Secret com cert + key
- 
+  ingressClassName: nginx
   rules:
     - http:
         paths:
-          - path: /
-            pathType: Prefix
+          - path: /auth(/|$)(.*)     # captura o que vem depois de /auth
+            pathType: ImplementationSpecific
             backend:
               service:
-                name: bff-storage-svc-ci  # nome exato do seu Service
+                name: auth-middleware-svc
+                port:
+                  number: 80
+          - path: /()(.*)            # fallback para bff-storage
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: bff-storage-svc-ci
                 port:
                   number: 80
