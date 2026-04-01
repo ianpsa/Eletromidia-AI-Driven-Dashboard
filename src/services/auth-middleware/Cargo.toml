@@ -22,3 +22,4 @@ google-cloud-auth = "0.16"
 moka = { version = "0.12", features = ["future"] }
 base64 = "0.22"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing = "0.1"

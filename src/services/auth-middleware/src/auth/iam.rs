@@ -65,20 +65,31 @@ impl IamAuthorizer {
 
     pub fn map_to_app_roles(iam_roles: &[String]) -> Vec<AppRole> {
         let mut app_roles = Vec::new();
+
+        let is_admin = iam_roles.iter().any(|r| matches!(
+            r.as_str(),
+            "roles/owner"                               // ← ADICIONAR
+            | "roles/editor"                            // ← considere adicionar
+            | "roles/resourcemanager.projectIamAdmin"
+            | "roles/bigquery.admin"
+            | "roles/looker.admin"
+        ));
         
         // Admin requirements
-        if iam_roles.iter().any(|r| r == "roles/resourcemanager.projectIamAdmin" || r == "roles/bigquery.admin" || 
-                                    r == "roles/looker.admin") {
-            app_roles.push(AppRole::Admin);
-            app_roles.push(AppRole::Editor);
-            app_roles.push(AppRole::Viewer);
-        } else if iam_roles.iter().any(|r| r == "roles/looker.developer" || 
-                                    r == "roles/bigquery.dataEditor" || r == "roles/bigquery.jobUser") {
-            // Editor requirements (note: roles/looker.admin is already covered in Admin)
-            app_roles.push(AppRole::Editor);
-            app_roles.push(AppRole::Viewer);
-        } else if iam_roles.iter().any(|r| r == "roles/looker.accessUser" || r == "roles/bigquery.dataViewer") {
-            // Viewer requirements
+        if is_admin {
+            app_roles.extend([AppRole::Admin, AppRole::Editor, AppRole::Viewer]);
+        } else if iam_roles.iter().any(|r| matches!(
+            r.as_str(),
+            "roles/looker.developer"
+            | "roles/bigquery.dataEditor"
+            | "roles/bigquery.jobUser"
+        )) {
+            app_roles.extend([AppRole::Editor, AppRole::Viewer]);
+        } else if iam_roles.iter().any(|r| matches!(
+            r.as_str(),
+            "roles/looker.accessUser"
+            | "roles/bigquery.dataViewer"
+        )) {
             app_roles.push(AppRole::Viewer);
         }
 

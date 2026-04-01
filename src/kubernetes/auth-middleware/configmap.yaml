@@ -13,3 +13,4 @@ data:
   ROLE_EDITOR: "roles/looker.developer"
   ROLE_VIEWER: "roles/looker.accessUser"
   ROLE_MANAGER: "roles/owner"
+  GOOGLE_APPLICATION_CREDENTIALS: "/secrets/key.json"

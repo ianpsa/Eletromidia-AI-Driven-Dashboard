@@ -34,7 +34,7 @@ impl FirebaseVerifier {
     pub fn new(project_id: String) -> Self {
         let key_cache = Cache::builder()
             .max_capacity(10)
-            .time_to_live(Duration::from_secs(60 * 60 * 6)) // Cache for 6 hours
+            .time_to_live(Duration::from_secs(60 * 60)) // Cache for 6 hours
             .build();
         
         Self {

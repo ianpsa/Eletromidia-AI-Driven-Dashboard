@@ -19,7 +19,12 @@ use axum::http::Method;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "auth_access=debug,tower_http=debug".into()),
+        )
+        .init();
     let _ = dotenvy::dotenv();
 
     let firebase_project_id = env::var("FIREBASE_PROJECT_ID")
