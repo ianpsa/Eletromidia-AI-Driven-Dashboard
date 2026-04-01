@@ -2,7 +2,7 @@ import { HexagonLayer } from "@deck.gl/aggregation-layers";
 import type { MapViewState } from "@deck.gl/core";
 import DeckGL from "@deck.gl/react";
 import type { StyleSpecification } from "maplibre-gl";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import MapView from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { HexbinPoint } from "../../types/geo";
@@ -95,10 +95,16 @@ export function HexbinChart({
     );
   }, [maxDistanceKm]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset when data or radius changes
-  useEffect(() => {
+  const prevDataRef = useRef(data);
+  const prevRadiusRef = useRef(hexbinRadiusMeters);
+  if (
+    prevDataRef.current !== data ||
+    prevRadiusRef.current !== hexbinRadiusMeters
+  ) {
+    prevDataRef.current = data;
+    prevRadiusRef.current = hexbinRadiusMeters;
     setDensityDomain([0, 0]);
-  }, [data, hexbinRadiusMeters]);
+  }
 
   const effectiveDensityDomain = densityDomainOverride ?? densityDomain;
 

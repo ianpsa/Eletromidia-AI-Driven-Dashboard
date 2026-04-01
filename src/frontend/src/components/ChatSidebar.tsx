@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { buildApiUrl } from "../utils/url";
 
 type RankingItem = {
@@ -9,9 +10,9 @@ type RankingItem = {
 };
 
 type MessageContent =
-  | { type: "text"; text: string }
+  | { type: "text"; text: string; fromStream?: boolean }
   | { type: "ranking"; items: RankingItem[] }
-  | { type: "dashboard"; url: string };
+  | { type: "dashboard_status"; summary: string };
 
 type Message = {
   id: number;
@@ -51,7 +52,7 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
   const [loading, setLoading] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const messageCount = messages.length;
   useEffect(() => {
@@ -83,18 +84,21 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
       prev.map((m) => {
         if (m.id !== msgId) return m;
         const last = m.contents[m.contents.length - 1];
-        if (last?.type === "text") {
+        if (last?.type === "text" && last.fromStream) {
           return {
             ...m,
             contents: [
               ...m.contents.slice(0, -1),
-              { type: "text", text: last.text + token },
+              { type: "text", text: last.text + token, fromStream: true },
             ],
           };
         }
         return {
           ...m,
-          contents: [...m.contents, { type: "text", text: token }],
+          contents: [
+            ...m.contents,
+            { type: "text", text: token, fromStream: true },
+          ],
         };
       }),
     );
@@ -111,6 +115,13 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
           break;
         case "tool_start":
           break;
+        case "dashboard_update": {
+          const url = data.url as string;
+          if (url) {
+            onLookerUrl?.(url);
+          }
+          break;
+        }
         case "tool_result": {
           const toolName = data.tool as string;
           const content = data.content as string;
@@ -122,16 +133,10 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
               appendToAgentMessage(msgId, { type: "text", text: content });
             }
           } else if (toolName === "filter_looker_dashboard") {
-            const urlMatch = content.match(/https?:\/\/\S+/);
-            if (urlMatch) {
-              onLookerUrl?.(urlMatch[0]);
-              appendToAgentMessage(msgId, {
-                type: "dashboard",
-                url: urlMatch[0],
-              });
-            } else {
-              appendToAgentMessage(msgId, { type: "text", text: content });
-            }
+            appendToAgentMessage(msgId, {
+              type: "dashboard_status",
+              summary: content,
+            });
           } else {
             appendToAgentMessage(msgId, { type: "text", text: content });
           }
@@ -165,6 +170,7 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
       { id: agentMsgId, sender: "agent", contents: [], streaming: true },
     ]);
     setInput("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
     setLoading(true);
 
     try {
@@ -281,7 +287,11 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
                 {msg.contents.map((content, i) => {
                   switch (content.type) {
                     case "text":
-                      return <p key={i}>{content.text}</p>;
+                      return (
+                        <div key={i} className="agent-md">
+                          <ReactMarkdown>{content.text}</ReactMarkdown>
+                        </div>
+                      );
                     case "ranking":
                       return (
                         <div
@@ -311,10 +321,13 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
                           </table>
                         </div>
                       );
-                    case "dashboard":
+                    case "dashboard_status":
                       return (
-                        <div key={i} className="agent-dashboard-embed">
-                          <iframe src={content.url} title="Dashboard" />
+                        <div key={i} className="agent-dashboard-status">
+                          <span className="agent-dashboard-status-icon">
+                            &#x2714;
+                          </span>
+                          <span>{content.summary}</span>
                         </div>
                       );
                     default:
@@ -337,14 +350,23 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
         </div>
 
         <div className="agent-input-bar">
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             placeholder="Descreva sua campanha..."
             disabled={loading}
+            rows={1}
           />
           <button
             type="button"

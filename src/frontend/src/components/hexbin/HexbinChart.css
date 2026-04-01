@@ -102,3 +102,33 @@
   color: var(--muted);
   font-weight: 600;
 }
+
+@media (max-width: 980px) {
+  .hexbin-card {
+    height: auto;
+  }
+
+  .hexbin-card__stage {
+    flex: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .hexbin-card__stage {
+    height: clamp(280px, 55vw, 520px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hexbin-card__stage {
+    height: clamp(220px, 65vw, 360px) !important;
+  }
+
+  .hexbin-card__legend {
+    right: 8px;
+    bottom: 8px;
+    padding: 6px 8px;
+    font-size: 10px;
+    min-width: 130px;
+  }
+}

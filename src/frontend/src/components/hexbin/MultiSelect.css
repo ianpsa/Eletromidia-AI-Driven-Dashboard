@@ -83,3 +83,19 @@
 .multi-select__option input {
   accent-color: var(--orange-strong);
 }
+
+@media (max-width: 600px) {
+  .multi-select__control {
+    min-height: 44px;
+    padding: 12px;
+  }
+
+  .multi-select__option {
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+
+  .multi-select__dropdown {
+    max-width: calc(100vw - 32px);
+  }
+}

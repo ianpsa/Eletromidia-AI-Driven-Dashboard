@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChatSidebar } from "./components/ChatSidebar";
 import { Login } from "./components/Login";
+import { MobileBottomBar } from "./components/MobileBottomBar";
 import { Sidebar } from "./components/Sidebar";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { CloudPage } from "./pages/CloudPage";
@@ -40,6 +41,12 @@ function AppShell() {
         open={chatOpen}
         onClose={() => setChatOpen(false)}
         onLookerUrl={handleLookerUrl}
+      />
+      <MobileBottomBar
+        activePage={page}
+        onNavigate={setPage}
+        onToggleChat={() => setChatOpen((v) => !v)}
+        chatOpen={chatOpen}
       />
     </div>
   );

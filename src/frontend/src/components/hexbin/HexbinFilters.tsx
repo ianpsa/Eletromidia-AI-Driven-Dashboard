@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MultiSelect } from "./MultiSelect";
 import "./HexbinFilters.css";
 import { useGeoFilterOptions } from "../../hooks/useGeoFilterOptions";
@@ -28,6 +29,8 @@ export function HexbinFilters({
     markFiltersAsApplied,
   } = useHexbinFilters(initialFilters);
 
+  const [collapsed, setCollapsed] = useState(true);
+
   const { options: remoteOptions } = useGeoFilterOptions({
     selectedState: filters.states[0],
     selectedCity: filters.cities[0],
@@ -47,8 +50,16 @@ export function HexbinFilters({
   };
 
   return (
-    <aside className="hexbin-filters">
-      <h3 className="hexbin-filters__title">Filtros</h3>
+    <aside
+      className={`hexbin-filters ${collapsed ? "hexbin-filters--collapsed" : ""}`}
+    >
+      <button
+        type="button"
+        className="hexbin-filters__title"
+        onClick={() => setCollapsed((v) => !v)}
+      >
+        Filtros
+      </button>
 
       <MultiSelect
         label="Estado"
