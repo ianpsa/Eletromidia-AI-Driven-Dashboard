@@ -1,7 +1,8 @@
+# ingress-auth.yaml — rotas públicas, sem autenticação
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: bff-storage-ingress
+  name: auth-ingress
   namespace: dev
   annotations:
     nginx.ingress.kubernetes.io/enable-cors: "true"
@@ -10,21 +11,15 @@ metadata:
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
     nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
-
-    # External Auth
-    nginx.ingress.kubernetes.io/auth-url: "http://auth-middleware-svc.dev.svc.cluster.local/validate"
-    nginx.ingress.kubernetes.io/auth-method: "GET"
-    # Repassa o header Authorization para o /validate — substitui o auth-snippet
-    nginx.ingress.kubernetes.io/auth-request-headers: "Authorization"
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
-          - path: /()(.*)
+          - path: /auth(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: bff-storage-svc-ci
+                name: auth-middleware-svc
                 port:
                   number: 80
