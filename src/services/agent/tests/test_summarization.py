@@ -37,7 +37,11 @@ class TestGetContextWindow:
 
     def test_gemini_model(self, monkeypatch):
         monkeypatch.setenv("LLM_MODEL", "gemini-2.0-flash")
-        assert _get_context_window() == 1_048_576
+        assert _get_context_window() == 1_000_000
+
+    def test_anthropic_model(self, monkeypatch):
+        monkeypatch.setenv("LLM_MODEL", "claude-haiku-4-5")
+        assert _get_context_window() == 200_000
 
     def test_unknown_model_returns_default(self, monkeypatch):
         monkeypatch.setenv("LLM_MODEL", "modelo-desconhecido")

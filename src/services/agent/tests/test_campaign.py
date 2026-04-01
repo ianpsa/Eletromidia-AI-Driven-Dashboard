@@ -4,11 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from core.tools.campaign import (
-    _build_sql,
-    _class_columns,
-    _overlapping_age_columns,
-)
+from core.tools.campaign import _build_sql, _class_columns, _overlapping_age_columns
 
 # ── _overlapping_age_columns ──────────────────────────────────────────
 
@@ -78,6 +74,7 @@ def _call_build_sql(**overrides):
         age_max=None,
         classes=None,
         city=None,
+        endereco=None,
         latitude=None,
         longitude=None,
         radius_km=2.0,
@@ -119,6 +116,26 @@ class TestBuildSql:
         assert "LOWER(s.cidade) = LOWER(@city)" in sql
         city_param = next(p for p in params if p.name == "city")
         assert city_param.value == "São Paulo"
+
+    def test_endereco_filter(self):
+        sql, params = _call_build_sql(endereco="FARIA LIMA")
+        assert "WHERE" in sql
+        assert "LOWER(s.endereco) LIKE" in sql
+        endereco_param = next(p for p in params if p.name == "endereco")
+        assert endereco_param.value == "FARIA LIMA"
+
+    def test_age_filter(self):
+        sql, _ = _call_build_sql(age_min=25, age_max=45)
+        assert "age_20_29_count" in sql
+        assert "age_30_39_count" in sql
+        assert "age_40_49_count" in sql
+        assert "age_18_19_count" not in sql
+
+    def test_class_filter(self):
+        sql, _ = _call_build_sql(classes=["A", "B1"])
+        assert "class_a_count" in sql
+        assert "class_b1_count" in sql
+        assert "class_c1_count" not in sql
 
     def test_combined_filters(self):
         sql, params = _call_build_sql(
