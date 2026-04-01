@@ -8,3 +8,4 @@ data:
   CS_SA_CREDENTIALS: "/secrets/cs-api-key.json"
   BQ_PROJECT_ID: "midia-in-da-house"
   BQ_DATASET_ID: "eletromidia_bq_dev"
+  BQ_SA_CREDENTIALS: "/secrets/cs-api-key.json"

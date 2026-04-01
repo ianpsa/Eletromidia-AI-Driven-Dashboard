@@ -274,6 +274,7 @@ func (c *Client) QueryGeoPoints(ctx context.Context, filters models.GeoFilters) 
 	)
 
 	q := c.client.Query(sql)
+	q.DefaultProjectID = c.ProjectID
 	q.Parameters = params
 
 	it, err := q.Read(ctx)
@@ -323,6 +324,7 @@ func (c *Client) QueryDemographics(ctx context.Context, filters models.GeoFilter
 	)
 
 	q := c.client.Query(sql)
+	q.DefaultProjectID = c.ProjectID
 	q.Parameters = params
 
 	it, err := q.Read(ctx)
@@ -361,6 +363,7 @@ func (c *Client) QueryCompare(ctx context.Context, filters models.GeoFilters, gr
 	)
 
 	q := c.client.Query(sql)
+	q.DefaultProjectID = c.ProjectID
 	q.Parameters = params
 
 	it, err := q.Read(ctx)
@@ -507,6 +510,7 @@ func (c *Client) queryDistinct(ctx context.Context, column, condition, _ string,
 	)
 
 	q := c.client.Query(sql)
+	q.DefaultProjectID = c.ProjectID
 	q.Parameters = params
 
 	it, err := q.Read(ctx)
@@ -574,6 +578,7 @@ func (c *Client) queryTableColumns(ctx context.Context, tableName string) ([]str
 	)
 
 	q := c.client.Query(sql)
+	q.DefaultProjectID = c.ProjectID
 	q.Parameters = []bq.QueryParameter{{Name: "table", Value: tableName}}
 
 	it, err := q.Read(ctx)

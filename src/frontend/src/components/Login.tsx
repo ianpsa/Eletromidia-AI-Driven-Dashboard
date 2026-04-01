@@ -1,20 +1,5 @@
-import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-
-function Icon({ children }: { children: ReactNode }) {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      {children}
-    </svg>
-  );
-}
+import { useAuth } from "../AuthContext";
 
 const SLIDES = [
   "/login/shoppings.jpg",
@@ -25,14 +10,8 @@ const SLIDES = [
   "/login/rio_galeao.jpg",
 ];
 
-interface LoginProps {
-  onLogin: () => void;
-}
-
-export function Login({ onLogin }: LoginProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+export function Login() {
+  const { signInWithGoogle, loading, error } = useAuth();
   const [slideIndex, setSlideIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState<number | null>(null);
 
@@ -45,11 +24,6 @@ export function Login({ onLogin }: LoginProps) {
     }, 4000);
     return () => clearInterval(id);
   }, []);
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    onLogin();
-  }
 
   function slideClass(i: number) {
     if (i === slideIndex) return "login-slide login-slide--active";
@@ -64,65 +38,25 @@ export function Login({ onLogin }: LoginProps) {
 
         <div className="login-card">
           <h2 className="login-title">Entrar na conta</h2>
+          <p className="login-subtitle">
+            Use sua conta Google corporativa para acessar.
+          </p>
 
-          <form onSubmit={handleSubmit}>
-            <div
-              className={`login-field${email ? " login-field--filled" : ""}`}
-            >
-              <input
-                id="login-email"
-                type="email"
-                placeholder=" "
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-              />
-              <label htmlFor="login-email">Seu e-mail</label>
+          {error && (
+            <div className="login-error" role="alert">
+              {error}
             </div>
+          )}
 
-            <div
-              className={`login-field${password ? " login-field--filled" : ""}`}
-            >
-              <div className="login-field-inner">
-                <input
-                  id="login-password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder=" "
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  className="login-eye"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                >
-                  {showPassword ? (
-                    <Icon>
-                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </Icon>
-                  ) : (
-                    <Icon>
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </Icon>
-                  )}
-                </button>
-              </div>
-              <label htmlFor="login-password">Senha</label>
-            </div>
-
-            <button
-              type="submit"
-              className="login-submit"
-              disabled={!email || !password}
-            >
-              Entrar
-            </button>
-          </form>
+          <button
+            type="button"
+            className="login-google-btn"
+            onClick={signInWithGoogle}
+            disabled={loading}
+          >
+            <GoogleIcon />
+            {loading ? "Entrando…" : "Entrar com Google"}
+          </button>
         </div>
       </div>
 
@@ -132,5 +66,16 @@ export function Login({ onLogin }: LoginProps) {
         ))}
       </div>
     </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
+      <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.6 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.9z"/>
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-8H6.3C9.7 35.6 16.3 44 24 44z"/>
+      <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.9 2.4-2.5 4.5-4.5 6l6.2 5.2C40.2 35.9 44 30.4 44 24c0-1.3-.1-2.7-.4-3.9z"/>
+    </svg>
   );
 }

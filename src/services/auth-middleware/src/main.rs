@@ -14,6 +14,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::collections::HashMap;
 use tower_http::trace::TraceLayer;
+use tower_http::cors::{CorsLayer, Any};
+use axum::http::Method;
 
 #[tokio::main]
 async fn main() {
@@ -56,6 +58,12 @@ async fn main() {
             .layer(from_fn_with_state(app_state.clone(), require_editor)))
         .route("/viewer", get(viewer_only)
             .layer(from_fn_with_state(app_state.clone(), require_viewer)))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+                .allow_headers(Any),
+        )
         .layer(TraceLayer::new_for_http())
         .with_state(app_state);
 

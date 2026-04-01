@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "./AuthContext";
 import { ChatSidebar } from "./components/ChatSidebar";
 import { Login } from "./components/Login";
 import { MobileBottomBar } from "./components/MobileBottomBar";
@@ -21,9 +22,7 @@ function AppShell() {
   }
 
   return (
-    <div
-      className={`drive-shell ${sidebarCollapsed ? "sidebar-is-collapsed" : ""}`}
-    >
+    <div className={`drive-shell ${sidebarCollapsed ? "sidebar-is-collapsed" : ""}`}>
       <Sidebar
         activePage={page}
         onNavigate={setPage}
@@ -53,9 +52,12 @@ function AppShell() {
 }
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
+  const { user, loading } = useAuth();
 
-  if (!loggedIn) return <Login onLogin={() => setLoggedIn(true)} />;
+  // While Firebase is resolving the persisted session, show nothing
+  if (loading) return null;
+
+  if (!user) return <Login />;
 
   return <AppShell />;
 }
