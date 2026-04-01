@@ -4,6 +4,7 @@ import type { GeodataPointsResponse } from "../types/geodataApi";
 import type { HexbinFiltersState } from "../types/hexbin";
 import { buildGeoPointsQuery, toHexbinPoints } from "../utils/geodataFilters";
 import { buildApiUrl } from "../utils/url";
+import { useAuth } from "../AuthContext";
 
 type UseGeoPointsParams = {
   filters: HexbinFiltersState;
@@ -14,14 +15,18 @@ export function useGeoPoints({ filters, limit }: UseGeoPointsParams) {
   const [points, setPoints] = useState<HexbinPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { getToken } = useAuth();
 
   const loadPoints = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
+      const token = await getToken();
       const query = buildGeoPointsQuery(filters, limit);
-      const response = await fetch(buildApiUrl("/geodata/points", query));
+      const response = await fetch(buildApiUrl("/geodata/points", query), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!response.ok) {
         throw new Error(`Falha ao buscar pontos do mapa (${response.status}).`);
@@ -39,7 +44,7 @@ export function useGeoPoints({ filters, limit }: UseGeoPointsParams) {
     } finally {
       setLoading(false);
     }
-  }, [filters, limit]);
+  }, [filters, limit, getToken]);
 
   useEffect(() => {
     void loadPoints();

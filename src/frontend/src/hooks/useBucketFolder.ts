@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ObjectItem } from "../types/api";
 import { fileDisplayName, parseDownloadFilename } from "../utils/filename";
 import { buildApiUrl } from "../utils/url";
+import { useAuth } from "../AuthContext";
 
 export function useBucketFolder() {
   const [bucketName, setBucketName] = useState("-");
@@ -12,6 +13,7 @@ export function useBucketFolder() {
   const [currentFolder, setCurrentFolder] = useState("");
   const [downloadingId, setDownloadingId] = useState("");
   const [downloadError, setDownloadError] = useState("");
+  const { getToken } = useAuth();
 
   const breadcrumbs = useMemo(() => {
     if (!currentFolder) return [];
@@ -27,8 +29,12 @@ export function useBucketFolder() {
     setError("");
 
     try {
+      const token = await getToken();
       const response = await fetch(
         buildApiUrl("/bucket/items/by-folder", { folder }),
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
       );
       if (!response.ok) {
         throw new Error(`Falha ao buscar itens (${response.status}).`);
@@ -51,7 +57,7 @@ export function useBucketFolder() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getToken]);
 
   useEffect(() => {
     void fetchFolder(currentFolder);
@@ -72,8 +78,12 @@ export function useBucketFolder() {
     setDownloadError("");
 
     try {
+      const token = await getToken();
       const response = await fetch(
         buildApiUrl("/bucket/items/file", { id: file.id }),
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
       );
       if (!response.ok) {
         throw new Error(`Falha no download (${response.status}).`);

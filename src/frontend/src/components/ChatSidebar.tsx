@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { buildApiUrl } from "../utils/url";
+import { useAuth } from "../AuthContext";
 
 type RankingItem = {
   point: string;
@@ -53,6 +54,7 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
   const [threadId, setThreadId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const { getToken } = useAuth();
 
   const messageCount = messages.length;
   useEffect(() => {
@@ -174,9 +176,15 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
     setLoading(true);
 
     try {
+      // Busca um token fresco antes de cada envio
+      const token = await getToken();
+
       const res = await fetch(buildApiUrl("/chat"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         body: JSON.stringify({ message: prompt, thread_id: threadId }),
       });
 

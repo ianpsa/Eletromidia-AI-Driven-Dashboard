@@ -5,6 +5,7 @@ import {
   toGeoFilterOptions,
 } from "../utils/geodataFilters";
 import { buildApiUrl } from "../utils/url";
+import { useAuth } from "../AuthContext";
 
 type UseGeoFilterOptionsParams = {
   selectedState?: string;
@@ -35,15 +36,20 @@ export function useGeoFilterOptions({
     useState<GeodataFilterOptions>(effectiveFallback);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { getToken } = useAuth();
 
   const loadOptions = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
+      const token = await getToken();
       const query = buildGeoFilterOptionsQuery(selectedState, selectedCity);
       const response = await fetch(
         buildApiUrl("/geodata/filter-options", query),
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
       );
       if (!response.ok) {
         throw new Error(
@@ -100,7 +106,7 @@ export function useGeoFilterOptions({
     } finally {
       setLoading(false);
     }
-  }, [selectedState, selectedCity, effectiveFallback]);
+  }, [selectedState, selectedCity, effectiveFallback, getToken]);
 
   useEffect(() => {
     void loadOptions();
