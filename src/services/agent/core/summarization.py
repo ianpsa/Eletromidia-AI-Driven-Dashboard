@@ -35,7 +35,10 @@ _CONTEXT_WINDOWS: dict[str, int] = {
     "llama-3.3-70b-versatile": 128_000,
     "llama-3.1-70b-versatile": 128_000,
     # Google
-    "gemini-2.0-flash": 1_048_576,
+    "gemini-2.0-flash": 1_000_000,
+    # Anthropic
+    "claude-haiku-4-5": 200_000,
+    "claude-sonnet-4-5": 200_000,
 }
 _DEFAULT_CONTEXT = 128_000
 _TRIGGER_RATIO = 0.75

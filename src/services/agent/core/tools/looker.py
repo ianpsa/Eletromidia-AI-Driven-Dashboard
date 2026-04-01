@@ -106,11 +106,10 @@ def filter_looker_dashboard(
     if ambiente:
         applied.append(f"ambiente={ambiente}")
 
-    lines = [
-        "Dashboard com os pontos recomendados:",
-        url,
-        "",
-        f"Filtros aplicados: {', '.join(applied) or 'nenhum'}",
-    ]
+    result = {
+        "url": url,
+        "filters_applied": applied,
+        "summary": f"Filtros aplicados: {', '.join(applied) or 'nenhum'}",
+    }
 
-    return "\n".join(lines)
+    return json.dumps(result, ensure_ascii=False)

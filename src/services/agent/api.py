@@ -16,6 +16,8 @@ from core.agent import get_agent
 
 load_dotenv()
 
+PORT = int(os.environ.get("PORT", "8001"))
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
@@ -67,12 +69,49 @@ async def chat(request: ChatRequest):
                                 payload = json.dumps({"tool": chunk["name"]})
                                 yield f"event: tool_start\ndata: {payload}\n\n"
                     elif event.content:
-                        payload = json.dumps({"content": event.content})
-                        yield f"event: token\ndata: {payload}\n\n"
+                        text = event.content
+                        if isinstance(text, list):
+                            text = "".join(
+                                block.get("text", "")
+                                for block in text
+                                if isinstance(block, dict)
+                            )
+                        if text:
+                            payload = json.dumps({"content": text})
+                            yield f"event: token\ndata: {payload}\n\n"
 
                 if isinstance(event, ToolMessage):
-                    payload = json.dumps({"tool": event.name, "content": event.content})
-                    yield f"event: tool_result\ndata: {payload}\n\n"
+                    if event.name == "filter_looker_dashboard":
+                        try:
+                            parsed = json.loads(event.content)
+                            dashboard_payload = json.dumps(
+                                {
+                                    "url": parsed["url"],
+                                    "filters": parsed["filters_applied"],
+                                }
+                            )
+                            yield (
+                                f"event: dashboard_update\n"
+                                f"data: {dashboard_payload}\n\n"
+                            )
+
+                            chat_payload = json.dumps(
+                                {
+                                    "tool": event.name,
+                                    "content": parsed["summary"],
+                                }
+                            )
+                            yield f"event: tool_result\ndata: {chat_payload}\n\n"
+                        except (json.JSONDecodeError, KeyError):
+                            payload = json.dumps(
+                                {"tool": event.name, "content": event.content}
+                            )
+                            yield f"event: tool_result\ndata: {payload}\n\n"
+                    else:
+                        payload = json.dumps(
+                            {"tool": event.name, "content": event.content}
+                        )
+                        yield f"event: tool_result\ndata: {payload}\n\n"
         except Exception:
             logger.exception("SSE stream error for thread_id=%s", thread_id)
             payload = json.dumps({"error": "Erro interno. Tente novamente."})
@@ -88,3 +127,9 @@ async def chat(request: ChatRequest):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("api:app", host="0.0.0.0", port=PORT, reload=True)

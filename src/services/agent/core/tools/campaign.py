@@ -50,6 +50,7 @@ def _build_sql(
     age_max: int | None,
     classes: list[str] | None,
     city: str | None,
+    endereco: str | None,
     latitude: float | None,
     longitude: float | None,
     radius_km: float,
@@ -106,10 +107,16 @@ def _build_sql(
         params.append(bigquery.ScalarQueryParameter("lat", "FLOAT64", latitude))
         params.append(bigquery.ScalarQueryParameter("radius_m", "FLOAT64", radius_m))
         where_parts.append("s.latitude IS NOT NULL")
+        where_parts.append("s.latitude BETWEEN -90 AND 90")
+        where_parts.append("s.longitude BETWEEN -180 AND 180")
 
     if city:
         where_parts.append("LOWER(s.cidade) = LOWER(@city)")
         params.append(bigquery.ScalarQueryParameter("city", "STRING", city))
+
+    if endereco:
+        where_parts.append("LOWER(s.endereco) LIKE CONCAT('%', LOWER(@endereco), '%')")
+        params.append(bigquery.ScalarQueryParameter("endereco", "STRING", endereco))
 
     where_clause = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
@@ -154,6 +161,7 @@ def analyze_campaign(
     age_max: int | None = None,
     classes: list[str] | None = None,
     city: str | None = None,
+    endereco: str | None = None,
     latitude: float | None = None,
     longitude: float | None = None,
     radius_km: float | None = 2.0,
@@ -167,16 +175,23 @@ def analyze_campaign(
     If you have a latitude/longitude from geocoding, pass them to filter points
     by geographic radius.  Otherwise you can pass a city name for a broad filter.
 
+    When the user mentions a specific street or avenue, pass the street name
+    in the endereco parameter to filter results to that street only.
+
     Args:
         gender: Target gender — 'female' or 'male'.
         age_min: Minimum target age.
         age_max: Maximum target age.
         classes: Target social classes, e.g. ['A', 'B1'].
         city: City name for broad filtering.
+        endereco: Street/avenue name filter (partial match). E.g. 'PAULISTA',
+                  'FARIA LIMA'. Use this when the user asks for points on a
+                  specific street.
         latitude: Center latitude for geographic filtering.
         longitude: Center longitude for geographic filtering.
         radius_km: Radius in km around the center point (default 2).
-        limit: Maximum number of points to return (default 10).
+        limit: Maximum number of points to return (default 10). Pass a
+               different value when the user asks for a specific quantity.
     """
     sql, params = _build_sql(
         gender=gender,
@@ -184,6 +199,7 @@ def analyze_campaign(
         age_max=age_max,
         classes=classes,
         city=city,
+        endereco=endereco,
         latitude=latitude,
         longitude=longitude,
         radius_km=radius_km or 2.0,
@@ -208,6 +224,8 @@ def analyze_campaign(
         filters_desc.append(f"classes={','.join(classes)}")
     if city:
         filters_desc.append(f"cidade={city}")
+    if endereco:
+        filters_desc.append(f"endereço={endereco}")
     if latitude is not None and longitude is not None:
         filters_desc.append(
             f"raio={radius_km or 2.0}km ({latitude:.4f}, {longitude:.4f})"

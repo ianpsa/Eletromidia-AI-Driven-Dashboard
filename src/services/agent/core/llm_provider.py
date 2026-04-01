@@ -36,9 +36,21 @@ class GoogleProvider:
         )
 
 
+class AnthropicProvider:
+    def build(self) -> BaseChatModel:
+        from langchain_anthropic import ChatAnthropic
+
+        return ChatAnthropic(
+            api_key=os.environ["ANTHROPIC_API_KEY"],
+            model_name=os.environ.get("LLM_MODEL", "claude-haiku-4-5"),
+            temperature=float(os.environ.get("LLM_TEMPERATURE", "0.3")),
+        )
+
+
 _PROVIDERS: dict[str, type[LLMProvider]] = {
     "groq": GroqProvider,
     "google": GoogleProvider,
+    "anthropic": AnthropicProvider,
 }
 
 _cached_provider: LLMProvider | None = None
