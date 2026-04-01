@@ -7,7 +7,7 @@ use axum::{
     Router,
     middleware::from_fn_with_state,
 };
-use handlers::{authorize, health, healthz, metrics, admin_only, editor_only, viewer_only, me, AppState};
+use handlers::{authorize, validate, health, healthz, metrics, admin_only, editor_only, viewer_only, me, AppState};
 use auth::{FirebaseVerifier, IamAuthorizer, require_admin, require_editor, require_viewer};
 use std::env;
 use std::net::SocketAddr;
@@ -51,6 +51,7 @@ async fn main() {
         .route("/healthz", get(healthz))
         .route("/metrics", get(metrics))
         .route("/authorize", post(authorize))
+        .route("/validate", get(validate))
         .route("/me", get(me))
         .route("/admin", get(admin_only)
             .layer(from_fn_with_state(app_state.clone(), require_admin)))

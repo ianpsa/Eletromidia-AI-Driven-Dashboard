@@ -98,3 +98,35 @@ pub async fn viewer_only(
 ) -> impl IntoResponse {
     (StatusCode::OK, format!("Welcome Viewer, {}!", auth_user.claims.email.unwrap_or_default()))
 }
+
+pub async fn validate(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let auth_header = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|h| h.to_str().ok());
+
+    let token_str = match auth_header {
+        Some(h) => match h.strip_prefix("Bearer ") {
+            Some(t) => t.to_string(),
+            None => return StatusCode::UNAUTHORIZED.into_response(),
+        },
+        None => return StatusCode::UNAUTHORIZED.into_response(),
+    };
+
+    let claims = match state.firebase_verifier.verify_token(&token_str).await {
+        Ok(c) => c,
+        Err(_) => return StatusCode::UNAUTHORIZED.into_response(),
+    };
+
+    let email = match claims.email {
+        Some(e) => e,
+        None => return StatusCode::UNAUTHORIZED.into_response(),
+    };
+
+    match state.iam_authorizer.get_user_app_roles(&email).await {
+        Ok(roles) if !roles.is_empty() => StatusCode::OK.into_response(),
+        _ => StatusCode::FORBIDDEN.into_response(),
+    }
+}
