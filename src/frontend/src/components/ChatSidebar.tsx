@@ -179,7 +179,7 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
       // Busca um token fresco antes de cada envio
       const token = await getToken();
 
-      const res = await fetch(buildApiUrl("/chat"), {
+      const res = await fetch(buildApiUrl("/ai/chat"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
