@@ -69,14 +69,6 @@ body {
   align-items: center;
 }
 
-.chat-toggle-btn {
-  margin-top: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  width: 100%;
-}
 
 .chat-toggle-active {
   background: linear-gradient(
@@ -1297,4 +1289,84 @@ tbody tr:hover {
   background: #fce8e6;
   color: #c5221f;
   font-size: 13px;
+}
+
+/* ── Sidebar footer ────────────────────────────────────────────────────────── */
+
+/*
+  Cole esse bloco no final do seu src/styles.css.
+  Remove também o .chat-toggle-btn { margin-top: auto } existente —
+  agora o margin-top: auto está no .sidebar-footer.
+*/
+
+/* Sobrescreve o margin-top: auto do chat-toggle-btn pois o footer assume esse papel */
+.chat-toggle-btn {
+  margin-top: auto !important;
+}
+
+.sidebar-footer {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Avatar + email */
+.sidebar-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  overflow: hidden;
+}
+
+.sidebar-user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--orange-strong, #fb5100), var(--orange-mid, #fd8c5c));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-user-email {
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Collapse + logout side by side */
+.sidebar-footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Logout — visível o tempo todo, cor de atenção suave */
+.sidebar-logout-btn {
+  color: #c0392b !important;
+  font-weight: 700;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(192, 57, 43, 0.10) !important;
+  color: #a93226 !important;
+}
+
+/* Collapsed: centraliza avatar */
+.sidebar-collapsed .sidebar-user-info {
+  justify-content: center;
+  padding: 6px 0;
+}
+
+.sidebar-collapsed .sidebar-footer-actions {
+  align-items: center;
 }
