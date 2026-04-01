@@ -13,7 +13,10 @@
 import { useCallback } from "react";
 import { useAuth } from "./AuthContext";
 
-const API_BASE = ((import.meta.env.VITE_BASE_URL as string) || "").replace(/\/$/, "");
+const API_BASE = ((import.meta.env.VITE_BASE_URL as string) || "").replace(
+  /\/$/,
+  "",
+);
 
 function resolveUrl(endpoint: string): string {
   if (endpoint.startsWith("http")) return endpoint;
@@ -27,7 +30,9 @@ async function handleResponse<T>(res: Response): Promise<T> {
     throw new Error(`[${res.status}] ${text}`);
   }
   const ct = res.headers.get("content-type") ?? "";
-  return ct.includes("application/json") ? res.json() : (res.text() as unknown as T);
+  return ct.includes("application/json")
+    ? res.json()
+    : (res.text() as unknown as T);
 }
 
 export function useApiClient() {
@@ -37,7 +42,10 @@ export function useApiClient() {
     async <T>(
       method: string,
       endpoint: string,
-      options: { body?: unknown; query?: Record<string, string | undefined> } = {},
+      options: {
+        body?: unknown;
+        query?: Record<string, string | undefined>;
+      } = {},
     ): Promise<T> => {
       const token = await getToken();
       const url = new URL(resolveUrl(endpoint));
@@ -51,7 +59,7 @@ export function useApiClient() {
       const res = await fetch(url.toString(), {
         method,
         headers: {
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           ...(options.body ? { "Content-Type": "application/json" } : {}),
         },
         ...(options.body ? { body: JSON.stringify(options.body) } : {}),
@@ -63,13 +71,12 @@ export function useApiClient() {
   );
 
   return {
-    get:  <T>(endpoint: string, query?: Record<string, string | undefined>) =>
-            request<T>("GET", endpoint, { query }),
+    get: <T>(endpoint: string, query?: Record<string, string | undefined>) =>
+      request<T>("GET", endpoint, { query }),
     post: <T>(endpoint: string, body?: unknown) =>
-            request<T>("POST", endpoint, { body }),
-    put:  <T>(endpoint: string, body?: unknown) =>
-            request<T>("PUT", endpoint, { body }),
-    del:  <T>(endpoint: string) =>
-            request<T>("DELETE", endpoint),
+      request<T>("POST", endpoint, { body }),
+    put: <T>(endpoint: string, body?: unknown) =>
+      request<T>("PUT", endpoint, { body }),
+    del: <T>(endpoint: string) => request<T>("DELETE", endpoint),
   };
 }

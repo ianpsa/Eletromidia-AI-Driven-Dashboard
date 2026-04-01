@@ -69,7 +69,6 @@ body {
   align-items: center;
 }
 
-
 .chat-toggle-active {
   background: linear-gradient(
     120deg,
@@ -1279,8 +1278,13 @@ tbody tr:hover {
   cursor: pointer;
   transition: background 0.15s;
 }
-.login-google-btn:hover:not(:disabled) { background: #f8f9fa; }
-.login-google-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.login-google-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+}
+.login-google-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .login-error {
   padding: 10px 14px;
@@ -1325,7 +1329,11 @@ tbody tr:hover {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--orange-strong, #fb5100), var(--orange-mid, #fd8c5c));
+  background: linear-gradient(
+    135deg,
+    var(--orange-strong, #fb5100),
+    var(--orange-mid, #fd8c5c)
+  );
   color: #fff;
   font-size: 13px;
   font-weight: 700;
@@ -1357,7 +1365,7 @@ tbody tr:hover {
 }
 
 .sidebar-logout-btn:hover {
-  background: rgba(192, 57, 43, 0.10) !important;
+  background: rgba(192, 57, 43, 0.1) !important;
   color: #a93226 !important;
 }
 

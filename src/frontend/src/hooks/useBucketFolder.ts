@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "../AuthContext";
 import type { ObjectItem } from "../types/api";
 import { fileDisplayName, parseDownloadFilename } from "../utils/filename";
 import { buildApiUrl } from "../utils/url";
-import { useAuth } from "../AuthContext";
 
 export function useBucketFolder() {
   const [bucketName, setBucketName] = useState("-");
@@ -24,40 +24,43 @@ export function useBucketFolder() {
     }));
   }, [currentFolder]);
 
-  const fetchFolder = useCallback(async (folder: string) => {
-    setLoading(true);
-    setError("");
+  const fetchFolder = useCallback(
+    async (folder: string) => {
+      setLoading(true);
+      setError("");
 
-    try {
-      const token = await getToken();
-      const response = await fetch(
-        buildApiUrl("/bucket/items/by-folder", { folder }),
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      if (!response.ok) {
-        throw new Error(`Falha ao buscar itens (${response.status}).`);
+      try {
+        const token = await getToken();
+        const response = await fetch(
+          buildApiUrl("/bucket/items/by-folder", { folder }),
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`Falha ao buscar itens (${response.status}).`);
+        }
+
+        const payload = (await response.json()) as {
+          bucket?: string;
+          folders?: string[];
+          items?: ObjectItem[];
+        };
+        setBucketName(payload.bucket ?? "-");
+        setFolders(Array.isArray(payload.folders) ? payload.folders : []);
+        setFiles(Array.isArray(payload.items) ? payload.items : []);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Erro ao consultar o servidor.";
+        setError(message);
+        setFolders([]);
+        setFiles([]);
+      } finally {
+        setLoading(false);
       }
-
-      const payload = (await response.json()) as {
-        bucket?: string;
-        folders?: string[];
-        items?: ObjectItem[];
-      };
-      setBucketName(payload.bucket ?? "-");
-      setFolders(Array.isArray(payload.folders) ? payload.folders : []);
-      setFiles(Array.isArray(payload.items) ? payload.items : []);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Erro ao consultar o servidor.";
-      setError(message);
-      setFolders([]);
-      setFiles([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [getToken]);
+    },
+    [getToken],
+  );
 
   useEffect(() => {
     void fetchFolder(currentFolder);

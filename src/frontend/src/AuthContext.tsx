@@ -1,23 +1,26 @@
 import {
+  signOut as firebaseSignOut,
+  onIdTokenChanged,
+  signInWithPopup,
+  type User,
+} from "firebase/auth";
+import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
-import {
-  type User,
-  onIdTokenChanged,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-} from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-const AUTH_BASE = ((import.meta.env.VITE_BASE_URL as string) || "").replace(/\/$/, "");
+const AUTH_BASE = ((import.meta.env.VITE_BASE_URL as string) || "").replace(
+  /\/$/,
+  "",
+);
 
 type AuthStatus = "idle" | "authorized" | "unauthorized";
 
@@ -77,7 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const status = await callValidate(token);
 
         if (status === "authorized") {
-          setState({ user: firebaseUser, idToken: token, loading: false, error: null, status });
+          setState({
+            user: firebaseUser,
+            idToken: token,
+            loading: false,
+            error: null,
+            status,
+          });
         } else {
           // Token válido no Firebase mas sem role no IAM — desloga automaticamente
           await firebaseSignOut(auth);
@@ -85,12 +94,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             user: null,
             idToken: null,
             loading: false,
-            error: "Acesso não autorizado. Seu email não tem permissão para acessar este sistema.",
+            error:
+              "Acesso não autorizado. Seu email não tem permissão para acessar este sistema.",
             status: "unauthorized",
           });
         }
       } else {
-        setState({ user: null, idToken: null, loading: false, error: null, status: "idle" });
+        setState({
+          user: null,
+          idToken: null,
+          loading: false,
+          error: null,
+          status: "idle",
+        });
       }
     });
 
@@ -115,18 +131,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: null,
         idToken: null,
         loading: false,
-        error: "Acesso não autorizado. Seu email não tem permissão para acessar este sistema.",
+        error:
+          "Acesso não autorizado. Seu email não tem permissão para acessar este sistema.",
         status: "unauthorized",
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Falha ao entrar com Google";
+      const msg =
+        err instanceof Error ? err.message : "Falha ao entrar com Google";
       setState((s) => ({ ...s, loading: false, error: msg, status: "idle" }));
     }
   }, []);
 
   const signOut = useCallback(async () => {
     await firebaseSignOut(auth);
-    setState({ user: null, idToken: null, loading: false, error: null, status: "idle" });
+    setState({
+      user: null,
+      idToken: null,
+      loading: false,
+      error: null,
+      status: "idle",
+    });
   }, []);
 
   const getToken = useCallback(async (): Promise<string> => {
@@ -136,7 +160,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, signInWithGoogle, signOut, getToken }}>
+    <AuthContext.Provider
+      value={{ ...state, signInWithGoogle, signOut, getToken }}
+    >
       {children}
     </AuthContext.Provider>
   );

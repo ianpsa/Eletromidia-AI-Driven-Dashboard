@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "../AuthContext";
 import type { GeodataFilterOptions } from "../types/geodataApi";
 import {
   buildGeoFilterOptionsQuery,
   toGeoFilterOptions,
 } from "../utils/geodataFilters";
 import { buildApiUrl } from "../utils/url";
-import { useAuth } from "../AuthContext";
 
 type UseGeoFilterOptionsParams = {
   selectedState?: string;

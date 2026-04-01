@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../AuthContext";
 import type { HexbinPoint } from "../types/geo";
 import type { GeodataPointsResponse } from "../types/geodataApi";
 import type { HexbinFiltersState } from "../types/hexbin";
 import { buildGeoPointsQuery, toHexbinPoints } from "../utils/geodataFilters";
 import { buildApiUrl } from "../utils/url";
-import { useAuth } from "../AuthContext";
 
 type UseGeoPointsParams = {
   filters: HexbinFiltersState;

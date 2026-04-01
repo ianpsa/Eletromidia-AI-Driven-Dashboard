@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { buildApiUrl } from "../utils/url";
 import { useAuth } from "../AuthContext";
+import { buildApiUrl } from "../utils/url";
 
 type RankingItem = {
   point: string;
@@ -183,7 +183,7 @@ export function ChatSidebar({ open, onClose, onLookerUrl }: ChatSidebarProps) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ message: prompt, thread_id: threadId }),
       });

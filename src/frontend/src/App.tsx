@@ -22,7 +22,9 @@ function AppShell() {
   }
 
   return (
-    <div className={`drive-shell ${sidebarCollapsed ? "sidebar-is-collapsed" : ""}`}>
+    <div
+      className={`drive-shell ${sidebarCollapsed ? "sidebar-is-collapsed" : ""}`}
+    >
       <Sidebar
         activePage={page}
         onNavigate={setPage}

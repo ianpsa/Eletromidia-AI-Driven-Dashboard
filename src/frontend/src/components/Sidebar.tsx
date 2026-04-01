@@ -1,3 +1,4 @@
+import { useAuth } from "../AuthContext";
 import {
   IconAgent,
   IconAnalytics,
@@ -5,7 +6,6 @@ import {
   IconCollapse,
   IconDashboard,
 } from "./NavIcons";
-import { useAuth } from "../AuthContext";
 
 type Page = "dashboard" | "analytics" | "cloud";
 
