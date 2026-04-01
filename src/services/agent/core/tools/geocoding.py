@@ -7,7 +7,7 @@ from typing import Protocol
 import httpx
 from langchain_core.tools import tool
 
-_DISAMBIGUATION_SUFFIX = ", São Paulo, Brasil"  # Todos os pontos disponíveis são em SP
+_DISAMBIGUATION_SUFFIX = ", município de São Paulo, Brasil"
 _TIMEOUT = 10.0
 
 
@@ -23,6 +23,7 @@ class NominatimProvider:
             "q": query + _DISAMBIGUATION_SUFFIX,
             "format": "json",
             "limit": "1",
+            "countrycodes": "br",
         }
         headers = {"User-Agent": "EletromidiaAgent/1.0"}
         resp = httpx.get(self._BASE, params=params, headers=headers, timeout=_TIMEOUT)
