@@ -51,6 +51,7 @@ spec:
                 secretKeyRef:
                   name: agent-secrets
                   key: GROQ_API_KEY
+                  optional: true
             - name: GOOGLE_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -62,9 +63,9 @@ spec:
                 secretKeyRef:
                   name: agent-secrets
                   key: ANTHROPIC_API_KEY
-                  optional: true
+                  # optional: true
           volumeMounts:
-            - name: gcp-sa-key
+            - name: agent-sa-key
               mountPath: /secrets/bq-sa-key.json
               subPath: bq-sa-key.json
               readOnly: true
@@ -76,10 +77,10 @@ spec:
               cpu: "100m"
             limits:
               memory: "512Mi"
-              cpu: "500m"
+              cpu: "150m"
       volumes:
-        - name: gcp-sa-key
+        - name: agent-sa-key
           secret:
-            secretName: gcp-sa-key
+            secretName: agent-sa-key
         - name: tmp
           emptyDir: {}

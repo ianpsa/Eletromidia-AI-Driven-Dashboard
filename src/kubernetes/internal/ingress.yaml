@@ -16,6 +16,7 @@ metadata:
     nginx.ingress.kubernetes.io/auth-method: "GET"
     # Repassa o header Authorization para o /validate — substitui o auth-snippet
     nginx.ingress.kubernetes.io/auth-request-headers: "Authorization"
+    nginx.ingress.kubernetes.io/limit-rpm: "100"
 spec:
   ingressClassName: nginx
   rules:
@@ -26,5 +27,12 @@ spec:
             backend:
               service:
                 name: bff-storage-svc-ci
+                port:
+                  number: 80
+          - path: /ai(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: agent-svc
                 port:
                   number: 80
