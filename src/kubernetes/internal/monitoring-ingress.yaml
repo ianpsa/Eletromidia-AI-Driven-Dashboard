@@ -1,8 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: bff-storage-ingress
-  namespace: dev
+  name: monitoring-ingress
+  namespace: monitoring
   annotations:
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-origin: "https://midia-in-da-house.web.app"
@@ -22,17 +22,17 @@ spec:
   rules:
     - http:
         paths:
-          - path: /()(.*)
+          - path: /prometheus(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: bff-storage-svc-ci
+                name: prometheus-kube-prometheus-prometheus
                 port:
-                  number: 80
-          - path: /ai(/|$)(.*)
+                  number: 9090
+          - path: /grafana(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: agent-svc
+                name: prometheus-grafana
                 port:
                   number: 80
