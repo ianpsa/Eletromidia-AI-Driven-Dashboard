@@ -3,7 +3,6 @@ import {
   SchemaRegistry,
   CODEC_SNAPPY,
   SCHEMA_TYPE_STRING,
-  SCHEMA_TYPE_JSON,
   BALANCER_ROUND_ROBIN,
 } from "k6/x/kafka";
 
@@ -14,21 +13,22 @@ const writer = new Writer({
   topic: "geodata-dev",
   balancer: BALANCER_ROUND_ROBIN,
   batchSize: 1000,
-  batchTimeout: 100,
+  batchTimeout: 100 * 1000 * 1000,
   compression: CODEC_SNAPPY,
   autoCreateTopic: false,
   async: true,
 });
 
+
 export const options = {
   scenarios: {
     kafka_high_throughput: {
       executor: "constant-arrival-rate",
-      rate: 33334,
+      rate: 2500,
       timeUnit: "1s",
       duration: "60s",
       preAllocatedVUs: 50,
-      maxVUs: 100,
+      maxVUs: 200,
     },
   },
 };
@@ -51,44 +51,47 @@ const TARGET = {
   classe_social: { A: 0.0531, B1: 0.0839, B2: 0.2467, C1: 0.285, C2: 0.2579, DE: 0.0735 },
 };
 
-export default function () {
-  const loc     = LOCATIONS[__ITER % LOCATIONS.length];
-  const hour    = __ITER % 24;
-  const uniques = parseFloat((Math.random() * 3000 + 500).toFixed(1));
-  const numero  = Math.floor(Math.random() * 2000) + 1;
+const BATCH_SIZE = 20; // mensagens por iteração
 
-  writer.produce({
-    messages: [
-      {
-        // ✅ key: string serializada via SCHEMA_TYPE_STRING
-        key: schemaRegistry.serialize({
-          data: String(loc.location_id),
-          schemaType: SCHEMA_TYPE_STRING,
+export default function () {
+  const messages = [];
+
+  for (let i = 0; i < BATCH_SIZE; i++) {
+    const idx     = (__ITER * BATCH_SIZE + i) % LOCATIONS.length;
+    const loc     = LOCATIONS[idx];
+    const hour    = (__ITER * BATCH_SIZE + i) % 24;
+    const uniques = parseFloat((Math.random() * 3000 + 500).toFixed(1));
+    const numero  = Math.floor(Math.random() * 2000) + 1;
+
+    messages.push({
+      key: schemaRegistry.serialize({
+        data: String(loc.location_id),
+        schemaType: SCHEMA_TYPE_STRING,
+      }),
+      value: schemaRegistry.serialize({
+        data: JSON.stringify({
+          impression_hour: hour,
+          location_id:     loc.location_id,
+          uniques:         uniques,
+          latitude:        loc.latitude,
+          longitude:       loc.longitude,
+          uf_estado:       loc.uf_estado,
+          cidade:          loc.cidade,
+          endereco:        loc.endereco,
+          numero:          numero,
+          target:          TARGET,
         }),
-        // ✅ value: JSON.stringify + SCHEMA_TYPE_STRING (padrão comprovado)
-        value: schemaRegistry.serialize({
-          data: JSON.stringify({
-            impression_hour: hour,
-            location_id:     loc.location_id,
-            uniques:         uniques,
-            latitude:        loc.latitude,
-            longitude:       loc.longitude,
-            uf_estado:       loc.uf_estado,
-            cidade:          loc.cidade,
-            endereco:        loc.endereco,
-            numero:          numero,
-            target:          TARGET,
-          }),
-          schemaType: SCHEMA_TYPE_STRING,
-        }),
-        headers: {
-          "content-type":   "application/json",
-          "source":         "k6-loadtest",
-          "schema-version": "1.0",
-        },
+        schemaType: SCHEMA_TYPE_STRING,
+      }),
+      headers: {
+        "content-type":   "application/json",
+        "source":         "k6-loadtest",
+        "schema-version": "1.0",
       },
-    ],
-  });
+    });
+  }
+
+  writer.produce({ messages });
 }
 
 export function teardown() {

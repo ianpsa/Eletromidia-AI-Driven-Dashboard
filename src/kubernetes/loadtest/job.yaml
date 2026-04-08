@@ -40,8 +40,8 @@ spec:
               cpu: "1"
               memory: "512Mi"
             limits:
-              cpu: "2"
-              memory: "1Gi"
+              cpu: "4"
+              memory: "2Gi"
 
           env:
             - name: K6_KAFKA_BROKERS
