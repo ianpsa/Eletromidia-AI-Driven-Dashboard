@@ -101,8 +101,8 @@ func (c *Consumer) Run(ctx context.Context, m *metrics.FlushMetrics) {
 		}
 
 		touchHealthFile()
-		log.Printf("buffered | partition=%d offset=%d pending=%d",
-			msg.Partition, msg.Offset, c.w.Pending())
+		// log.Printf("buffered | partition=%d offset=%d pending=%d",
+		// 	msg.Partition, msg.Offset, c.w.Pending())
 	}
 }
 
