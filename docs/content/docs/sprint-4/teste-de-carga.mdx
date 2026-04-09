@@ -1,6 +1,121 @@
 ---
 title: Teste de Carga
-description: Placeholder
+description: Resultados do teste de carga na Sprint 4 — 1.028.000 requisições processadas com 0,09% de perda de dados em cluster Kubernetes de 3 nodes.
 ---
 
-Placeholder.
+## Visão Geral
+
+Na Sprint 4, realizamos um teste de carga em larga escala para validar a capacidade do pipeline de ingestão de dados. O teste foi executado diretamente no **Google Cloud Platform**, no cluster **GKE** (Google Kubernetes Engine) do projeto, com escalamento horizontal dos producers e consumidores. O objetivo foi verificar o comportamento do sistema sob alta demanda, medindo throughput, tempo de processamento e integridade dos dados até o **BigQuery Writer** (Data Warehouse).
+
+---
+
+## Infraestrutura do Teste
+
+O teste foi executado diretamente no **Google Cloud Platform**, utilizando o cluster GKE do projeto com a seguinte configuração:
+
+### Cluster GKE
+
+| Recurso | Total | Utilizado |
+| ------- | ----- | --------- |
+| Núcleos de CPU | 6 | 4 |
+| Memória RAM | 18 GB | 15 GB |
+| Nodes | 3 | 3 |
+| Tipo de máquina | e2-standard-2 | — |
+
+### Escalamento dos Pods
+
+Para atingir o throughput desejado, os pods foram escalados horizontalmente durante o teste:
+
+| Serviço | Réplicas | Função |
+| ------- | -------- | ------ |
+| `csv-kafka-producer` (Rust) | Escalado | Produção de mensagens para o Kafka |
+| `bigquery-writer` (Go) | 20 | Consumo do Kafka e escrita no BigQuery |
+| `bucket-consumer` (Go) | 20 | Consumo do Kafka e escrita no Cloud Storage |
+
+O Kafka foi configurado com **100 partições** no tópico de produção, permitindo que os múltiplos consumidores processassem mensagens em paralelo de forma eficiente.
+
+A alta utilização de recursos (4 de 6 CPUs e 15 de 18 GB de RAM) demonstra que o sistema operou próximo da capacidade máxima do cluster durante o teste.
+
+---
+
+## Resultados
+
+| Métrica | Valor |
+| ------- | ----- |
+| Total de requisições enviadas | **1.028.000** |
+| Throughput (req/s) | **25.000** |
+| Tempo total de processamento | **23 minutos** |
+| Perda de dados | **0,09%** |
+
+> O tempo de processamento de 23 minutos foi contado em relação ao **BigQuery Writer**, que modela os dados para inserção no Data Warehouse. Isso inclui todo o caminho da requisição até a escrita final no BigQuery.
+
+---
+
+## Análise dos Resultados
+
+### Throughput
+
+O sistema sustentou **25 mil requisições por segundo** de forma estável durante toda a execução. Comparando com os testes da Sprint 3, onde o `csv-kafka-producer` isoladamente atingiu ~544 mil msg/s em hardware local (Intel i5 13ª Gen), o throughput de 25k req/s no cluster reflete o gargalo natural do pipeline completo — incluindo Kafka, consumidores e escrita no BigQuery.
+
+### Integridade dos dados
+
+A taxa de perda de **0,09%** (aproximadamente 925 requisições de 1.028.000) é considerada excelente para um sistema distribuído sob carga extrema. Isso significa que **99,91% dos dados foram processados e persistidos com sucesso** no Data Warehouse.
+
+### Utilização de recursos
+
+O cluster operou com **66% de utilização de CPU** (4/6 núcleos) e **83% de utilização de RAM** (15/18 GB), indicando que:
+
+- O sistema está bem dimensionado para essa carga
+- Ainda existe margem de ~33% de CPU disponível para picos adicionais
+- A memória é o recurso mais próximo do limite, sugerindo que escalar RAM seria a prioridade em caso de aumento de carga
+
+---
+
+## Caminho da Requisição
+
+O teste exercitou o pipeline completo de ingestão:
+
+```text
+Requisições (1.028.000)
+       │
+       ▼
+csv-kafka-producer (Rust) × N réplicas ──► 25.000 req/s
+       │
+       ▼
+  Kafka Topic: csv-topic (100 partições)
+       │
+       ├──► bigquery-writer × 20 ──► BigQuery (Data Warehouse)
+       └──► bucket-consumer × 20 ──► Cloud Storage
+       
+Tempo total: 23 min (medido no BigQuery Writer)
+Perda: 0,09%
+```
+
+---
+
+## Comparação com Sprint 3
+
+| Métrica | Sprint 3 (local) | Sprint 4 (cluster) |
+| ------- | ----------------- | ------------------- |
+| Ambiente | PC local (i5 13ª Gen) | GKE — Google Cloud (3 nodes, 6 CPU, 18 GB RAM) |
+| Escopo | `csv-kafka-producer` isolado | Pipeline completo (producer → Kafka → BigQuery) |
+| Throughput máximo | ~544.000 msg/s | 25.000 req/s |
+| Total de mensagens | 2.723.000 (5s burst) | 1.028.000 (23 min sustentado) |
+| Perda de dados | Não medida | 0,09% |
+
+A diferença de throughput é esperada: na Sprint 3 apenas o producer foi testado isoladamente, enquanto na Sprint 4 o teste mediu o pipeline completo end-to-end, incluindo a escrita no BigQuery.
+
+---
+
+## Conclusão
+
+O teste de carga da Sprint 4 validou que o sistema, executado diretamente no **Google Cloud (GKE)** com escalamento horizontal dos producers e consumidores, é capaz de processar **mais de 1 milhão de requisições** com throughput sustentado de **25 mil req/s** e perda mínima de **0,09%** em um cluster de 3 nodes. O pipeline de ingestão completo — do `csv-kafka-producer` até o BigQuery Writer — demonstrou estabilidade e confiabilidade sob carga elevada.
+
+---
+
+## Ver também
+
+- [CSV Kafka Producer — Sprint 3](/docs/sprint-3/csv-kafka-producer) — testes de throughput do producer isolado
+- [Observabilidade](/docs/sprint-4/observabilidade) — monitoramento e métricas do cluster
+- [Deploy](/docs/sprint-4/deploy) — estratégia de deploy no Kubernetes
+- [Kubernetes — Probes and Security](/docs/sprint-3/kubernetes/probes-and-security) — health checks dos serviços
