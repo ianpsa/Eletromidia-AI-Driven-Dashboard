@@ -1,0 +1,73 @@
+---
+title: Deploy do Frontend
+description: Deploy do frontend via Firebase Hosting
+---
+
+## Visão geral
+
+O frontend é uma **SPA em React** localizada em `src/frontend`, construída com Vite e publicada no **Firebase Hosting**. O build gera arquivos estáticos em `src/frontend/dist`, servidos via CDN com HTTPS automático.
+
+### Acesso público
+
+O frontend em produção pode ser acessado em:
+
+- https://midia-in-da-house.web.app/grafana
+
+### Objetivos do deploy
+
+- Servir a SPA com baixa latência via CDN do Firebase.
+- Garantir HTTPS em produção.
+- Manter compatibilidade com o backend atual (HTTP) sem mixed content.
+
+### Fluxo de publicação
+
+O fluxo é simples: o Vite gera o `dist/`, o Firebase Hosting publica os arquivos estáticos com CDN e HTTPS, e as rotas `/api/**` são encaminhadas para o Cloud Run, que faz o repasse ao backend HTTP.
+
+## Deploy como Single Page Application (SPA)
+
+Como a navegação é client-side, todas as rotas precisam retornar o mesmo HTML base. O rewrite para `index.html` evita 404 ao recarregar páginas internas.
+
+Isso é essencial para URLs diretas como `/grafana`, que não existem no servidor — elas são resolvidas pelo React após o carregamento do `index.html`.
+
+## Domínio e TLS automático
+
+O Firebase Hosting entrega automaticamente:
+
+- **Domínio gerenciado**: `midia-da-house.web.app`
+- **TLS automático**: certificados HTTPS provisionados e renovados sem ação manual
+
+Resultado: o frontend fica sempre em HTTPS.
+
+## Problema: backend sem TLS
+
+Com o frontend em HTTPS, o navegador bloqueia chamadas HTTP (mixed content). O backend atual expõe somente HTTP, então precisamos de uma ponte com TLS válido.
+
+## Solução: Proxy no Cloud Run
+
+Criamos o serviço **`firebase-proxy`** no Cloud Run. Ele recebe as requisições HTTPS e encaminha para o backend HTTP.
+
+Na prática, o navegador consome os arquivos estáticos no Firebase Hosting e, quando chama `/api/**`, a requisição vai primeiro para o Cloud Run (TLS) e só depois para o backend HTTP.
+
+### Implementação do proxy
+
+O proxy usa Express + `http-proxy-middleware`:
+
+- Código: `src/firebase-proxy/index.js`
+- Porta padrão: `8080`
+- Backend atual: `http://34.39.196.243`
+- Repassa `Authorization` quando existe
+
+Isso elimina mixed content sem exigir certificado no backend.
+
+## Build e deploy (resumo)
+
+1. **Build do frontend**
+   - `src/frontend/dist` é o artefato final
+2. **Deploy do Firebase Hosting**
+   - usa o `firebase.json` na raiz
+3. **Cloud Run**
+   - serviço `firebase-proxy` em `us-central1`
+
+## Conclusão
+
+Com essa estratégia, o frontend ganha **CDN global, HTTPS automático e suporte a SPA**, sem exigir mudanças imediatas no backend. O proxy em Cloud Run resolve o problema de mixed content e mantém a arquitetura segura e simples até que o backend tenha TLS nativo.

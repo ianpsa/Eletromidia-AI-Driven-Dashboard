@@ -1,3 +1,6 @@
 {
-  "title": "Sprint 5"
+  "title": "Sprint 5",
+  "pages": [
+    "deploy-frontend"
+  ]
 }
