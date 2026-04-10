@@ -147,3 +147,151 @@ class TestBuildSql:
         assert " AND " in sql
         assert "ST_DISTANCE" in sql
         assert "LOWER(s.cidade)" in sql
+
+    def test_gender_none_uses_uniques(self):
+        sql, _ = _call_build_sql(gender=None)
+        assert "SUM(s.uniques)" in sql
+        assert "s.feminine_count" not in sql
+        assert "s.masculine_count" not in sql
+
+    def test_invalid_classes_fallback_to_uniques(self):
+        sql, _ = _call_build_sql(classes=["X", "Y"])
+        # No valid class columns → fallback to SUM(s.uniques)
+        assert "class_" not in sql
+
+    def test_empty_classes_uses_uniques(self):
+        sql, _ = _call_build_sql(classes=[])
+        assert "class_" not in sql
+
+    def test_age_min_only_none_uses_uniques(self):
+        # Only age_max set, age_min is None → no age filter applied
+        sql, _ = _call_build_sql(age_min=None, age_max=30)
+        # Both must be non-None to apply age filter
+        assert "age_" not in sql
+
+    def test_age_max_only_none_uses_uniques(self):
+        sql, _ = _call_build_sql(age_min=25, age_max=None)
+        assert "age_" not in sql
+
+    def test_result_limit_param(self):
+        _, params = _call_build_sql(limit=25)
+        limit_param = next(p for p in params if p.name == "result_limit")
+        assert limit_param.value == 25
+
+    def test_geo_adds_coordinate_validity_checks(self):
+        sql, _ = _call_build_sql(latitude=-23.5, longitude=-46.6, radius_km=1.0)
+        assert "s.latitude IS NOT NULL" in sql
+        assert "BETWEEN -90 AND 90" in sql
+        assert "BETWEEN -180 AND 180" in sql
+
+    def test_dataset_ref_used_in_from(self):
+        sql, _ = _call_build_sql()
+        assert f"`{_DS}.vw_geodata_enriched`" in sql
+
+    def test_all_demographic_filters_combined(self):
+        sql, params = _call_build_sql(
+            gender="female",
+            age_min=25,
+            age_max=35,
+            classes=["A", "B1"],
+        )
+        assert "s.feminine_count" in sql
+        assert "age_20_29_count" in sql
+        assert "age_30_39_count" in sql
+        assert "class_a_count" in sql
+        assert "class_b1_count" in sql
+
+
+# ── analyze_campaign (tool function) ─────────────────────────────────
+
+
+def _make_row(**kwargs):
+    defaults = {
+        "location_id": "loc1",
+        "endereco_ref": "Av. Paulista, 1000 — São Paulo",
+        "cidade": "São Paulo",
+        "latitude": -23.5505,
+        "longitude": -46.6333,
+        "total_flow": 5000,
+        "affinity": 85.5,
+        "target_audience": 3000,
+    }
+    defaults.update(kwargs)
+    return defaults
+
+
+class TestAnalyzeCampaign:
+    from core.tools.campaign import analyze_campaign
+
+    def test_returns_ranked_results(self):
+        from core.tools.campaign import analyze_campaign
+
+        rows = [_make_row(), _make_row(location_id="loc2", affinity=70.0)]
+        with (
+            patch("core.tools.campaign.get_dataset_ref", return_value=_DS),
+            patch("core.tools.campaign.run_query_with_params", return_value=rows),
+        ):
+            result = analyze_campaign.invoke({"gender": "female", "city": "São Paulo"})
+        assert "2 pontos" in result
+        assert "Ranking:" in result
+        assert "85.5%" in result
+
+    def test_no_results_returns_message(self):
+        from core.tools.campaign import analyze_campaign
+
+        with (
+            patch("core.tools.campaign.get_dataset_ref", return_value=_DS),
+            patch("core.tools.campaign.run_query_with_params", return_value=[]),
+        ):
+            result = analyze_campaign.invoke({})
+        assert "Nenhum ponto" in result
+
+    def test_exception_returns_error_message(self):
+        from core.tools.campaign import analyze_campaign
+
+        with (
+            patch("core.tools.campaign.get_dataset_ref", return_value=_DS),
+            patch(
+                "core.tools.campaign.run_query_with_params",
+                side_effect=Exception("connection error"),
+            ),
+        ):
+            result = analyze_campaign.invoke({"city": "São Paulo"})
+        assert "Erro" in result
+
+    def test_filters_description_included(self):
+        from core.tools.campaign import analyze_campaign
+
+        rows = [_make_row()]
+        with (
+            patch("core.tools.campaign.get_dataset_ref", return_value=_DS),
+            patch("core.tools.campaign.run_query_with_params", return_value=rows),
+        ):
+            result = analyze_campaign.invoke(
+                {"gender": "female", "age_min": 25, "age_max": 35, "city": "São Paulo"}
+            )
+        assert "gênero=female" in result
+        assert "idade=25-35" in result
+        assert "cidade=São Paulo" in result
+
+    def test_coords_in_output(self):
+        from core.tools.campaign import analyze_campaign
+
+        rows = [_make_row(latitude=-23.5505, longitude=-46.6333)]
+        with (
+            patch("core.tools.campaign.get_dataset_ref", return_value=_DS),
+            patch("core.tools.campaign.run_query_with_params", return_value=rows),
+        ):
+            result = analyze_campaign.invoke({})
+        assert "coords:" in result
+
+    def test_no_coords_when_none(self):
+        from core.tools.campaign import analyze_campaign
+
+        rows = [_make_row(latitude=None, longitude=None)]
+        with (
+            patch("core.tools.campaign.get_dataset_ref", return_value=_DS),
+            patch("core.tools.campaign.run_query_with_params", return_value=rows),
+        ):
+            result = analyze_campaign.invoke({})
+        assert "coords:" not in result
