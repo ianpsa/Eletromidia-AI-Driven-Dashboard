@@ -221,8 +221,6 @@ def _make_row(**kwargs):
 
 
 class TestAnalyzeCampaign:
-    from core.tools.campaign import analyze_campaign
-
     def test_returns_ranked_results(self):
         from core.tools.campaign import analyze_campaign
 
