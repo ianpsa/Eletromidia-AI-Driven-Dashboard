@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import core.tools.geocoding as geo_module
 import pytest
+
+import core.tools.geocoding as geo_module
 from core.tools.geocoding import (
     GoogleProvider,
     MapboxProvider,
