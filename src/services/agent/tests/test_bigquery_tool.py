@@ -33,13 +33,15 @@ class TestValidateSql:
         assert _validate_sql("TRUNCATE TABLE t") == _SELECT_ONLY_ERROR
 
     def test_merge_rejected(self):
-        assert _validate_sql("MERGE t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.x = s.x") == _SELECT_ONLY_ERROR
+        sql = "MERGE t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.x = s.x"
+        assert _validate_sql(sql) == _SELECT_ONLY_ERROR
 
     def test_grant_rejected(self):
         assert _validate_sql("GRANT SELECT ON t TO user") == _SELECT_ONLY_ERROR
 
     def test_create_rejected(self):
-        assert _validate_sql("CREATE TABLE new_table AS SELECT * FROM t") == _SELECT_ONLY_ERROR
+        sql = "CREATE TABLE new_table AS SELECT * FROM t"
+        assert _validate_sql(sql) == _SELECT_ONLY_ERROR
 
     def test_semicolon_rejected(self):
         assert _validate_sql("SELECT 1; DROP TABLE users") == _SELECT_ONLY_ERROR
@@ -117,7 +119,9 @@ class TestQueryBigquery:
             patch("core.tools.bigquery.get_dataset_ref", return_value=_DS),
             patch("core.tools.bigquery.run_query", return_value=rows) as mock_run,
         ):
-            query_bigquery.invoke({"sql_query": "SELECT * FROM enriched_screens LIMIT 10"})
+            query_bigquery.invoke(
+                {"sql_query": "SELECT * FROM enriched_screens LIMIT 10"}
+            )
         called_sql = mock_run.call_args[0][0]
         assert called_sql.count("LIMIT") == 1
 
@@ -132,7 +136,10 @@ class TestQueryBigquery:
     def test_exception_returns_error_message(self):
         with (
             patch("core.tools.bigquery.get_dataset_ref", return_value=_DS),
-            patch("core.tools.bigquery.run_query", side_effect=Exception("connection error")),
+            patch(
+                "core.tools.bigquery.run_query",
+                side_effect=Exception("connection error"),
+            ),
         ):
             result = query_bigquery.invoke({"sql_query": "SELECT * FROM geodata"})
         assert "Erro" in result
@@ -146,7 +153,9 @@ class TestQueryBigquery:
             patch("core.tools.bigquery.get_dataset_ref", return_value=_DS),
             patch("core.tools.bigquery.run_query", return_value=rows),
         ):
-            result = query_bigquery.invoke({"sql_query": "SELECT * FROM enriched_screens"})
+            result = query_bigquery.invoke(
+                {"sql_query": "SELECT * FROM enriched_screens"}
+            )
         assert "2 linhas" in result
         assert "cidade" in result
         assert "São Paulo" in result

@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 import core.tools.geocoding as geo_module
+import pytest
 from core.tools.geocoding import (
     GoogleProvider,
     MapboxProvider,
@@ -41,14 +40,18 @@ class TestNominatimProvider:
         assert result is None
 
     def test_query_appends_disambiguation_suffix(self):
-        with patch("core.tools.geocoding.httpx.get", return_value=_mock_http([])) as mock_get:
+        with patch(
+            "core.tools.geocoding.httpx.get", return_value=_mock_http([])
+        ) as mock_get:
             NominatimProvider().geocode("Faria Lima")
         params = mock_get.call_args[1]["params"]
         assert "município de São Paulo, Brasil" in params["q"]
         assert "Faria Lima" in params["q"]
 
     def test_uses_countrycodes_br(self):
-        with patch("core.tools.geocoding.httpx.get", return_value=_mock_http([])) as mock_get:
+        with patch(
+            "core.tools.geocoding.httpx.get", return_value=_mock_http([])
+        ) as mock_get:
             NominatimProvider().geocode("Rua Augusta")
         params = mock_get.call_args[1]["params"]
         assert params["countrycodes"] == "br"

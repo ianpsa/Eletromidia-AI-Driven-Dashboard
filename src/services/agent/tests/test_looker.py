@@ -5,8 +5,6 @@ from __future__ import annotations
 import json
 from urllib.parse import unquote
 
-import pytest
-
 from core.tools.looker import (
     _DEFAULT_PAGE_ID,
     _DEFAULT_REPORT_ID,
@@ -244,6 +242,6 @@ class TestBuildUrl:
         assert "%2C" in data["df50"]
         # The literal comma must NOT appear (it would confuse the separator)
         value = data["df50"]
-        # Remove known SEP occurrences, then check no raw comma remains in the value segment
+        # Remove known SEP occurrences; check no raw comma in the value segment
         after_in = value.split("IN" + _SEP, 1)[-1]
         assert "," not in after_in
