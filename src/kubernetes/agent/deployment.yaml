@@ -74,10 +74,10 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "100m"
+              cpu: "10m"
             limits:
               memory: "512Mi"
-              cpu: "150m"
+              cpu: "20m"
       volumes:
         - name: agent-sa-key
           secret:

@@ -271,7 +271,7 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 				return
 			}
 
-			log.Printf("flush: %s appended %d rows", a.ts.name, len(a.rows))
+			// log.Printf("flush: %s appended %d rows", a.ts.name, len(a.rows))
 			m.AppendLatency.WithLabelValues(topic, a.ts.name).Observe(time.Since(tStart).Seconds())
 			m.AppendRowsTotal.WithLabelValues(topic, a.ts.name).Add(float64(len(a.rows)))
 		}()
@@ -279,7 +279,7 @@ func (w *Writer) Flush(ctx context.Context, m *metrics.FlushMetrics) error {
 
 	wg.Wait()
 
-	log.Printf("flush complete: %d/%d messages processed, 5 tables", parsed, len(batch))
+	// log.Printf("flush complete: %d/%d messages processed, 5 tables", parsed, len(batch))
 
 	duration := time.Since(start).Seconds()
 	m.FlushDuration.WithLabelValues(topic, "success").Observe(duration)

@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-kafka-loadtest
+  namespace: kafka                      # mesmo namespace do cluster Kafka
+  labels:
+    app: k6-kafka-loadtest
+spec:
+  # Não faz retry automático — falha explícita é preferível a loops infinitos
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 600          # limpa o Job 10 min após conclusão
+
+  template:
+    metadata:
+      labels:
+        app: k6-kafka-loadtest
+    spec:
+      restartPolicy: Never
+
+      # ── Garante execução EXCLUSIVA no nó de loadtest ───────────────────────
+      nodeSelector:
+        dedicated: loadtest           # label aplicado pelo nodepool.sh
+
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "loadtest"
+          effect: "NoSchedule"        # taint aplicado pelo nodepool.sh
+
+      containers:
+        - name: k6
+          image: southamerica-east1-docker.pkg.dev/midia-in-da-house/gke-cr/load-test:latest   # ← altere para sua imagem
+          imagePullPolicy: Always
+
+          args: ["run", "/scripts/loadtest.js", "--out", "json=/tmp/results.json"]
+
+          # ── Recursos: ajustado para ~33k msg/s ──
+          resources:
+            requests:
+              cpu: "1"
+              memory: "512Mi"
+            limits:
+              cpu: "4"
+              memory: "2Gi"
+
+          env:
+            - name: K6_KAFKA_BROKERS
+              value: "my-cluster-kafka-bootstrap.kafka.svc:9092"
+
+          # ── Paralelismo Go alinhado ao limit de CPU ───────────────
+            - name: GOMAXPROCS
+              value: "2"
+
+          volumeMounts:
+            - name: results
+              mountPath: /tmp
+
+      volumes:
+        - name: results
+          emptyDir: {}

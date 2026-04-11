@@ -3,7 +3,7 @@
 ## Grupo - Midia in da house
 
 <p align="center">
-  <img src="" alt="Logo Midia in da house" width="600">
+  <img src="assets/G05%20-%20Sprint%205.png" alt="Logo Midia in da house" width="600">
 </p>
 
 ## Integrantes:
@@ -13,37 +13,37 @@
     <tr>
       <td align="center">
         <a href="">
-          <img src="" style="border-radius: 10%; width: 150px;" alt="Davi Abreu da Silveira"/><br>
+          <img src="assets/davi.jpg" style="border-radius: 10%; width: 150px;" alt="Davi Abreu da Silveira"/><br>
           <sub><b>Davi Abreu da Silveira</b></sub>
         </a>
       </td>
       <td align="center">
         <a href="https://www.linkedin.com/in/ian-pereira-simao/">
-          <img src="" style="border-radius: 10%; width: 150px;" alt="Ian Pereira Simão"/><br>
+          <img src="assets/ian.jpg" style="border-radius: 10%; width: 150px;" alt="Ian Pereira Simão"/><br>
           <sub><b>Ian Pereira Simão</b></sub>
         </a>
       </td>
       <td align="center">
         <a href="https://www.linkedin.com/in/julia-lika-ishikawa/">
-          <img src="" style="border-radius: 10%; width: 150px;" alt="Júlia Lika Ishikawa"/><br>
+          <img src="assets/lika.png" style="border-radius: 10%; width: 150px;" alt="Júlia Lika Ishikawa"/><br>
           <sub><b>Júlia Lika Ishikawa</b></sub>
         </a>
       </td>
       <td align="center">
         <a href="https://www.linkedin.com/in/lucas-periquito-costa/">
-          <img src="" style="border-radius: 10%; width: 150px;" alt="Lucas Periquito Costa"/><br>
+          <img src="assets/cuca.jpg" style="border-radius: 10%; width: 150px;" alt="Lucas Periquito Costa"/><br>
           <sub><b>Lucas Periquito Costa</b></sub>
         </a>
       </td>
       <td align="center">
         <a href="https://www.linkedin.com/in/murilo-couto-oliveira/">
-          <img src="" style="border-radius: 10%; width: 150px;" alt="Murilo Couto Oliveira"/><br>
+          <img src="assets/murilo.jpg" style="border-radius: 10%; width: 150px;" alt="Murilo Couto Oliveira"/><br>
           <sub><b>Murilo Couto Oliveira</b></sub>
         </a>
       </td>
       <td align="center">
-        <a href="">
-          <img src="" style="border-radius: 10%; width: 150px;" alt="Yasmim Marly Passos"/><br>
+        <a href="https://www.linkedin.com/in/yasmim-passos">
+          <img src="assets/yas.png" style="border-radius: 10%; width: 150px;" alt="Yasmim Marly Passos"/><br>
           <sub><b>Yasmim Marly Passos</b></sub>
         </a>
       </td>
@@ -67,17 +67,40 @@
 
 ## Descrição
 
-Descrição do projeto
+**Midia in da house** é uma plataforma de planejamento de campanhas de mídia OOH (*Out-of-Home*) assistida por IA, desenvolvida em parceria com a **Eletromidia**. A solução permite que planejadores de mídia identifiquem os melhores pontos de exibição a partir de dados reais de fluxo de pessoas e inventário de telas.
+
+A arquitetura é orientada a dados e composta por:
+
+- **Pipeline de ingestão**: CSVs são processados por um produtor em Rust, publicados em **Kafka** e consumidos para carga no **BigQuery**.
+- **Visualização geoespacial**: frontend em React + Deck.GL + MapLibre que renderiza camadas de *hexbins* sobre o mapa para análise de densidade e cobertura.
+- **Agente conversacional**: um *AI agent* baseado em LangGraph que responde perguntas sobre campanhas, cruzando dados do BigQuery com contexto do usuário.
+- **Dashboard analítico**: integração com Looker Studio para relatórios consolidados.
 
 ## Estrutura de Pastas
 
-Estrutura de pastas do projeto
+```
+g05/
+├── data/                   # Datasets CSV (claro, eletromidia, fluxo_claro)
+├── docs/                   # Documentação (Next.js + Fumadocs)
+├── releases/               # Notas de cada sprint
+└── src/
+    ├── docker-compose.yml  # Orquestração local (Kafka, agent, auth, frontend)
+    ├── frontend/           # React + Vite + Deck.GL + MapLibre
+    ├── iac/                # Terraform modules (GCP)
+    ├── kubernetes/         # Manifestos Kubernetes por serviço
+    └── services/
+        ├── agent/              # AI agent (Python, FastAPI, LangGraph)
+        ├── auth-middleware/    # Autenticação (Rust, Axum)
+        ├── bff-storage/        # BFF para GCS/BigQuery (Go)
+        ├── bigquery-writer/    # Consumer Kafka → BigQuery (Go)
+        ├── bucket-consumer/    # Eventos GCS → Kafka (Go)
+        ├── populate-bigquery/  # Carga inicial do BigQuery (Go)
+        └── rust-producer/      # Ingestão de CSV para Kafka (Rust, Actix)
+```
 
 ## Execução do Projeto
 
 ### Documentação
-
-A documentação completa do Midia in da house pode ser acessada através do link: [Documentação Midia in da house]()
 
 Para executar a documentação localmente:
 
@@ -90,7 +113,27 @@ npm run dev
 
 ### Execução Completa
 
-Execução aqui
+A stack completa (Kafka, frontend, agente de IA e serviços de suporte) é orquestrada via Docker Compose. Pré-requisitos: `git`, `docker` e `docker compose`.
+
+Antes de subir o ambiente, você vai precisar de:
+
+- **API key de um provedor de LLM** (ex.: `GROQ_API_KEY`) para o agente e o frontend.
+- **Service Account do BigQuery** (JSON) usada pelo agente e pelo `populate-bigquery` para consultar/popular as tabelas.
+- **Service Account do Google Cloud Storage** (JSON, ex.: `cs-api-key.json`) usada pelo `bucket-consumer` e pelo `populate-bigquery`.
+- **Projeto Firebase** (ID do projeto) para o `auth-middleware`.
+- Arquivos `.env` preenchidos em cada serviço — use os `.env.example` como base (`services/agent`, `services/auth-middleware`, `services/bucket-consumer`, `services/populate-bigquery`, `services/rust-producer/services/csv-kafka-producer`, `frontend`).
+
+Consulte a [documentação oficial do projeto](#documentação) para mais informações sobre como obter cada credencial e quais variáveis são obrigatórias por serviço.
+
+Com as credenciais no lugar, suba a stack:
+
+```bash
+git clone https://git.inteli.edu.br/graduacao/2026-1a/t12/g05
+cd g05/src
+docker compose up --build
+```
+
+Após a inicialização, o frontend fica disponível em `http://localhost:5173` e o agente em `http://localhost:8001`.
 
 ## Histórico de Lançamentos
 
@@ -98,11 +141,26 @@ Execução aqui
 
 ### 0.4.0 - Sprint 4
 
+- Pipeline CI/CD e observabilidade com Prometheus em todos os serviços.
+- Visualização por *hexbins* com sidebar de chat integrada ao frontend.
+- Integração BigQuery ↔ Looker Studio, fluxo de autenticação completo e cobertura de testes.
+
 ### 0.3.0 - Sprint 3
+
+- Frontend React com telas de Login, Dashboard, Cloud e Agent.
+- AI agent baseado em LangGraph para análise conversacional das campanhas.
+- *Hardening* dos manifestos Kubernetes, CSV producer com *health* e *metrics* e provisionamento GCP via Terraform.
 
 ### 0.2.0 - Sprint 2
 
+- Pipeline de ingestão CSV → Kafka → BigQuery em funcionamento ponta a ponta.
+- Primeiros manifestos Kubernetes dos serviços de dados.
+- Dashboard inicial em Looker Studio sobre a base consolidada.
+
 ### 0.1.0 - Sprint 1
+
+- Fundação do projeto e definição da arquitetura de microserviços.
+- Documentação inicial publicada com Next.js + Fumadocs.
 
 ## Licença
 
