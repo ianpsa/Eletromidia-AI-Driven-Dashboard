@@ -1,0 +1,245 @@
+---
+title: Testes Unitários
+description: Documentação dos testes unitários adicionados na Sprint 5 para o serviço agent, cobrindo bigquery, campaign, geocoding, looker e summarization
+---
+
+## Visão geral
+
+Na Sprint 5, foram adicionados e expandidos testes unitários para o serviço **agent** (Python), totalizando aproximadamente **95 novos casos de teste** distribuídos em 5 arquivos. O objetivo é ampliar a cobertura das ferramentas do agente, incluindo novos módulos antes não testados (geocoding e looker) e aprofundar os testes existentes com casos de borda e fluxos de erro.
+
+## Resumo geral
+
+| Arquivo | Novos casos |
+|---|---|
+| `tests/test_bigquery_tool.py` | 17 |
+| `tests/test_campaign.py` | 15 |
+| `tests/test_geocoding.py` | 18 (arquivo novo) |
+| `tests/test_looker.py` | 35 (arquivo novo) |
+| `tests/test_summarization.py` | 10 |
+
+---
+
+## test_bigquery_tool.py
+
+Expande a cobertura da ferramenta BigQuery, adicionando novos casos de rejeição SQL e uma nova classe que testa a função pública `query_bigquery`.
+
+### TestValidateSql - 9 novos casos
+
+Novos cenários de rejeição de comandos SQL não-SELECT:
+
+| Cenário | Resultado esperado |
+|---|---|
+| `UPDATE` | Rejeitado |
+| `DELETE` | Rejeitado |
+| `ALTER TABLE` | Rejeitado |
+| `TRUNCATE` | Rejeitado |
+| `MERGE` | Rejeitado |
+| `GRANT` | Rejeitado |
+| `CREATE TABLE AS SELECT` | Rejeitado |
+| SELECT com subquery | Permitido |
+| SELECT com JOIN | Permitido |
+
+### TestQueryBigquery - 8 casos
+
+Testa a função pública `query_bigquery` com mocks para `get_dataset_ref` e `run_query`.
+
+| Cenário | Resultado esperado |
+|---|---|
+| SQL perigoso (DROP) | Retorna erro sem executar a query |
+| Nomes de tabela não qualificados | Tabelas são qualificadas com o dataset ref |
+| Query sem LIMIT | `LIMIT 100` é adicionado automaticamente |
+| Query com LIMIT já presente | LIMIT não é duplicado |
+| Resultado vazio | Retorna mensagem "Nenhum resultado encontrado." |
+| Exceção no `run_query` | Retorna mensagem de erro |
+| Resultado com linhas | Formata como tabela com contagem de linhas |
+| SQL com ponto e vírgula final | Ponto e vírgula é removido antes da execução |
+
+---
+
+## test_campaign.py
+
+Expande a cobertura dos construtores de SQL e adiciona a classe `TestAnalyzeCampaign` para testar a ferramenta de análise de pontos.
+
+### TestBuildSql - 9 novos casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| `gender=None` | Usa `SUM(s.uniques)` sem coluna de gênero |
+| Classes inválidas | Fallback para `SUM(s.uniques)` |
+| Lista de classes vazia | Fallback para `SUM(s.uniques)` |
+| `age_min=None` com `age_max` definido | Filtro de idade não é aplicado |
+| `age_max=None` com `age_min` definido | Filtro de idade não é aplicado |
+| Parâmetro `limit` | `result_limit` nos parâmetros da query |
+| Filtro geográfico | SQL inclui verificações de validade de coordenadas |
+| Dataset ref no FROM | `FROM` usa o dataset ref qualificado |
+| Todos os filtros demográficos combinados | SQL inclui gênero, idade e classe corretamente |
+
+### TestAnalyzeCampaign - 6 casos
+
+Testa a ferramenta `analyze_campaign` com mocks para `get_dataset_ref` e `run_query_with_params`.
+
+| Cenário | Resultado esperado |
+|---|---|
+| Múltiplos pontos | Retorna ranking com contagem e afinidade |
+| Nenhum resultado | Retorna mensagem "Nenhum ponto" |
+| Exceção na query | Retorna mensagem de erro |
+| Filtros aplicados | Descrição de filtros presente na saída |
+| Coordenadas presentes | `coords:` incluído na saída |
+| Coordenadas nulas | `coords:` omitido da saída |
+
+---
+
+## test_geocoding.py (arquivo novo)
+
+Testa a seleção de provedores de geocodificação e as respostas HTTP de cada provedor.
+
+### TestNominatimProvider - 5 casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Resposta com coordenadas | Retorna tupla `(lat, lon)` como float |
+| Resposta vazia | Retorna `None` |
+| Query adiciona sufixo de desambiguação | Parâmetro `q` contém "município de São Paulo, Brasil" |
+| Country code correto | `countrycodes=br` |
+| Tipos dos valores retornados | Tupla de floats |
+
+### TestMapboxProvider - 3 casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Resposta com features | Retorna `(lat, lon)` (inverte `[lon, lat]` do Mapbox) |
+| Features vazio | Retorna `None` |
+| Tipos dos valores retornados | Tupla de floats |
+
+### TestGoogleProvider - 3 casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Resposta com results | Retorna `(lat, lng)` |
+| Results vazio | Retorna `None` |
+| Tipos dos valores retornados | Tupla de floats |
+
+### TestGetProvider - 7 casos
+
+Testa a seleção e cache do provedor via variável de ambiente `GEOCODING_PROVIDER`.
+
+| Cenário | Resultado esperado |
+|---|---|
+| Sem variável de ambiente | Retorna `NominatimProvider` (padrão) |
+| `nominatim` explícito | Retorna `NominatimProvider` |
+| `mapbox` | Retorna `MapboxProvider` |
+| `google` | Retorna `GoogleProvider` |
+| Provedor desconhecido | Lança `ValueError` |
+| Segunda chamada sem mudança de env | Retorna a mesma instância (cache) |
+| Nome do provedor em caixa alta | Case insensitive |
+
+---
+
+## test_looker.py (arquivo novo)
+
+Testa as funções puras do módulo Looker responsáveis pela construção de URLs filtradas para o Looker Studio.
+
+### TestDecodeUnicodeEscapes - 6 casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Escape `\u0041` | `"A"` |
+| Char acentuado `caf\u00e9` | `"café"` |
+| String sem escapes | Inalterada |
+| Múltiplos escapes | Todos decodificados |
+| String vazia | `""` |
+| Hex maiúsculo `\u00E9` | `"é"` |
+
+### TestEncodeValue - 5 casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Coordenada com vírgula | Vírgula substituída por `%2C` |
+| String sem vírgula | Inalterada |
+| String vazia | `""` |
+| Múltiplas vírgulas | Todas substituídas |
+| Apenas vírgula | `"%2C"` |
+
+### TestFilterEq - 4 casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Estrutura do filtro | Contém `include`, `0`, `EQ` separados por `_SEP` |
+| Valor incluído | Valor presente na string |
+| Valor com vírgula | Vírgula codificada como `%2C` |
+| Contém separador | `_SEP` presente na string |
+
+### TestFilterIn - 5 casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Estrutura do filtro | Contém `include`, `0`, `IN` |
+| Um valor | Valor presente na string |
+| Múltiplos valores | Ambos presentes e separados por `_SEP` |
+| Coordenadas com vírgula | Vírgulas codificadas como `%2C` |
+| Lista vazia | Prefixo `IN` ainda presente |
+
+### TestGetConfig - 4 casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Sem variáveis de ambiente | Retorna valores padrão |
+| `LOOKER_REPORT_ID` customizado | Report ID sobrescrito |
+| `LOOKER_PAGE_ID` customizado | Page ID sobrescrito |
+| Ambos customizados | Ambos sobrescritos |
+
+### TestBuildUrl - 11 casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Sem filtros | URL base sem `params=` |
+| URL base contém report e page ID padrão | IDs presentes na URL |
+| Filtro por cidade | Usa `EQ` com a chave padrão `df49` |
+| Chave de cidade customizada (`LOOKER_KEY_CIDADE`) | Usa a chave configurada |
+| Filtro por pontos | Usa `IN` com a chave padrão `df50` |
+| Chave de pontos customizada (`LOOKER_KEY_PONTOS`) | Usa a chave configurada |
+| Filtro por ambiente | Usa `EQ` com a chave padrão `df48` |
+| Cidade e ambiente combinados | 2 filtros no params |
+| Todos os filtros combinados | 3 filtros no params |
+| Cidade com unicode escape | Escape decodificado antes de serializar |
+| Vírgula em coordenada de pontos | Vírgula codificada como `%2C` no valor do filtro |
+
+---
+
+## test_summarization.py
+
+Expande a cobertura de `_estimate_tokens`, `_get_context_window` e adiciona testes para a função `maybe_summarize`.
+
+### TestEstimateTokens - 4 novos casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Content como lista de strings | Tokens somados de todos os itens |
+| Múltiplas mensagens | Tokens somados de todas as mensagens |
+| Dict sem chave `text` | Ignorado (0 tokens) |
+| `SystemMessage` | Contado normalmente |
+
+### TestGetContextWindow - 3 novos casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Modelo Groq Llama 3.1 | 128.000 tokens |
+| Modelo Anthropic Sonnet | 200.000 tokens |
+| Modelo vazio | Fallback 128.000 tokens |
+
+### TestMaybeSummarize - 3 casos
+
+| Cenário | Resultado esperado |
+|---|---|
+| Mensagens abaixo do threshold (75% da janela) | Retorna `{"messages": []}` sem chamar o LLM |
+| Mensagens acima do threshold | LLM é invocado e resultado contém `RemoveMessage` e resumo |
+| Lista de mensagens vazia | Retorna `{"messages": []}` |
+
+---
+
+## Como executar
+
+```bash
+cd src/services/agent
+python -m pytest tests/ -v
+```

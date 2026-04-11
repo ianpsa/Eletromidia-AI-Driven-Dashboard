@@ -1,6 +1,7 @@
 {
   "title": "Sprint 5",
   "pages": [
-    "deploy-frontend"
+    "deploy-frontend",
+    "testes-unitarios"
   ]
 }
