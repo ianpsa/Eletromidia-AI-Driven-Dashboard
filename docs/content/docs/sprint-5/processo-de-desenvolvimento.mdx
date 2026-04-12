@@ -1,0 +1,156 @@
+---
+title: Processo de Desenvolvimento
+description: Valor entregue pelo projeto, aspectos técnicos considerados durante o desenvolvimento e evolução da solução ao longo das sprints
+---
+
+## Valor Entregue
+
+O projeto transforma dados brutos de fluxo de pessoas — arquivos CSV distribuídos pela Claro Geodata — em uma plataforma analítica acessível para equipes não técnicas da Eletromidia e para seus clientes anunciantes.
+
+Antes desta solução, extrair qualquer insight desses dados exigia conhecimento técnico em SQL ou Python. Apenas analistas de dados conseguiam responder perguntas do tipo "qual o perfil de público que passa pela Av. Paulista às 8h?" ou "como o fluxo feminino se distribui no raio de 1km do Parque do Povo?". Equipes de negócios, precificação e growth dependiam de solicitações ad hoc para o time técnico, criando gargalos e atrasando decisões comerciais.
+
+O sistema entregue resolve esse problema em três camadas:
+
+**Visualização self-service** — qualquer usuário autorizado consegue abrir o mapa hexbin, aplicar filtros demográficos e temporais, e identificar padrões de fluxo sem precisar escrever uma linha de código. O perfil gerencial (Carmen), uma das [personas](/docs/sprint-1/perfil-do-parceiro/personas) do projeto, consegue usar o sistema de forma autônoma.
+
+**Análise assistida por IA** — o agente conversacional elimina a barreira técnica completamente. O usuário faz a pergunta em português e recebe uma análise contextualizada com os dados reais do BigQuery. Isso reduz o ciclo de análise de dias (esperar o time técnico) para segundos.
+
+**Infraestrutura escalável** — o pipeline de ingestão e o cluster Kubernetes foram projetados para receber novas bases de dados em formato compatível, permitindo que a Eletromidia replique a análise em outras cidades ou com dados atualizados sem mudanças na plataforma.
+
+---
+
+## Evolução por Sprint
+
+### Sprint 1 — Planejamento e Arquitetura
+
+A Sprint 1 estabeleceu as bases do projeto: levantamento do problema com o parceiro, definição das [personas](/docs/sprint-1/perfil-do-parceiro/personas), mapeamento dos [requisitos funcionais e não funcionais](/docs/sprint-1/requisitos) e design da [arquitetura cloud-agnostic](/docs/sprint-1/arquitetura).
+
+A decisão mais importante desta fase foi adotar uma **arquitetura em camadas separadas** (ingestão, processamento, visualização), que permitiria desenvolver e evoluir cada componente de forma independente ao longo das sprints seguintes. O pipeline Kafka foi escolhido como backbone de ingestão por garantir desacoplamento e tolerância a falhas desde a fase 1.
+
+O [Value Proposition Canvas](/docs/sprint-1/perfil-do-parceiro/value-proposition-canvas) e a análise de [potencial de retorno](/docs/sprint-1/potencial-de-retorno) documentaram formalmente o valor de negócio esperado, alinhando expectativas com o parceiro antes do início do desenvolvimento.
+
+### Sprint 2 — Pipeline de Dados e Backend
+
+A Sprint 2 implementou o núcleo de processamento de dados: o produtor Kafka em **Rust**, o `bigquery-writer` e o `bucket-consumer` em **Go**, e a infraestrutura Kubernetes provisionada via **Terraform**.
+
+A escolha de Rust para o produtor foi motivada por performance e segurança de memória — o componente que recebe e valida os CSVs precisa ser robusto e eficiente para lidar com arquivos grandes. Go foi escolhido para os consumidores por sua concorrência nativa e biblioteca de clientes GCP de alta qualidade.
+
+A decisão de usar **Kubernetes desde o início** (em vez de Cloud Run ou App Engine) foi estratégica: garantia controle completo sobre escalonamento, networking e segurança, além de padronizar o ambiente de deploy para todos os serviços do monorepo.
+
+O [dashboard analítico no Looker Studio](/docs/sprint-2/dashboard-analitico) foi prototipadoe integrado ainda nesta fase, validando que os dados do BigQuery chegavam com esquema correto e latência aceitável.
+
+### Sprint 3 — Frontend, Chatbot e Segurança de Cluster
+
+A Sprint 3 foi a fase de maior entrega de interface e experiência do usuário. O **frontend React** com Vite foi construído sem dependência de bibliotecas de UI externas (CSS puro), reduzindo o bundle final e eliminando inconsistências visuais. O mapa hexbin foi implementado com dados reais do BigQuery consultados via `bff-storage`.
+
+O **agente de IA** teve sua primeira versão funcional nesta sprint, usando **LangGraph** como framework de orquestração e **FastAPI com SSE** (Server-Sent Events) para streaming das respostas diretamente na interface. A decisão de usar SSE em vez de WebSockets foi deliberada: SSE é unidirecional, mais simples de implementar e suficiente para o padrão de uso do chat (usuário pergunta, agente responde em fluxo contínuo).
+
+Na camada de infraestrutura, a Sprint 3 adicionou **health probes, RBAC e políticas de segurança** no Kubernetes, documentados em [Probes and Security](/docs/sprint-3/kubernetes/probes-and-security) e [RBAC](/docs/sprint-3/kubernetes/rbac). Isso tornou o cluster production-ready.
+
+### Sprint 4 — IA Avançada, Autenticação e Qualidade
+
+A Sprint 4 consolidou as camadas que faltavam para um produto de produção: autenticação real, CI/CD, observabilidade e testes.
+
+O **auth-middleware em Rust** integrou Firebase Auth com o mapeamento de roles via GCP IAM, centralizando a autenticação de todos os serviços em um único ponto de validação. A decisão de mapear roles de infraestrutura GCP (`roles/looker.developer`, `roles/looker.accessUser`) para roles de aplicação (`Admin`, `Editor`, `Viewer`) foi intencional: evitou criar um sistema de permissões paralelo e aproveitou o controle de acesso que a Eletromidia já tem no GCP.
+
+O **pipeline CI/CD no GitLab** foi estruturado em três estágios (test, build, deploy) com jobs específicos por serviço, ativados apenas quando arquivos do respectivo diretório mudam. Isso reduziu o tempo médio de pipeline ao evitar builds desnecessários em um monorepo com múltiplas linguagens (Go, Rust, Python, TypeScript).
+
+Os **testes unitários** cobriram os componentes de lógica de negócio de cinco serviços, com cobertura próxima de 100% nas funções testáveis (handlers, writers, mapeamentos). O critério de exclusão de código de integração externo (BigQuery, Kafka, Firebase) foi documentado explicitamente para evitar interpretações equivocadas das métricas de cobertura.
+
+### Sprint 5 — Consolidação e Prova de Conceito
+
+A Sprint 5 focou em produção e evidência. O frontend foi publicado no **Firebase Hosting** com CDN global e HTTPS automático. O problema de mixed content (frontend HTTPS chamando backend HTTP) foi resolvido com um proxy no **Cloud Run** que adiciona a camada TLS sem exigir mudanças no backend.
+
+Os testes com usuários finais validaram os seis requisitos funcionais da Fase 1, com os resultados documentados na [Prova de Conceito](/docs/sprint-5/prova-de-conceito).
+
+---
+
+## Decisões Técnicas Relevantes
+
+### Monorepo com múltiplas linguagens
+
+O projeto adotou uma estrutura de **monorepo** com serviços em Go, Rust, Python e TypeScript no mesmo repositório. Essa decisão simplificou o gerenciamento de dependências entre serviços, facilitou o CI/CD com regras por diretório e manteve o histórico de mudanças em um único lugar.
+
+A contrapartida é a complexidade do pipeline CI/CD, que precisa identificar qual serviço foi modificado para executar apenas os jobs relevantes. A solução adotada — regras `changes` no GitLab CI — resolveu isso de forma elegante.
+
+### BigQuery como camada analítica
+
+A escolha do **BigQuery** como banco de dados analítico (em vez de PostgreSQL ou ClickHouse) foi motivada pela integração nativa com o Looker Studio e pela capacidade de consultar terabytes de dados de fluxo sem necessidade de indexação ou particionamento manual. O BigQuery cobra por volume de dados processados por consulta, o que se adequa bem ao padrão de uso do sistema (consultas analíticas pontuais, não OLTP de alta frequência).
+
+### LangGraph para orquestração do agente
+
+O **LangGraph** foi escolhido para o agente de IA por permitir modelar o fluxo de decisão como um grafo de estados, o que facilita a adição de novas ferramentas sem alterar o fluxo principal. O agente atual possui ferramentas para consulta ao BigQuery, geocoding, análise de campanhas e integração com Looker. Cada ferramenta é independente e pode ser testada unitariamente.
+
+A decisão de suportar múltiplos LLM providers (**Groq** e **Google Gemini**) evita lock-in e permite otimizar custo vs. qualidade por tipo de consulta. O sistema seleciona o provider via variável de ambiente, sem mudança de código.
+
+### Separação frontend/backend com proxy
+
+A arquitetura de produção usa **três camadas de serving**:
+
+```text
+Firebase Hosting (CDN global, HTTPS)
+       │
+       ▼ /api/**
+Cloud Run — firebase-proxy (HTTPS → HTTP)
+       │
+       ▼
+GKE — serviços backend (HTTP interno)
+```
+
+Essa separação permite evoluir cada camada de forma independente. O CDN do Firebase garante baixa latência global para os assets estáticos. O Cloud Run resolve o mixed content sem custo de certificado no backend. O GKE mantém o controle operacional completo sobre os serviços.
+
+### Kafka como backbone de ingestão
+
+O **Kafka** foi escolhido como ponto central de ingestão por três razões: tolerância a falhas (mensagens persistidas mesmo se o consumidor estiver fora do ar), desacoplamento entre produtor e consumidores, e capacidade de reprocessar mensagens em caso de erro. O `bucket-consumer` faz backup automático de cada mensagem no Cloud Storage antes do processamento, garantindo que nenhum dado seja perdido mesmo em falhas do `bigquery-writer`.
+
+---
+
+## Aspectos de Qualidade e Operação
+
+### Observabilidade
+
+Todos os serviços expõem endpoints `/healthz` e `/metrics` compatíveis com Prometheus e com os probes de liveness e readiness do Kubernetes. Isso permite que o cluster detecte automaticamente serviços degradados e reinicie pods com falha sem intervenção manual. A stack de observabilidade está documentada em [Observabilidade](/docs/sprint-4/observabilidade).
+
+### Testes de carga
+
+Os principais endpoints foram submetidos a testes de carga documentados em [Teste de Carga](/docs/sprint-4/teste-de-carga). Os resultados confirmaram que o sistema suporta o volume de requisições esperado para o uso interno da Eletromidia sem degradação perceptível de latência.
+
+### Segurança
+
+A superfície de ataque foi minimizada em múltiplas camadas: nós GKE privados (sem IP público), Workload Identity para autenticação de pods no GCP (sem chaves de service account em disco), validação de JWT no auth-middleware antes de qualquer acesso a dados, e RBAC no Kubernetes limitando permissões por namespace.
+
+A validação de SQL no agente de IA merece destaque: qualquer query gerada pelo LLM passa por uma camada de validação que rejeita comandos que não sejam `SELECT` ou CTEs com `WITH`, prevenindo injeção de SQL. Essa decisão está documentada em [Ferramentas do Agente](/docs/sprint-4/ia/ferramentas).
+
+---
+
+## Limitações e Próximos Passos
+
+### Limitações Conhecidas
+
+| Limitação | Impacto | Mitigação possível |
+|---|---|---|
+| Backend sem TLS nativo | Requer proxy intermediário | Adicionar certificado TLS ao ingress do GKE |
+| Autenticação baseada em token Firebase sem refresh automático | Sessão expira após 1h sem ação | Implementar refresh token no frontend |
+| Agente de IA sem memória de sessão persistente | Cada conversa começa do zero | Adicionar store de histórico (Redis ou BigQuery) |
+| Dados limitados a São Paulo | Análise não cobre outras cidades | Pipeline suporta novos datasets (RF10 — Fase 2) |
+| Sem exportação de relatórios | Usuário precisa capturar tela | RF07 planejado para Fase 3 |
+
+### Recomendações para Continuidade
+
+Para uma versão de produção com usuários reais em escala, o grupo recomenda priorizar:
+
+1. **TLS nativo no backend** — elimina a dependência do proxy Cloud Run
+2. **RBAC de aplicação completo** (RF08) — necessário para onboarding de clientes externos da Eletromidia
+3. **Histórico do agente de IA** — melhora significativamente a experiência em conversas longas de análise
+4. **Exportação de relatórios** (RF07) — demanda frequente do perfil gerencial identificada durante os testes
+
+---
+
+## Veja também
+
+- [Arquitetura](/docs/sprint-1/arquitetura) — visão geral da arquitetura do sistema
+- [Requisitos](/docs/sprint-1/requisitos) — requisitos funcionais e fases de evolução
+- [Prova de Conceito](/docs/sprint-5/prova-de-conceito) — validação com usuário final
+- [CI/CD Pipeline](/docs/sprint-4/ci-cd-pipeline) — automação de build, test e deploy
+- [Observabilidade](/docs/sprint-4/observabilidade) — métricas e health checks
+- [Testes Unitários](/docs/sprint-4/testes-unitarios) — cobertura de testes por serviço
