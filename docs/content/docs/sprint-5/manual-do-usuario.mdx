@@ -1,0 +1,324 @@
+---
+title: Manual do Usuário
+description: Guia completo para acessar, configurar e utilizar o sistema de visualização de fluxo de pessoas da Eletromidia
+---
+
+## Visão Geral do Sistema
+
+O sistema é uma aplicação web para visualização e análise de dados de fluxo de pessoas em São Paulo. Ele é composto por um frontend React, dashboards Looker, um mapa hexbin interativo e um agente de IA conversacional.
+
+Existem três formas de utilizar o sistema:
+
+1. **Acesso em produção** — via URL pública, sem instalação local
+2. **Ambiente local com Docker Compose** — para desenvolvimento e testes
+3. **Ambiente Kubernetes** — para deploy completo equivalente à produção
+
+---
+
+## 1. Acesso em Produção
+
+### URL de Acesso
+
+O sistema em produção está disponível em:
+
+**[https://midia-in-da-house.web.app](https://midia-in-da-house.web.app)**
+
+### Pré-requisitos
+
+- Conta Google autorizada pelo administrador do projeto
+- Navegador moderno (Chrome, Firefox, Edge ou Safari — versão recente)
+
+### Etapas de Acesso
+
+1. Acesse a URL acima no navegador
+2. Clique em **"Entrar com Google"** na tela de login
+3. Selecione a conta Google cadastrada pelo administrador
+4. Após autenticação, você será redirecionado automaticamente para o dashboard principal
+
+> Se receber erro de permissão após o login, entre em contato com o administrador do projeto para que sua conta seja adicionada ao Firebase Authentication e tenha o papel GCP IAM correto atribuído.
+
+---
+
+## 2. Ambiente Local com Docker Compose
+
+O ambiente local replica os principais serviços do sistema sem necessidade de infraestrutura em nuvem. É indicado para desenvolvimento e testes funcionais.
+
+### Pré-requisitos
+
+- [Docker](https://docs.docker.com/get-docker/) 24+ instalado
+- [Docker Compose](https://docs.docker.com/compose/) V2 instalado
+- Git para clonar o repositório
+- Acesso ao repositório do projeto no GitLab
+
+### Clonando o Repositório
+
+```bash
+git clone https://git.inteli.edu.br/graduacao/2026-1a/t12/g05.git
+cd g05
+```
+
+### Configurando Variáveis de Ambiente
+
+Cada serviço possui um arquivo `.env.example` com as variáveis necessárias. Copie-os e preencha os valores:
+
+```bash
+# BFF Storage
+cp src/services/bff-storage/.env.example src/services/bff-storage/.env
+
+# Agente de IA
+cp src/services/agent/.env.example src/services/agent/.env
+
+# Produtor Kafka (Rust)
+cp src/services/rust-producer/.env.example src/services/rust-producer/.env
+```
+
+As variáveis obrigatórias para o ambiente local incluem:
+
+| Variável | Serviço | Descrição |
+|---|---|---|
+| `GCS_BUCKET_NAME` | bff-storage | Nome do bucket no Cloud Storage |
+| `GOOGLE_APPLICATION_CREDENTIALS` | bff-storage, agent | Caminho para o arquivo de credenciais GCP |
+| `GROQ_API_KEY` ou `GOOGLE_API_KEY` | agent | Chave do LLM provider (Groq ou Google) |
+| `BIGQUERY_PROJECT_ID` | agent, bigquery-writer | ID do projeto GCP |
+| `BIGQUERY_DATASET_ID` | agent, bigquery-writer | ID do dataset no BigQuery |
+| `KAFKA_BOOTSTRAP_SERVERS` | kafka-producer, bigquery-writer | Endereço do broker Kafka |
+
+### Iniciando os Serviços
+
+```bash
+cd src
+docker compose up --build
+```
+
+O Docker Compose sobe os seguintes serviços:
+
+| Serviço | Porta local | Descrição |
+|---|---|---|
+| Zookeeper | 2181 | Coordenação do Kafka |
+| Kafka | 9092 | Message broker |
+| `kafka-producer` | 5000 | Endpoint de ingestão de CSV (Rust) |
+| `agent` | 8001 | API do agente de IA (FastAPI) |
+| `auth-middleware` | 5001 | Validação de tokens JWT (Rust) |
+| Frontend (Nginx) | 5173 | SPA React |
+
+O frontend fica disponível em `http://localhost:5173`.
+
+> **Nota:** O ambiente local não inclui autenticação Firebase ativa. Para testar a autenticação completa, use o ambiente de produção ou configure as credenciais Firebase no `.env` do frontend.
+
+### Verificando o Status dos Serviços
+
+```bash
+# Verificar se os containers estão rodando
+docker compose ps
+
+# Ver logs de um serviço específico
+docker compose logs -f agent
+
+# Verificar health do agente
+curl http://localhost:8001/health
+```
+
+### Ingerindo Dados Localmente
+
+Para popular o ambiente local com dados de fluxo:
+
+```bash
+# Enviar um CSV para o produtor Kafka
+curl -X POST http://localhost:5000/upload \
+  -F "file=@/caminho/para/dados.csv"
+```
+
+O produtor valida o esquema do CSV, produz as mensagens no Kafka e o `bigquery-writer` as persiste no BigQuery (requer credenciais GCP configuradas).
+
+### Encerrando o Ambiente
+
+```bash
+docker compose down
+```
+
+Para remover também os volumes (dados do Kafka):
+
+```bash
+docker compose down -v
+```
+
+---
+
+## 3. Ambiente Kubernetes
+
+O ambiente Kubernetes é equivalente à produção. É utilizado para testes de integração completos e para operar o sistema com toda a infraestrutura GCP.
+
+### Pré-requisitos
+
+- `kubectl` configurado para o cluster GKE
+- `gcloud` CLI autenticado com a conta de serviço correta
+- Acesso ao cluster GKE (`t12g05-cluster` em `us-central1`)
+- Docker e acesso ao Artifact Registry
+
+### Configurando o kubectl
+
+```bash
+# Autenticar no GCP
+gcloud auth login
+
+# Configurar o contexto do cluster
+gcloud container clusters get-credentials t12g05-cluster \
+  --region us-central1 \
+  --project SEU_PROJECT_ID
+```
+
+### Verificando os Serviços em Execução
+
+```bash
+# Listar todos os pods
+kubectl get pods -n default
+
+# Verificar status dos deployments
+kubectl get deployments -n default
+
+# Ver serviços expostos
+kubectl get services -n default
+```
+
+### Acessando Logs de um Serviço
+
+```bash
+# Logs do agente de IA
+kubectl logs -l app=agent -f
+
+# Logs do BFF Storage
+kubectl logs -l app=bff-storage -f
+
+# Logs do auth-middleware
+kubectl logs -l app=auth-middleware -f
+```
+
+### Fazendo Deploy de uma Nova Imagem
+
+O processo de build e deploy de imagens está automatizado via CI/CD no GitLab. Para um deploy manual:
+
+```bash
+# Build e push da imagem para o Artifact Registry
+docker build -t us-central1-docker.pkg.dev/PROJECT_ID/gke-cr/agent:latest \
+  src/services/agent/
+
+docker push us-central1-docker.pkg.dev/PROJECT_ID/gke-cr/agent:latest
+
+# Atualizar o deployment no Kubernetes
+kubectl rollout restart deployment/agent
+```
+
+O pipeline completo de CI/CD está documentado em [CI/CD Pipeline](/docs/sprint-4/ci-cd-pipeline).
+
+---
+
+## 4. Guia de Uso das Funcionalidades
+
+### 4.1 Dashboard Analítico
+
+Ao acessar o sistema, o usuário é direcionado ao dashboard Looker. Os painéis disponíveis incluem:
+
+**Visão Geral**
+- Total de pessoas únicas no período selecionado
+- Distribuição por horário do dia (heatmap)
+- Série temporal de fluxo por dia da semana
+
+**Filtros Disponíveis**
+
+| Filtro | Opções |
+|---|---|
+| Período | Intervalo de datas com seletor de calendário |
+| Hora do dia | Faixa horária (ex: 06h–12h, 12h–18h, ou customizado) |
+| Gênero | Masculino, Feminino, Todos |
+| Faixa etária | 18–24, 25–34, 35–44, 45–54, 55–64, 65+ |
+| Classe social | A, B1, B2, C1, C2, DE |
+
+Para aplicar um filtro, selecione o valor desejado no painel de filtros à esquerda. Todos os gráficos atualizam automaticamente.
+
+### 4.2 Mapa Hexbin
+
+Acesse o mapa pelo menu lateral. O mapa exibe São Paulo dividida em hexágonos coloridos por intensidade de fluxo.
+
+**Como usar:**
+
+1. **Navegar** — use scroll do mouse para zoom, clique e arraste para mover o mapa
+2. **Inspecionar um hexbin** — clique sobre um hexágono para ver a soma de pessoas únicas e os pontos Eletromidia contidos
+3. **Filtrar por distância** — use o campo "Raio de análise" para inserir um endereço ou coordenada e um raio em quilômetros; o mapa destaca apenas os hexbins dentro da área
+4. **Aplicar filtros demográficos** — os mesmos filtros do dashboard (gênero, faixa etária, classe social) se aplicam ao mapa
+5. **Comparar segmentos** — selecione dois filtros diferentes para visualizar comparação de distribuição entre segmentos
+
+### 4.3 Navegador de Arquivos (Cloud)
+
+A tela Cloud permite acessar e baixar as bases de dados CSV armazenadas no Cloud Storage.
+
+**Como usar:**
+
+1. Acesse a tela **Cloud** pelo menu lateral
+2. Navegue pelas pastas para encontrar a base desejada
+3. Clique no arquivo para baixar diretamente para o computador
+
+O acesso é autenticado — apenas usuários com permissão de leitura no Cloud Storage conseguem visualizar e baixar os arquivos.
+
+### 4.4 Agente de IA (Chat Sidebar)
+
+O agente conversacional está disponível como um painel lateral (`ChatSidebar`) acessível em qualquer tela da aplicação. Permite fazer perguntas em linguagem natural sobre os dados de fluxo e campanhas.
+
+**Como usar:**
+
+1. Clique no ícone de chat na interface para abrir o painel lateral
+2. Digite sua pergunta no campo de texto e pressione **Enter** ou clique em **Enviar**
+3. O agente responde em streaming — o texto aparece progressivamente enquanto é gerado
+
+**Exemplos de perguntas:**
+
+- *"Qual o perfil demográfico predominante próximo à estação Consolação no período da manhã?"*
+- *"Compare o fluxo de mulheres da classe B nos bairros Pinheiros e Vila Mariana"*
+- *"Qual o melhor horário para uma campanha voltada para jovens de 18 a 24 anos?"*
+- *"Quantas pessoas únicas passaram pelos pontos da Av. Paulista na última semana disponível?"*
+
+O agente consulta o BigQuery com SQL gerado dinamicamente, enriquece os dados com informações geográficas e retorna análises contextualizadas. A arquitetura interna está descrita em [Ferramentas do Agente](/docs/sprint-4/ia/ferramentas).
+
+> **Dica:** Seja específico nas perguntas — inclua referências geográficas, demográficas e temporais para obter respostas mais precisas.
+
+---
+
+## 5. Resolução de Problemas Comuns
+
+### Login não funciona / acesso negado
+
+- Verifique se a conta Google utilizada foi cadastrada no Firebase Authentication pelo administrador
+- Verifique se a conta possui o papel GCP IAM correto (`roles/looker.accessUser` mínimo)
+- Limpe os cookies do navegador e tente novamente
+
+### Dashboard do Looker não carrega
+
+- O Looker pode levar alguns segundos para carregar na primeira vez — aguarde até 30 segundos
+- Verifique a conexão com a internet
+- Se o problema persistir, recarregue a página (F5)
+
+### Mapa hexbin aparece vazio
+
+- Verifique se há dados no período selecionado — tente ampliar o intervalo de datas
+- Certifique-se de que o filtro de gênero ou faixa etária não está excluindo todos os registros
+- Aguarde o carregamento completo dos tiles do mapa
+
+### Agente de IA não responde
+
+- O agente pode levar alguns segundos para iniciar a resposta (carregamento do contexto)
+- Se a resposta travar, recarregue a página e tente novamente
+- Perguntas muito genéricas (sem referências geográficas ou temporais) podem gerar respostas menos precisas
+
+### Erro ao fazer upload de CSV (ambiente local)
+
+- Verifique se o CSV contém as colunas obrigatórias: `location_id`, `impression_hour`, `uniques`, `latitude`, `longitude`
+- Certifique-se de que o Kafka está rodando: `docker compose ps`
+- Verifique os logs do produtor: `docker compose logs rust-producer`
+
+---
+
+## Veja também
+
+- [Prova de Conceito](/docs/sprint-5/prova-de-conceito) — validação dos requisitos com o usuário final
+- [Deploy do Frontend](/docs/sprint-5/deploy-frontend) — como o frontend é publicado no Firebase Hosting
+- [CI/CD Pipeline](/docs/sprint-4/ci-cd-pipeline) — automação de build e deploy
+- [Arquitetura](/docs/sprint-1/arquitetura) — visão geral da arquitetura do sistema
