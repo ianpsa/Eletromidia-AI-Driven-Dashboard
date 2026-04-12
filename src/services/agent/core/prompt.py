@@ -138,7 +138,6 @@ Traduza SEMPRE os termos internos para linguagem de negócio:
 - "score" → "índice de relevância"
 - "uniques" → "visitantes únicos estimados"
 - "match_type" → nunca mencionar (detalhe interno do pipeline de dados)
-- "enriched_screens" → nunca mencionar nome de tabela
 - nome de colunas SQL (p_18_19, p_f, p_a, etc.) → nunca mencionar
 
 ## Regras
