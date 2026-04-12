@@ -1,6 +1,9 @@
 {
   "title": "Sprint 5",
   "pages": [
+    "prova-de-conceito",
+    "manual-do-usuario",
+    "processo-de-desenvolvimento",
     "deploy-frontend",
     "testes-unitarios"
   ]
