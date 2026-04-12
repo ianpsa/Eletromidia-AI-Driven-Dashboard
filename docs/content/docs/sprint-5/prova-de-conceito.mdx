@@ -1,0 +1,169 @@
+---
+title: Prova de Conceito
+description: Demonstração do protótipo funcional e validação dos requisitos funcionais com o usuário final
+---
+
+## Visão Geral
+
+A Prova de Conceito consolida o trabalho realizado ao longo do módulo inteiro. O objetivo é duplo: demonstrar que o sistema funciona de ponta a ponta em ambiente de produção, e comprovar que cada requisito funcional implementado foi validado por meio de testes com o usuário final.
+
+O sistema está disponível publicamente. Todos os componentes — frontend, backend, pipeline de dados e agente de IA — estão em operação no Google Cloud Platform.
+
+---
+
+## Sistema Deployado
+
+### Acesso em Produção
+
+O frontend da aplicação pode ser acessado em:
+
+**[https://midia-in-da-house.web.app](https://midia-in-da-house.web.app)**
+
+A aplicação exige autenticação via conta Google. Usuários autorizados são cadastrados no Firebase Auth e têm suas permissões mapeadas via GCP IAM, conforme documentado em [Autenticação](/docs/sprint-4/autenticacao).
+
+### Arquitetura em Produção
+
+O sistema deployado é composto por:
+
+| Componente | Tecnologia | Ambiente |
+|---|---|---|
+| Frontend (SPA) | React + Vite | Firebase Hosting + CDN global |
+| Proxy HTTPS | Express + Cloud Run | `us-central1` |
+| Auth Middleware | Rust (Axum) | GKE |
+| BFF Storage | Go | GKE |
+| Agente de IA | Python (FastAPI + LangGraph) | GKE |
+| Pipeline de dados | Rust + Go (Kafka) | GKE |
+| Dados analíticos | BigQuery | GCP gerenciado |
+| Arquivos CSV | Cloud Storage | GCP gerenciado |
+| Dashboards | Looker Studio | GCP gerenciado |
+
+A infraestrutura completa é provisionada via Terraform e orquestrada pelo GKE, conforme detalhado em [Deploy](/docs/sprint-4/deploy) e [Kubernetes](/docs/sprint-3/kubernetes/probes-and-security).
+
+---
+
+## Demonstração do Protótipo
+
+### Tela de Login
+
+O acesso ao sistema é protegido por autenticação Firebase. O usuário realiza login com conta Google e é redirecionado automaticamente para o dashboard principal após a validação do token JWT pelo `auth-middleware`.
+
+### Dashboard Analítico (Looker)
+
+A tela central da aplicação exibe dashboards do Looker Studio embutidos diretamente no frontend. Os painéis apresentam:
+
+- **Visão geral de fluxo** — total de pessoas únicas por período
+- **Segmentação demográfica** — distribuição por faixa etária, gênero e classe social
+- **Série temporal** — variação de fluxo ao longo do dia e da semana
+- **KPIs** — métricas agregadas dos pontos de presença da Eletromidia
+
+Os filtros aplicados no frontend são transmitidos ao Looker via parâmetros de URL, mantendo sincronia em tempo real entre a interface e os gráficos.
+
+### Mapa Hexbin
+
+O mapa interativo exibe a concentração de fluxo de pessoas em São Paulo por meio de hexágonos coloridos. Cada hexbin agrega os `uniques` (pessoas únicas) dos `location_id`s contidos naquele polígono. O usuário pode:
+
+- Navegar e dar zoom para expandir a granularidade
+- Selecionar um hexbin para ver os detalhes dos pontos internos
+- Aplicar filtros demográficos e temporais que atualizam o mapa em tempo real
+- Usar o filtro por distância para analisar o raio de influência de um ponto específico
+
+### Cloud (Navegador de Arquivos)
+
+A tela de Cloud permite navegar pelos arquivos CSV armazenados no Cloud Storage e baixar bases de dados diretamente pelo navegador. O BFF Storage intermedia o acesso de forma segura, exigindo token JWT válido em cada requisição.
+
+### Agente de IA (Chat Sidebar)
+
+O agente conversacional é acessado pelo painel lateral de chat (`ChatSidebar`), disponível em qualquer tela da aplicação. O usuário pode fazer perguntas em linguagem natural sobre os dados de fluxo — por exemplo, qual o perfil demográfico predominante próximo ao Parque do Povo, ou qual o melhor horário para uma campanha voltada para a classe B. O agente:
+
+- Consulta o BigQuery com SQL gerado dinamicamente (apenas queries `SELECT` são permitidas)
+- Enriquece os dados com informações geográficas via geocoding (Nominatim)
+- Filtra dashboards do Looker de forma programática
+- Retorna respostas em streaming (Server-Sent Events) diretamente na interface
+
+O agente possui cinco ferramentas implementadas: `bigquery`, `campaign`, `geocoding`, `looker` e `metadata`. A arquitetura completa está documentada em [Visão Geral da IA](/docs/sprint-4/ia/visao-geral).
+
+---
+
+## Validação dos Requisitos Funcionais
+
+Os testes foram conduzidos com usuários finais representativos dos perfis mapeados nas [Personas](/docs/sprint-1/perfil-do-parceiro/personas) do projeto: o perfil analítico-técnico (Mário), o perfil gerencial (Carmen) e o perfil de cliente anunciante (Carlos).
+
+### Escopo de Validação
+
+Conforme estabelecido em [Requisitos](/docs/sprint-1/requisitos), os requisitos da **Fase 1** são o núcleo implementado neste módulo. Os requisitos de Fase 2 e Fase 3 foram planejados como evolução arquitetural e estão documentados como mudanças de escopo na seção seguinte.
+
+### Tabela de Validação
+
+| Requisito | Descrição | Forma de Teste | Resultado |
+|---|---|---|---|
+| **RF01** | Ingestão de base de dados de fluxo | Upload de CSV via pipeline Rust → Kafka → BigQuery; verificação de registros no console do BigQuery | ✅ Aprovado |
+| **RF02** | Mapa interativo com hexbin | Usuário abre o mapa, navega por São Paulo, aplica zoom e verifica expansão dos hexbins | ✅ Aprovado |
+| **RF03** | Filtros por período e hora | Usuário seleciona intervalo de datas e faixa horária; mapa e gráficos atualizam em tempo real | ✅ Aprovado |
+| **RF04** | Comparação de filtros | Usuário seleciona dois segmentos demográficos (ex: masculino vs. feminino) e compara distribuição no mapa | ✅ Aprovado |
+| **RF05** | Agrupamentos e agregações personalizadas | Usuário agrupa por gênero, faixa etária e classe social; relatórios exibem proporções corretas | ✅ Aprovado |
+| **RF06** | Gráficos e painéis auxiliares | Usuário aplica filtro temporal e verifica atualização imediata dos gráficos de linha e barras | ✅ Aprovado |
+
+### Detalhamento dos Testes
+
+#### RF01 — Ingestão de Dados
+
+O teste foi conduzido com o perfil técnico (Mário). Um arquivo CSV no formato padrão da Claro Geodata foi submetido ao endpoint do `csv-kafka-producer`. O sistema validou as colunas obrigatórias (`location_id`, `impression_hour`, `uniques`, `latitude`, `longitude`), produziu as mensagens no Kafka e o `bigquery-writer` persistiu os registros. O painel do BigQuery confirmou os dados ingeridos com contagem de registros, período mínimo e máximo de `impression_hour` e contagem de `location_id`s únicos.
+
+#### RF02 — Mapa Interativo
+
+Testado com todos os perfis. O mapa carrega com hexbins visíveis sobre São Paulo. Ao aumentar o zoom, os hexagônos se expandem revelando granularidade maior. Ao clicar em um hexbin, o usuário vê a soma de `uniques` e a lista dos `location_id`s contidos. O perfil gerencial (Carmen) conseguiu identificar regiões de alta densidade sem orientação técnica, confirmando a acessibilidade da visualização.
+
+#### RF03 — Filtros Temporais
+
+O usuário selecionou o intervalo `2025-01-06 08:00 → 2025-01-06 11:00` (manhã de segunda-feira) e observou a atualização imediata do mapa e dos gráficos. O filtro de hora do dia foi testado com faixas como "horário comercial" (08h–18h) e "pico noturno" (18h–22h), com resultados distintos e coerentes com o comportamento esperado para cada período.
+
+#### RF04 — Comparação de Filtros
+
+Testado com o perfil de cliente anunciante (Carlos). O usuário comparou o fluxo do segmento feminino vs. masculino e o segmento classe A vs. classe C em pontos próximos ao Parque do Povo. A interface exibiu mapas hexbin paralelos com diferenças espaciais visualmente identificáveis, permitindo que o usuário tomasse decisões de targeting de campanha com base nos dados.
+
+#### RF05 — Agrupamentos Personalizados
+
+O usuário aplicou agrupamento por gênero e verificou a distribuição proporcional no painel do Looker. Em seguida, agrupou por classe social e faixa etária. Em todos os casos, os gráficos de barras exibiram proporções consistentes com os dados brutos. O agrupamento por hexbin mostrou quais `location_id`s compunham cada célula do mapa.
+
+#### RF06 — Gráficos e Painéis
+
+O Looker Studio exibiu gráfico de linha temporal, barras por categoria e heatmap horário. Ao aplicar filtro temporal, os três gráficos atualizaram simultaneamente. Os tooltips exibiram valores exatos ao passar o cursor sobre cada ponto ou barra. O perfil gerencial confirmou que os gráficos eram suficientemente claros para uso em apresentações executivas sem necessidade de exportação adicional.
+
+---
+
+## Mudanças de Escopo Documentadas
+
+### Requisitos Não Implementados Neste Módulo
+
+Conforme planejado desde a [Sprint 1](/docs/sprint-1/requisitos), os requisitos de Fase 2 e Fase 3 estão fora do escopo de entrega deste módulo. Eles foram conscientemente priorizados para fases futuras por dependerem de camadas arquiteturais adicionais (RBAC completo, auditoria, gestão de múltiplos datasets).
+
+| Requisito | Fase | Motivo da Postergação |
+|---|---|---|
+| RF07 — Exportação de relatório (PDF/CSV) | Fase 3 | Depende de RBAC com controle de acesso granular por role |
+| RF08 — Gestão de usuários e papéis (RBAC) | Fase 3 | Requer serviço de identidade completo e UI de administração |
+| RF09 — Histórico de consultas e auditoria | Fase 3 | Depende de serviço de auditoria e logging estruturado por usuário |
+| RF10 — Upload de nova base para outras cidades | Fase 2 | Requer gerenciamento de múltiplos datasets no pipeline |
+| RF11 — Ajuda contextual e glossário | Fase 2 | Melhoria de UX planejada para versão com usuários reais em produção |
+| RF12 — Indicadores e perguntas prontas | Fase 2 | Requer consultas analíticas parametrizadas e UI de quick insights |
+
+### Funcionalidades Adicionadas Além do Escopo Original
+
+Durante o desenvolvimento, o grupo identificou e implementou funcionalidades que agregam valor ao produto mas não estavam previstas nos requisitos originais:
+
+| Funcionalidade | Sprint | Justificativa |
+|---|---|---|
+| Agente de IA conversacional (LangGraph + FastAPI) | Sprint 3 / Sprint 4 | Identificado como diferencial competitivo para análise de campanhas |
+| Auth Middleware em Rust com mapeamento GCP IAM | Sprint 4 | Necessário para viabilizar o controle de acesso seguro ao sistema |
+| CI/CD completo no GitLab com lint, typecheck e build | Sprint 4 | Prática de engenharia de software adotada pelo grupo para garantir qualidade |
+| Proxy HTTPS no Cloud Run | Sprint 5 | Solução necessária para resolver mixed content entre Firebase Hosting e backend HTTP |
+
+Essas adições foram discutidas com o parceiro e registradas nas documentações de sprint correspondentes.
+
+---
+
+## Veja também
+
+- [Requisitos Funcionais e Não Funcionais](/docs/sprint-1/requisitos) — definição original dos RFs e RNFs
+- [Personas](/docs/sprint-1/perfil-do-parceiro/personas) — perfis dos usuários utilizados nos testes
+- [Arquitetura do Agente de IA](/docs/sprint-4/ia/arquitetura) — componentes do agente conversacional
+- [Manual do Usuário](/docs/sprint-5/manual-do-usuario) — como acessar e usar o sistema
