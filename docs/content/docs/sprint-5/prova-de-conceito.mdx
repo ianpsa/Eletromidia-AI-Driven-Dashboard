@@ -25,17 +25,17 @@ A aplicação exige autenticação via conta Google. Usuários autorizados são 
 
 O sistema deployado é composto por:
 
-| Componente | Tecnologia | Ambiente |
-|---|---|---|
-| Frontend (SPA) | React + Vite | Firebase Hosting + CDN global |
-| Proxy HTTPS | Express + Cloud Run | `us-central1` |
-| Auth Middleware | Rust (Axum) | GKE |
-| BFF Storage | Go | GKE |
-| Agente de IA | Python (FastAPI + LangGraph) | GKE |
-| Pipeline de dados | Rust + Go (Kafka) | GKE |
-| Dados analíticos | BigQuery | GCP gerenciado |
-| Arquivos CSV | Cloud Storage | GCP gerenciado |
-| Dashboards | Looker Studio | GCP gerenciado |
+| Componente        | Tecnologia                   | Ambiente                      |
+| ----------------- | ---------------------------- | ----------------------------- |
+| Frontend (SPA)    | React + Vite                 | Firebase Hosting + CDN global |
+| Proxy HTTPS       | Express + Cloud Run          | `us-central1`                 |
+| Auth Middleware   | Rust (Axum)                  | GKE                           |
+| BFF Storage       | Go                           | GKE                           |
+| Agente de IA      | Python (FastAPI + LangGraph) | GKE                           |
+| Pipeline de dados | Rust + Go (Kafka)            | GKE                           |
+| Dados analíticos  | BigQuery                     | GCP gerenciado                |
+| Arquivos CSV      | Cloud Storage                | GCP gerenciado                |
+| Dashboards        | Looker Studio                | GCP gerenciado                |
 
 A infraestrutura completa é provisionada via Terraform e orquestrada pelo GKE, conforme detalhado em [Deploy](/docs/sprint-4/deploy) e [Kubernetes](/docs/sprint-3/kubernetes/probes-and-security).
 
@@ -94,14 +94,14 @@ Conforme estabelecido em [Requisitos](/docs/sprint-1/requisitos), os requisitos 
 
 ### Tabela de Validação
 
-| Requisito | Descrição | Forma de Teste | Resultado |
-|---|---|---|---|
-| **RF01** | Ingestão de base de dados de fluxo | Upload de CSV via pipeline Rust → Kafka → BigQuery; verificação de registros no console do BigQuery | ✅ Aprovado |
-| **RF02** | Mapa interativo com hexbin | Usuário abre o mapa, navega por São Paulo, aplica zoom e verifica expansão dos hexbins | ✅ Aprovado |
-| **RF03** | Filtros por período e hora | Usuário seleciona intervalo de datas e faixa horária; mapa e gráficos atualizam em tempo real | ✅ Aprovado |
-| **RF04** | Comparação de filtros | Usuário seleciona dois segmentos demográficos (ex: masculino vs. feminino) e compara distribuição no mapa | ✅ Aprovado |
-| **RF05** | Agrupamentos e agregações personalizadas | Usuário agrupa por gênero, faixa etária e classe social; relatórios exibem proporções corretas | ✅ Aprovado |
-| **RF06** | Gráficos e painéis auxiliares | Usuário aplica filtro temporal e verifica atualização imediata dos gráficos de linha e barras | ✅ Aprovado |
+| Requisito | Descrição                                | Forma de Teste                                                                                            | Resultado   |
+| --------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------- |
+| **RF01**  | Ingestão de base de dados de fluxo       | Upload de CSV via pipeline Rust → Kafka → BigQuery; verificação de registros no console do BigQuery       | ✅ Aprovado |
+| **RF02**  | Mapa interativo com hexbin               | Usuário abre o mapa, navega por São Paulo, aplica zoom e verifica expansão dos hexbins                    | ✅ Aprovado |
+| **RF03**  | Filtros por período e hora               | Usuário seleciona intervalo de datas e faixa horária; mapa e gráficos atualizam em tempo real             | ✅ Aprovado |
+| **RF04**  | Comparação de filtros                    | Usuário seleciona dois segmentos demográficos (ex: masculino vs. feminino) e compara distribuição no mapa | ✅ Aprovado |
+| **RF05**  | Agrupamentos e agregações personalizadas | Usuário agrupa por gênero, faixa etária e classe social; relatórios exibem proporções corretas            | ✅ Aprovado |
+| **RF06**  | Gráficos e painéis auxiliares            | Usuário aplica filtro temporal e verifica atualização imediata dos gráficos de linha e barras             | ✅ Aprovado |
 
 ### Detalhamento dos Testes
 
@@ -137,25 +137,25 @@ O Looker Studio exibiu gráfico de linha temporal, barras por categoria e heatma
 
 Conforme planejado desde a [Sprint 1](/docs/sprint-1/requisitos), os requisitos de Fase 2 e Fase 3 estão fora do escopo de entrega deste módulo. Eles foram conscientemente priorizados para fases futuras por dependerem de camadas arquiteturais adicionais (RBAC completo, auditoria, gestão de múltiplos datasets).
 
-| Requisito | Fase | Motivo da Postergação |
-|---|---|---|
-| RF07 — Exportação de relatório (PDF/CSV) | Fase 3 | Depende de RBAC com controle de acesso granular por role |
-| RF08 — Gestão de usuários e papéis (RBAC) | Fase 3 | Requer serviço de identidade completo e UI de administração |
-| RF09 — Histórico de consultas e auditoria | Fase 3 | Depende de serviço de auditoria e logging estruturado por usuário |
-| RF10 — Upload de nova base para outras cidades | Fase 2 | Requer gerenciamento de múltiplos datasets no pipeline |
-| RF11 — Ajuda contextual e glossário | Fase 2 | Melhoria de UX planejada para versão com usuários reais em produção |
-| RF12 — Indicadores e perguntas prontas | Fase 2 | Requer consultas analíticas parametrizadas e UI de quick insights |
+| Requisito                                      | Fase   | Motivo da Postergação                                               |
+| ---------------------------------------------- | ------ | ------------------------------------------------------------------- |
+| RF07 — Exportação de relatório (PDF/CSV)       | Fase 3 | Depende de RBAC com controle de acesso granular por role            |
+| RF08 — Gestão de usuários e papéis (RBAC)      | Fase 3 | Requer serviço de identidade completo e UI de administração         |
+| RF09 — Histórico de consultas e auditoria      | Fase 3 | Depende de serviço de auditoria e logging estruturado por usuário   |
+| RF10 — Upload de nova base para outras cidades | Fase 2 | Requer gerenciamento de múltiplos datasets no pipeline              |
+| RF11 — Ajuda contextual e glossário            | Fase 2 | Melhoria de UX planejada para versão com usuários reais em produção |
+| RF12 — Indicadores e perguntas prontas         | Fase 2 | Requer consultas analíticas parametrizadas e UI de quick insights   |
 
 ### Funcionalidades Adicionadas Além do Escopo Original
 
 Durante o desenvolvimento, o grupo identificou e implementou funcionalidades que agregam valor ao produto mas não estavam previstas nos requisitos originais:
 
-| Funcionalidade | Sprint | Justificativa |
-|---|---|---|
-| Agente de IA conversacional (LangGraph + FastAPI) | Sprint 3 / Sprint 4 | Identificado como diferencial competitivo para análise de campanhas |
-| Auth Middleware em Rust com mapeamento GCP IAM | Sprint 4 | Necessário para viabilizar o controle de acesso seguro ao sistema |
-| CI/CD completo no GitLab com lint, typecheck e build | Sprint 4 | Prática de engenharia de software adotada pelo grupo para garantir qualidade |
-| Proxy HTTPS no Cloud Run | Sprint 5 | Solução necessária para resolver mixed content entre Firebase Hosting e backend HTTP |
+| Funcionalidade                                       | Sprint              | Justificativa                                                                        |
+| ---------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------ |
+| Agente de IA conversacional (LangGraph + FastAPI)    | Sprint 3 / Sprint 4 | Identificado como diferencial competitivo para análise de campanhas                  |
+| Auth Middleware em Rust com mapeamento GCP IAM       | Sprint 4            | Necessário para viabilizar o controle de acesso seguro ao sistema                    |
+| CI/CD completo no GitLab com lint, typecheck e build | Sprint 4            | Prática de engenharia de software adotada pelo grupo para garantir qualidade         |
+| Proxy HTTPS no Cloud Run                             | Sprint 5            | Solução necessária para resolver mixed content entre Firebase Hosting e backend HTTP |
 
 Essas adições foram discutidas com o parceiro e registradas nas documentações de sprint correspondentes.
 

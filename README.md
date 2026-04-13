@@ -12,7 +12,7 @@
   <table>
     <tr>
       <td align="center">
-        <a href="">
+        <a href="https://www.linkedin.com/in/davi-abreu-da-silveira/">
           <img src="assets/davi.jpg" style="border-radius: 10%; width: 150px;" alt="Davi Abreu da Silveira"/><br>
           <sub><b>Davi Abreu da Silveira</b></sub>
         </a>
@@ -67,13 +67,13 @@
 
 ## Descrição
 
-**Midia in da house** é uma plataforma de planejamento de campanhas de mídia OOH (*Out-of-Home*) assistida por IA, desenvolvida em parceria com a **Eletromidia**. A solução permite que planejadores de mídia identifiquem os melhores pontos de exibição a partir de dados reais de fluxo de pessoas e inventário de telas.
+**Midia in da house** é uma plataforma de planejamento de campanhas de mídia OOH (_Out-of-Home_) assistida por IA, desenvolvida em parceria com a **Eletromidia**. A solução permite que planejadores de mídia identifiquem os melhores pontos de exibição a partir de dados reais de fluxo de pessoas e inventário de telas.
 
 A arquitetura é orientada a dados e composta por:
 
 - **Pipeline de ingestão**: CSVs são processados por um produtor em Rust, publicados em **Kafka** e consumidos para carga no **BigQuery**.
-- **Visualização geoespacial**: frontend em React + Deck.GL + MapLibre que renderiza camadas de *hexbins* sobre o mapa para análise de densidade e cobertura.
-- **Agente conversacional**: um *AI agent* baseado em LangGraph que responde perguntas sobre campanhas, cruzando dados do BigQuery com contexto do usuário.
+- **Visualização geoespacial**: frontend em React + Deck.GL + MapLibre que renderiza camadas de _hexbins_ sobre o mapa para análise de densidade e cobertura.
+- **Agente conversacional**: um _AI agent_ baseado em LangGraph que responde perguntas sobre campanhas, cruzando dados do BigQuery com contexto do usuário.
 - **Dashboard analítico**: integração com Looker Studio para relatórios consolidados.
 
 ## Estrutura de Pastas
@@ -142,14 +142,14 @@ Após a inicialização, o frontend fica disponível em `http://localhost:5173` 
 ### 0.4.0 - Sprint 4
 
 - Pipeline CI/CD e observabilidade com Prometheus em todos os serviços.
-- Visualização por *hexbins* com sidebar de chat integrada ao frontend.
+- Visualização por _hexbins_ com sidebar de chat integrada ao frontend.
 - Integração BigQuery ↔ Looker Studio, fluxo de autenticação completo e cobertura de testes.
 
 ### 0.3.0 - Sprint 3
 
 - Frontend React com telas de Login, Dashboard, Cloud e Agent.
 - AI agent baseado em LangGraph para análise conversacional das campanhas.
-- *Hardening* dos manifestos Kubernetes, CSV producer com *health* e *metrics* e provisionamento GCP via Terraform.
+- _Hardening_ dos manifestos Kubernetes, CSV producer com _health_ e _metrics_ e provisionamento GCP via Terraform.
 
 ### 0.2.0 - Sprint 2
 

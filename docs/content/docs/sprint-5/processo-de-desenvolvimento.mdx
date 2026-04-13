@@ -127,13 +127,13 @@ A validação de SQL no agente de IA merece destaque: qualquer query gerada pelo
 
 ### Limitações Conhecidas
 
-| Limitação | Impacto | Mitigação possível |
-|---|---|---|
-| Backend sem TLS nativo | Requer proxy intermediário | Adicionar certificado TLS ao ingress do GKE |
-| Autenticação baseada em token Firebase sem refresh automático | Sessão expira após 1h sem ação | Implementar refresh token no frontend |
-| Agente de IA sem memória de sessão persistente | Cada conversa começa do zero | Adicionar store de histórico (Redis ou BigQuery) |
-| Dados limitados a São Paulo | Análise não cobre outras cidades | Pipeline suporta novos datasets (RF10 — Fase 2) |
-| Sem exportação de relatórios | Usuário precisa capturar tela | RF07 planejado para Fase 3 |
+| Limitação                                                     | Impacto                          | Mitigação possível                               |
+| ------------------------------------------------------------- | -------------------------------- | ------------------------------------------------ |
+| Backend sem TLS nativo                                        | Requer proxy intermediário       | Adicionar certificado TLS ao ingress do GKE      |
+| Autenticação baseada em token Firebase sem refresh automático | Sessão expira após 1h sem ação   | Implementar refresh token no frontend            |
+| Agente de IA sem memória de sessão persistente                | Cada conversa começa do zero     | Adicionar store de histórico (Redis ou BigQuery) |
+| Dados limitados a São Paulo                                   | Análise não cobre outras cidades | Pipeline suporta novos datasets (RF10 — Fase 2)  |
+| Sem exportação de relatórios                                  | Usuário precisa capturar tela    | RF07 planejado para Fase 3                       |
 
 ### Recomendações para Continuidade
 

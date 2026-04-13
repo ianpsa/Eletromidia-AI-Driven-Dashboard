@@ -74,14 +74,14 @@ cp src/services/rust-producer/.env.example src/services/rust-producer/.env
 
 As variáveis obrigatórias para o ambiente local incluem:
 
-| Variável | Serviço | Descrição |
-|---|---|---|
-| `GCS_BUCKET_NAME` | bff-storage | Nome do bucket no Cloud Storage |
-| `GOOGLE_APPLICATION_CREDENTIALS` | bff-storage, agent | Caminho para o arquivo de credenciais GCP |
-| `GROQ_API_KEY` ou `GOOGLE_API_KEY` | agent | Chave do LLM provider (Groq ou Google) |
-| `BIGQUERY_PROJECT_ID` | agent, bigquery-writer | ID do projeto GCP |
-| `BIGQUERY_DATASET_ID` | agent, bigquery-writer | ID do dataset no BigQuery |
-| `KAFKA_BOOTSTRAP_SERVERS` | kafka-producer, bigquery-writer | Endereço do broker Kafka |
+| Variável                           | Serviço                         | Descrição                                 |
+| ---------------------------------- | ------------------------------- | ----------------------------------------- |
+| `GCS_BUCKET_NAME`                  | bff-storage                     | Nome do bucket no Cloud Storage           |
+| `GOOGLE_APPLICATION_CREDENTIALS`   | bff-storage, agent              | Caminho para o arquivo de credenciais GCP |
+| `GROQ_API_KEY` ou `GOOGLE_API_KEY` | agent                           | Chave do LLM provider (Groq ou Google)    |
+| `BIGQUERY_PROJECT_ID`              | agent, bigquery-writer          | ID do projeto GCP                         |
+| `BIGQUERY_DATASET_ID`              | agent, bigquery-writer          | ID do dataset no BigQuery                 |
+| `KAFKA_BOOTSTRAP_SERVERS`          | kafka-producer, bigquery-writer | Endereço do broker Kafka                  |
 
 ### Iniciando os Serviços
 
@@ -92,14 +92,14 @@ docker compose up --build
 
 O Docker Compose sobe os seguintes serviços:
 
-| Serviço | Porta local | Descrição |
-|---|---|---|
-| Zookeeper | 2181 | Coordenação do Kafka |
-| Kafka | 9092 | Message broker |
-| `kafka-producer` | 5000 | Endpoint de ingestão de CSV (Rust) |
-| `agent` | 8001 | API do agente de IA (FastAPI) |
-| `auth-middleware` | 5001 | Validação de tokens JWT (Rust) |
-| Frontend (Nginx) | 5173 | SPA React |
+| Serviço           | Porta local | Descrição                          |
+| ----------------- | ----------- | ---------------------------------- |
+| Zookeeper         | 2181        | Coordenação do Kafka               |
+| Kafka             | 9092        | Message broker                     |
+| `kafka-producer`  | 5000        | Endpoint de ingestão de CSV (Rust) |
+| `agent`           | 8001        | API do agente de IA (FastAPI)      |
+| `auth-middleware` | 5001        | Validação de tokens JWT (Rust)     |
+| Frontend (Nginx)  | 5173        | SPA React                          |
 
 O frontend fica disponível em `http://localhost:5173`.
 
@@ -226,13 +226,13 @@ Ao acessar o sistema, o usuário é direcionado ao dashboard Looker. Os painéis
 
 ### Filtros Disponíveis
 
-| Filtro | Opções |
-|---|---|
-| Período | Intervalo de datas com seletor de calendário |
-| Hora do dia | Faixa horária (ex: 06h–12h, 12h–18h, ou customizado) |
-| Gênero | Masculino, Feminino, Todos |
-| Faixa etária | 18–24, 25–34, 35–44, 45–54, 55–64, 65+ |
-| Classe social | A, B1, B2, C1, C2, DE |
+| Filtro        | Opções                                               |
+| ------------- | ---------------------------------------------------- |
+| Período       | Intervalo de datas com seletor de calendário         |
+| Hora do dia   | Faixa horária (ex: 06h–12h, 12h–18h, ou customizado) |
+| Gênero        | Masculino, Feminino, Todos                           |
+| Faixa etária  | 18–24, 25–34, 35–44, 45–54, 55–64, 65+               |
+| Classe social | A, B1, B2, C1, C2, DE                                |
 
 Para aplicar um filtro, selecione o valor desejado no painel de filtros à esquerda. Todos os gráficos atualizam automaticamente.
 
@@ -272,10 +272,10 @@ O agente conversacional está disponível como um painel lateral (`ChatSidebar`)
 
 **Exemplos de perguntas:**
 
-- *"Qual o perfil demográfico predominante próximo à estação Consolação no período da manhã?"*
-- *"Compare o fluxo de mulheres da classe B nos bairros Pinheiros e Vila Mariana"*
-- *"Qual o melhor horário para uma campanha voltada para jovens de 18 a 24 anos?"*
-- *"Quantas pessoas únicas passaram pelos pontos da Av. Paulista na última semana disponível?"*
+- _"Qual o perfil demográfico predominante próximo à estação Consolação no período da manhã?"_
+- _"Compare o fluxo de mulheres da classe B nos bairros Pinheiros e Vila Mariana"_
+- _"Qual o melhor horário para uma campanha voltada para jovens de 18 a 24 anos?"_
+- _"Quantas pessoas únicas passaram pelos pontos da Av. Paulista na última semana disponível?"_
 
 O agente consulta o BigQuery com SQL gerado dinamicamente, enriquece os dados com informações geográficas e retorna análises contextualizadas. A arquitetura interna está descrita em [Ferramentas do Agente](/docs/sprint-4/ia/ferramentas).
 
