@@ -1,0 +1,10 @@
+# Release v0.5.0
+
+## What's New
+- Sprint 5 documentation (user manual, proof of concept, development process, deploy, README)
+- Authentication: OAuth fully integrated in frontend, Firebase proxy, CORS policies, Ingress NGINX for auth routes
+- BigQuery Writer: migrated to Storage Write API with parallel inserts and proto encoding
+- AI Agent: improved prompts (quantity, radius, response rules), Anthropic provider support, geocoding fix, K8s deployment with security hardening
+- Frontend: auto-expanding chat textarea, a11y improvements, logout button, AI feature integration
+- Kubernetes: monitoring ingress, load testing infrastructure, CPU/RAM pod tuning
+- Unit tests for agent (campaign, summarization) and BigQuery Writer (proto encoding, row conversion)
