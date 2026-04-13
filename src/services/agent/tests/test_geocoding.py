@@ -14,7 +14,6 @@ from core.tools.geocoding import (
     get_provider,
 )
 
-
 # ── helpers ───────────────────────────────────────────────────────────
 
 
