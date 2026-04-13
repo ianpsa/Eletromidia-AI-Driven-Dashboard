@@ -99,9 +99,7 @@ class TestGoogleProvider:
     def test_returns_lat_lon(self, monkeypatch):
         monkeypatch.setenv("GOOGLE_MAPS_API_KEY", "test-key")
         body = {
-            "results": [
-                {"geometry": {"location": {"lat": -23.5505, "lng": -46.6333}}}
-            ]
+            "results": [{"geometry": {"location": {"lat": -23.5505, "lng": -46.6333}}}]
         }
         with patch("core.tools.geocoding.httpx.get", return_value=_mock_http(body)):
             result = GoogleProvider().geocode("Av. Paulista")
@@ -117,9 +115,7 @@ class TestGoogleProvider:
     def test_result_is_float_tuple(self, monkeypatch):
         monkeypatch.setenv("GOOGLE_MAPS_API_KEY", "test-key")
         body = {
-            "results": [
-                {"geometry": {"location": {"lat": -22.9068, "lng": -43.1729}}}
-            ]
+            "results": [{"geometry": {"location": {"lat": -22.9068, "lng": -43.1729}}}]
         }
         with patch("core.tools.geocoding.httpx.get", return_value=_mock_http(body)):
             result = GoogleProvider().geocode("Rio de Janeiro")

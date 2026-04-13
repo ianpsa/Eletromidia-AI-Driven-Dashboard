@@ -35,8 +35,8 @@ class TestEstimateTokens:
 
     def test_multiple_messages_summed(self):
         msgs = [
-            HumanMessage(content="a" * 40),   # 10 tokens
-            AIMessage(content="b" * 80),       # 20 tokens
+            HumanMessage(content="a" * 40),  # 10 tokens
+            AIMessage(content="b" * 80),  # 20 tokens
         ]
         assert _estimate_tokens(msgs) == 30
 
