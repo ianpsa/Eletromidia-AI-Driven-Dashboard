@@ -3,11 +3,14 @@ import { createMDX } from 'fumadocs-mdx/next';
 const withMDX = createMDX();
 
 /** @type {import('next').NextConfig} */
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+const assetPrefix = basePath ? `${basePath}/` : '';
+
 const config = {
   output: 'export',
   reactStrictMode: true,
-  basePath: '/2026-1a/t12/g05',
-  assetPrefix: '/2026-1a/t12/g05/',
+  basePath,
+  assetPrefix,
   images: {
     unoptimized: true,
   },
